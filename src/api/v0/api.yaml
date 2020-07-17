@@ -1,0 +1,199 @@
+openapi: "3.0.0"
+info:
+  description: "Genomes on a Tree OpenAPI test."
+  version: "0.0.1"
+  title: "GoaT"
+  contact:
+    name: "GoaT"
+    email: "goat@genomehubs.org"
+  license:
+    name: "MIT License"
+servers:
+- url: "http://localhost:3000/api/v0.0.1"
+tags:
+- name: "taxa"
+  description: "Everything at the taxon level"
+paths:
+  /taxon/{taxonId}:
+    get:
+      tags:
+        - "taxa"
+      summary: "All details for a taxon"
+      description: "Returns all details for one or more `taxonId`s"
+      operationId: "getTaxaById"
+      x-eov-operation-handler: "api/v0/routes/taxon"
+      parameters:
+        - $ref: "#/components/parameters/taxonIdParam"
+        - $ref: "#/components/parameters/parentCountParam"
+        - $ref: "#/components/parameters/childCountParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Taxon"
+            application/xml:
+              schema:
+                xml:
+                  name: taxon
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Taxon"
+        "400":
+          description: "Invalid taxonId"
+  /taxon/{taxonId}/{propertyId}:
+    get:
+      tags:
+        - "taxa"
+      summary: "Property values for a taxon"
+      description: "Returns all details for one or more `propertyId`s and `taxonId`s"
+      operationId: "getpropertiesById"
+      x-eov-operation-handler: "api/v0/routes/taxon"
+      parameters:
+        - $ref: "#/components/parameters/taxonIdParam"
+        - $ref: "#/components/parameters/propertyIdParam"
+        - $ref: "#/components/parameters/parentCountParam"
+        - $ref: "#/components/parameters/childCountParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                type: "array"
+                items:
+                  $ref: "#/components/schemas/Taxon"
+        "400":
+          description: "Invalid taxonId value"
+  /taxon/{taxonId}/{propertyId}/{summaryType}:
+    get:
+      tags:
+        - "taxa"
+      summary: "Property values for a taxon"
+      description: "Multiple `taxonId`s and/or `propertyId`s can be provided with comma separated strings"
+      operationId: "getPropertySummaryById"
+      x-eov-operation-handler: "api/v0/routes/taxon"
+      parameters:
+        - $ref: "#/components/parameters/taxonIdParam"
+        - $ref: "#/components/parameters/propertyIdParam"
+        - $ref: "#/components/parameters/summaryTypeParam"
+        - $ref: "#/components/parameters/parentCountParam"
+        - $ref: "#/components/parameters/childCountParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+               type: "array"
+               items:
+                 $ref: "#/components/schemas/Taxon"
+        "400":
+          description: "Invalid taxonId value"
+components:
+  parameters:
+    taxonIdParam:
+      name: taxonId
+      in: path
+      schema:
+        type: array
+        items:
+          type: string
+        minItems: 1
+      required: true
+      description: Unique taxon identifier(s)
+      style: simple
+      explode: false
+    propertyIdParam:
+      name: propertyId
+      in: path
+      schema:
+        type: array
+        items:
+          type: string
+        minItems: 1
+      required: true
+      description: Property identifier(s)
+      style: simple
+      explode: false
+    summaryTypeParam:
+      name: summaryType
+      in: path
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - max
+            - min
+            - mean
+            - median
+            - mode
+            - stdev
+            - all
+        minItems: 1
+      required: true
+      description: Summary statistic(s) to return
+      style: simple
+      explode: false
+    parentCountParam:
+      name: parentCount
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: -1
+      required: false
+      description: Number of parent taxa to include (use -1 to include all parents)
+      style: form
+      explode: false
+    childCountParam:
+      name: childCount
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: -1
+      required: false
+      description: Number of child ranks to include (use -1 to include all child ranks)
+      style: form
+      explode: false
+    indentParam:
+      name: indent
+      in: query
+      schema:
+        type: integer
+        default: 0
+        minimum: 0
+        maximum: 8
+      required: false
+      description: Format output with indented lines
+      style: form
+      explode: false
+  schemas:
+    Taxon:
+      type: "object"
+      properties:
+        taxon_id:
+           type: "string"
+        parents:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Taxon"
+        children:
+          type: "array"
+          items:
+            $ref: "#/components/schemas/Taxon"
+      example:
+        - taxonId: "3701"
+          parents:
+            - taxonId: "980083"
+          children:
+            - taxonId: "3702"
+            - taxonId: "59689"

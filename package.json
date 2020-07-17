@@ -1,0 +1,35 @@
+{
+  "name": "goat-api",
+  "version": "0.0.1",
+  "description": "Genomes on a Tree Open API Test",
+  "scripts": {
+    "start": "nodemon -r esm src/app.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/tolkit/goat-api.git"
+  },
+  "author": "Tolkit",
+  "license": "MIT",
+  "bugs": {
+    "url": "https://github.com/tolkit/goat-api/issues"
+  },
+  "homepage": "https://github.com/tolkit/goat-api#readme",
+  "dependencies": {
+    "body-parser": "^1.19.0",
+    "cookie-parser": "^1.4.5",
+    "cors": "^2.8.5",
+    "esm": "^3.2.25",
+    "express": "^4.17.1",
+    "express-openapi-validator": "^3.16.6",
+    "install": "^0.13.0",
+    "morgan": "^1.10.0",
+    "s": "^1.0.0",
+    "swagger-ui-express": "^4.1.4",
+    "yamljs": "^0.3.0"
+  },
+  "devDependencies": {
+    "nodemon": "^2.0.4"
+  }
+}
