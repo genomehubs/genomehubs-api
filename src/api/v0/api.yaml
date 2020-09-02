@@ -9,23 +9,31 @@ info:
   license:
     name: "MIT License"
 servers:
-- url: "http://localhost:3000/api/v0.0.1"
+  - url: "http://localhost:3000/api/v0.0.1"
 tags:
-- name: "taxa"
-  description: "Everything at the taxon level"
+  - name: "GoaT API"
+    description: "Query Genomes on a Tree"
 paths:
-  /taxon/{taxonId}:
+  /lookup:
     get:
       tags:
-        - "taxa"
-      summary: "All details for a taxon"
-      description: "Returns all details for one or more `taxonId`s"
-      operationId: "getTaxaById"
-      x-eov-operation-handler: "api/v0/routes/taxon"
+        - "GoaT API"
+      summary: "Lookup"
+      description: "Returns suggestions/identifiers matching a searchTerm"
+      operationId: "getIdentifiers"
+      x-eov-operation-handler: "api/v0/routes/lookup"
       parameters:
-        - $ref: "#/components/parameters/taxonIdParam"
-        - $ref: "#/components/parameters/parentCountParam"
-        - $ref: "#/components/parameters/childCountParam"
+        - $ref: "#/components/parameters/searchTermParam"
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/prefixQueryParam"
+        - $ref: "#/components/parameters/sizeParam"
+        - $ref: "#/components/parameters/lineageParam"
+        - $ref: "#/components/parameters/suggestSizeParam"
+        - $ref: "#/components/parameters/gramSizeParam"
+        - $ref: "#/components/parameters/maxErrorsParam"
+        - $ref: "#/components/parameters/confidenceParam"
+        - $ref: "#/components/parameters/preTagParam"
+        - $ref: "#/components/parameters/postTagParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -33,31 +41,27 @@ paths:
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/Taxon"
-            application/xml:
-              schema:
-                xml:
-                  name: taxon
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/Taxon"
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+                  - results:
+                    $ref: "#/components/schemas/Results"
+                  - suggestions:
+                    $ref: "#/components/schemas/Suggestions"
         "400":
-          description: "Invalid taxonId"
-  /taxon/{taxonId}/{propertyId}:
+          description: "Invalid queryTerm"
+  /record:
     get:
       tags:
-        - "taxa"
-      summary: "Property values for a taxon"
-      description: "Returns all details for one or more `propertyId`s and `taxonId`s"
-      operationId: "getpropertiesById"
-      x-eov-operation-handler: "api/v0/routes/taxon"
+        - "GoaT API"
+      summary: "Returns individual records"
+      description: "Returns records matching a record identifier"
+      operationId: "getRecords"
+      x-eov-operation-handler: "api/v0/routes/record"
       parameters:
-        - $ref: "#/components/parameters/taxonIdParam"
-        - $ref: "#/components/parameters/propertyIdParam"
-        - $ref: "#/components/parameters/parentCountParam"
-        - $ref: "#/components/parameters/childCountParam"
+        - $ref: "#/components/parameters/recordIdParam"
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -65,103 +69,64 @@ paths:
           content:
             application/json:
               schema:
-                type: "array"
-                items:
-                  $ref: "#/components/schemas/Taxon"
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+                  - results:
+                    $ref: "#/components/schemas/Records"
         "400":
-          description: "Invalid taxonId value"
-  /taxon/{taxonId}/{propertyId}/{summaryType}:
-    get:
-      tags:
-        - "taxa"
-      summary: "Property values for a taxon"
-      description: "Multiple `taxonId`s and/or `propertyId`s can be provided with comma separated strings"
-      operationId: "getPropertySummaryById"
-      x-eov-operation-handler: "api/v0/routes/taxon"
-      parameters:
-        - $ref: "#/components/parameters/taxonIdParam"
-        - $ref: "#/components/parameters/propertyIdParam"
-        - $ref: "#/components/parameters/summaryTypeParam"
-        - $ref: "#/components/parameters/parentCountParam"
-        - $ref: "#/components/parameters/childCountParam"
-        - $ref: "#/components/parameters/indentParam"
-      responses:
-        "200":
-          description: "successful operation"
-          content:
-            application/json:
-              schema:
-               type: "array"
-               items:
-                 $ref: "#/components/schemas/Taxon"
-        "400":
-          description: "Invalid taxonId value"
+          description: "Invalid recordId"
 components:
   parameters:
-    taxonIdParam:
-      name: taxonId
-      in: path
-      schema:
-        type: array
-        items:
-          type: string
-        minItems: 1
-      required: true
-      description: Unique taxon identifier(s)
-      style: simple
-      explode: false
-    propertyIdParam:
-      name: propertyId
-      in: path
-      schema:
-        type: array
-        items:
-          type: string
-        minItems: 1
-      required: true
-      description: Property identifier(s)
-      style: simple
-      explode: false
-    summaryTypeParam:
-      name: summaryType
-      in: path
-      schema:
-        type: array
-        items:
-          type: string
-          enum:
-            - max
-            - min
-            - mean
-            - median
-            - mode
-            - stdev
-            - all
-        minItems: 1
-      required: true
-      description: Summary statistic(s) to return
-      style: simple
-      explode: false
-    parentCountParam:
-      name: parentCount
+    searchTermParam:
+      name: searchTerm
       in: query
       schema:
-        type: integer
-        default: 0
-        minimum: -1
-      required: false
-      description: Number of parent taxa to include (use -1 to include all parents)
+        type: string
+      required: true
+      description: Search term
+    recordIdParam:
+      name: recordId
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
       style: form
       explode: false
-    childCountParam:
-      name: childCount
+      required: true
+      description: Record identifier
+    resultParam:
+      name: result
+      in: query
+      schema:
+        type: string
+        enum:
+          - taxon
+      required: true
+      description: The result type (data set) to search against
+    prefixQueryParam:
+      name: prefixQuery
+      in: query
+      schema:
+        type: boolean
+      description: Treat search term as a prefix
+    lineageParam:
+      name: lineage
+      in: query
+      schema:
+        type: string
+      required: false
+      description: Lineage (name or taxon ID) to restrict search to
+    suggestParam:
+      name: suggest
       in: query
       schema:
         type: integer
         default: 0
-        minimum: -1
+        minimum: 0
       required: false
-      description: Number of child ranks to include (use -1 to include all child ranks)
+      description: Number of valid terms to suggest
       style: form
       explode: false
     indentParam:
@@ -176,24 +141,145 @@ components:
       description: Format output with indented lines
       style: form
       explode: false
+    sizeParam:
+      name: size
+      in: query
+      schema:
+        type: integer
+        default: 10
+        minimum: 0
+        maximum: 1000
+      required: false
+      description: Maximum number of results to return
+      style: form
+      explode: false
+    suggestSizeParam:
+      name: suggestSize
+      in: query
+      schema:
+        type: integer
+        default: 3
+        minimum: 0
+        maximum: 10
+      required: false
+      description: Number of similar terms to suggest
+      style: form
+      explode: false
+    gramSizeParam:
+      name: gramSize
+      in: query
+      schema:
+        type: integer
+        default: 3
+        minimum: 2
+        maximum: 4
+      required: false
+      description: Size of N-grams used by tokeniser
+      style: form
+      explode: false
+    maxErrorsParam:
+      name: maxErrors
+      in: query
+      schema:
+        type: integer
+        default: 3
+        minimum: 0
+        maximum: 10
+      required: false
+      description: Maximumum error percentage when matching terms
+      style: form
+      explode: false
+    confidenceParam:
+      name: confidence
+      in: query
+      schema:
+        type: number
+        default: 1
+        minimum: 0
+        maximum: 2
+      required: false
+      description: Threshold for candidate suggestions relative to input phrase
+      style: form
+      explode: false
+    preTagParam:
+      name: preTag
+      in: query
+      schema:
+        type: string
+        default: <em>
+      required: false
+      description: Tag to place before matching portion of query term
+      style: form
+      explode: false
+    postTagParam:
+      name: postTag
+      in: query
+      schema:
+        type: string
+        default: </em>
+      required: false
+      description: Tag to place after matching portion of query term
+      style: form
+      explode: false
   schemas:
-    Taxon:
-      type: "object"
+    Status:
+      type: object
       properties:
-        taxon_id:
-           type: "string"
-        parents:
-          type: "array"
-          items:
-            $ref: "#/components/schemas/Taxon"
-        children:
-          type: "array"
-          items:
-            $ref: "#/components/schemas/Taxon"
-      example:
-        - taxonId: "3701"
-          parents:
-            - taxonId: "980083"
-          children:
-            - taxonId: "3702"
-            - taxonId: "59689"
+        success:
+          type: boolean
+        took:
+          type: integer
+          description: Time (ms) taken to execute query
+        error:
+          type: string
+        hits:
+          type: integer
+    Records:
+      type: array
+      items:
+        type: object
+        properties:
+          id:
+            type: string
+          index:
+            type: string
+          found:
+            type: boolean
+          record:
+            type: object
+    Results:
+      type: array
+      items:
+        type: object
+        properties:
+          score:
+            type: number
+          result:
+            type: object
+          reason:
+            type: array
+            items:
+              type: object
+              properties:
+                score:
+                  type: number
+                fields:
+                  type: object
+    Suggestions:
+      type: array
+      items:
+        type: object
+        properties:
+          text:
+            type: string
+          suggestion:
+            type: object
+            properties:
+              text:
+                type: string
+              highlighted:
+                type: string
+              score:
+                type: number
+              collate_match:
+                type: boolean
