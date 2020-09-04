@@ -11,6 +11,7 @@ export const getRecordsByTaxon = async ({
   fields,
   includeEstimates,
   rawValues,
+  rank,
 }) => {
   const { body } = await client
     .search({
@@ -21,6 +22,7 @@ export const getRecordsByTaxon = async ({
         fields,
         includeEstimates,
         rawValues,
+        rank,
       }),
       rest_total_hits_as_int: true,
     })

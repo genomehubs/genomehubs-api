@@ -4,6 +4,7 @@ export const searchByTaxon = ({
   searchTerm,
   ancestral,
   fields,
+  rank,
   includeEstimates,
   rawValues,
 }) => {
@@ -13,6 +14,16 @@ export const searchByTaxon = ({
   if (!includeEstimates) {
     aggregation_source = [
       { match: { "attributes.aggregation_source": "direct" } },
+    ];
+  }
+  let ranks = [];
+  if (rank) {
+    ranks = [
+      {
+        match: {
+          taxon_rank: rank,
+        },
+      },
     ];
   }
   let lineage = [];
@@ -89,7 +100,7 @@ export const searchByTaxon = ({
               },
             },
           },
-        ],
+        ].concat(ranks),
       },
     },
     _source: {

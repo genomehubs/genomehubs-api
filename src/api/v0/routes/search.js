@@ -18,7 +18,12 @@ const generateQuery = ({
   } else {
     fields = fields.split(",");
   }
-  let taxTerm = query.match(/tax_(\w+)\((.+?)\)/);
+  let taxTerm = query.match(/tax_([^r]\w+)\((.+?)\)/);
+  let taxRank = query.match(/tax_rank\((.+?)\)/);
+  let rank;
+  if (taxRank) {
+    rank = taxRank[1];
+  }
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
       return {
@@ -54,6 +59,7 @@ const generateQuery = ({
           fields,
           includeEstimates,
           rawValues,
+          rank,
         },
       };
     }
