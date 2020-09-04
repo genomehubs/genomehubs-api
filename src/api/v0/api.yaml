@@ -93,6 +93,8 @@ paths:
       parameters:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/fieldsParam"
+        - $ref: "#/components/parameters/includeEstimatesParam"
+        - $ref: "#/components/parameters/rawValuesParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/taxonomyParam"
@@ -238,6 +240,18 @@ components:
           - "v0.1"
       required: true
       description: GenomeHub version number
+    includeEstimatesParam:
+      name: includeEstimates
+      in: query
+      schema:
+        type: boolean
+      description: Include estimated values in search results
+    rawValuesParam:
+      name: rawValues
+      in: query
+      schema:
+        type: boolean
+      description: Include raw values in search results
     summaryParam:
       name: summary
       in: query

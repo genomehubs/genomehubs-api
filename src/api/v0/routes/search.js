@@ -6,7 +6,13 @@ import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
 import { typesMap } from "../functions/typesMap";
 import { indexName } from "../functions/indexName";
 
-const generateQuery = ({ query, result, fields }) => {
+const generateQuery = ({
+  query,
+  result,
+  fields,
+  includeEstimates,
+  rawValues,
+}) => {
   if (fields == "all") {
     fields = Object.keys(typesMap);
   } else {
@@ -14,24 +20,41 @@ const generateQuery = ({ query, result, fields }) => {
   }
   let taxTerm = query.match(/tax_(\w+)\((.+?)\)/);
   if (taxTerm) {
-    let type = taxTerm[1];
-    let term = taxTerm[2];
     if (taxTerm[1] == "eq") {
       return {
         func: getRecordsById,
-        params: { recordId: taxTerm[2], result, fields },
+        params: {
+          recordId: taxTerm[2],
+          result,
+          fields,
+          includeEstimates,
+          rawValues,
+        },
       };
     }
     if (taxTerm[1] == "name") {
       return {
         func: getRecordsByTaxon,
-        params: { searchTerm: taxTerm[2], result, fields },
+        params: {
+          searchTerm: taxTerm[2],
+          result,
+          fields,
+          includeEstimates,
+          rawValues,
+        },
       };
     }
     if (taxTerm[1] == "tree") {
       return {
         func: getRecordsByTaxon,
-        params: { searchTerm: taxTerm[2], result, ancestral: true, fields },
+        params: {
+          searchTerm: taxTerm[2],
+          result,
+          ancestral: true,
+          fields,
+          includeEstimates,
+          rawValues,
+        },
       };
     }
   }

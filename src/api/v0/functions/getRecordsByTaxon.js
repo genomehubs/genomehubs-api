@@ -9,6 +9,8 @@ export const getRecordsByTaxon = async ({
   result,
   ancestral,
   fields,
+  includeEstimates,
+  rawValues,
 }) => {
   const { body } = await client
     .search({
@@ -17,6 +19,8 @@ export const getRecordsByTaxon = async ({
         searchTerm,
         ancestral,
         fields,
+        includeEstimates,
+        rawValues,
       }),
       rest_total_hits_as_int: true,
     })

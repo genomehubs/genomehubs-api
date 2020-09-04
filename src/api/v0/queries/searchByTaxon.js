@@ -1,8 +1,20 @@
 import { typesMap } from "../functions/typesMap";
 
-export const searchByTaxon = ({ searchTerm, ancestral, fields }) => {
+export const searchByTaxon = ({
+  searchTerm,
+  ancestral,
+  fields,
+  includeEstimates,
+  rawValues,
+}) => {
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types)];
+  let aggregation_source = [];
+  if (!includeEstimates) {
+    aggregation_source = [
+      { match: { "attributes.aggregation_source": "direct" } },
+    ];
+  }
   let lineage = [];
   if (ancestral) {
     lineage = [
@@ -56,7 +68,7 @@ export const searchByTaxon = ({ searchTerm, ancestral, fields }) => {
                             field: `attributes.${typesMap[field]}_value`,
                           },
                         },
-                      ],
+                      ].concat(aggregation_source),
                     },
                   })),
                 },
