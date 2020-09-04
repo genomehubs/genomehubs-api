@@ -1,4 +1,4 @@
-const checkDocResponse = ({ body }) => {
+export const checkDocResponse = ({ body }) => {
   let status = { hits: 0, success: true };
   if (body.error) {
     status.success = false;
@@ -13,5 +13,3 @@ const checkDocResponse = ({ body }) => {
   status.hits = body.docs.length;
   return status;
 };
-
-export default checkDocResponse;

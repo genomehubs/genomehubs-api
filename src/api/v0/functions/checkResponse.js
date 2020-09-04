@@ -1,4 +1,4 @@
-const checkResponse = ({ body }) => {
+export const checkResponse = ({ body }) => {
   let status = { hits: 0, success: true };
   if (body.error) {
     status.success = false;
@@ -23,5 +23,3 @@ const checkResponse = ({ body }) => {
   status.hits = body.hits.total;
   return status;
 };
-
-export default checkResponse;

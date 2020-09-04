@@ -28,6 +28,9 @@ paths:
         - $ref: "#/components/parameters/prefixQueryParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/lineageParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/hubParam"
+        - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/suggestSizeParam"
         - $ref: "#/components/parameters/gramSizeParam"
         - $ref: "#/components/parameters/maxErrorsParam"
@@ -62,6 +65,9 @@ paths:
         - $ref: "#/components/parameters/recordIdParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/hubParam"
+        - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -76,6 +82,91 @@ paths:
                     $ref: "#/components/schemas/Records"
         "400":
           description: "Invalid recordId"
+  /search:
+    get:
+      tags:
+        - "GoaT API"
+      summary: "Search for records"
+      description: "Returns records matching a query"
+      operationId: "getSearchResults"
+      x-eov-operation-handler: "api/v0/routes/search"
+      parameters:
+        - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/fieldsParam"
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/sizeParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/hubParam"
+        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+                  - results:
+                    $ref: "#/components/schemas/Records"
+        "400":
+          description: "Invalid query"
+  /count:
+    get:
+      tags:
+        - "GoaT API"
+      summary: "Count records"
+      description: "Returns count of records matching a query"
+      operationId: "getSearchResultCount"
+      x-eov-operation-handler: "api/v0/routes/count"
+      parameters:
+        - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/hubParam"
+        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+        "400":
+          description: "Invalid query"
+  /summary:
+    get:
+      tags:
+        - "GoaT API"
+      summary: "Search result summary"
+      description: "Returns summary of search results"
+      operationId: "getSearchSummary"
+      x-eov-operation-handler: "api/v0/routes/summary"
+      parameters:
+        - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/summaryParam"
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/hubParam"
+        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+                  - results:
+                    $ref: "#/components/schemas/Summaries"
+        "400":
+          description: "Invalid query"
 components:
   parameters:
     searchTermParam:
@@ -96,6 +187,21 @@ components:
       explode: false
       required: true
       description: Record identifier
+    queryParam:
+      name: query
+      in: query
+      schema:
+        type: string
+      required: true
+      description: Search query
+    fieldsParam:
+      name: fields
+      in: query
+      schema:
+        type: string
+        default: all
+      required: false
+      description: Comma separated list of fields to return
     resultParam:
       name: result
       in: query
@@ -105,6 +211,44 @@ components:
           - taxon
       required: true
       description: The result type (data set) to search against
+    taxonomyParam:
+      name: taxonomy
+      in: query
+      schema:
+        type: string
+        enum:
+          - ncbi
+      required: true
+      description: The taxonomy to search against
+    hubParam:
+      name: hub
+      in: query
+      schema:
+        type: string
+        enum:
+          - demo
+      required: true
+      description: GenomeHub name
+    versionParam:
+      name: version
+      in: query
+      schema:
+        type: string
+        enum:
+          - "v0.1"
+      required: true
+      description: GenomeHub version number
+    summaryParam:
+      name: summary
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - histogram
+      required: true
+      description: The summary type to return
     prefixQueryParam:
       name: prefixQuery
       in: query
@@ -265,6 +409,15 @@ components:
                   type: number
                 fields:
                   type: object
+    Summaries:
+      type: array
+      items:
+        type: object
+        properties:
+          name:
+            type: string
+          summary:
+            type: object
     Suggestions:
       type: array
       items:

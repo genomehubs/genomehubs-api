@@ -1,12 +1,14 @@
-import formatJson from "../functions/formatJson";
-import client from "../functions/connection";
-import checkResponse from "../functions/checkResponse";
-import processHits from "../functions/processHits";
+import { checkResponse } from "../functions/checkResponse";
+import { formatJson } from "../functions/formatJson";
+import { client } from "../functions/connection";
+import { indexName } from "../functions/indexName";
+import { processHits } from "../functions/processHits";
 
 const sayt = async (params) => {
+  let index = indexName({ ...params });
   const { body } = await client
     .searchTemplate({
-      index: `${params.result}-*`,
+      index,
       body: { id: `${params.result}_sayt`, params },
       rest_total_hits_as_int: true,
     })
@@ -22,13 +24,14 @@ const sayt = async (params) => {
 };
 
 const lookup = async (params) => {
+  let index = indexName({ ...params });
   let id = `${params.result}_lookup`;
   if (params.lineage) {
     id = `${id}_by_lineage`;
   }
   const { body } = await client
     .searchTemplate({
-      index: `${params.result}-*`,
+      index,
       body: { id, params },
       rest_total_hits_as_int: true,
     })
@@ -44,9 +47,10 @@ const lookup = async (params) => {
 };
 
 const suggest = async (params) => {
+  let index = indexName({ ...params });
   const { body } = await client
     .searchTemplate({
-      index: `${params.result}-*`,
+      index,
       body: { id: `${params.result}_suggest`, params },
       rest_total_hits_as_int: true,
     })
