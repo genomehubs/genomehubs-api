@@ -29,7 +29,6 @@ paths:
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/lineageParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/hubParam"
         - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/suggestSizeParam"
         - $ref: "#/components/parameters/gramSizeParam"
@@ -66,7 +65,6 @@ paths:
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/hubParam"
         - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
@@ -95,10 +93,13 @@ paths:
         - $ref: "#/components/parameters/fieldsParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/rawValuesParam"
+        - $ref: "#/components/parameters/summaryValuesParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
+        - $ref: "#/components/parameters/sortByParam"
+        - $ref: "#/components/parameters/sortOrderParam"
+        - $ref: "#/components/parameters/sortModeParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/hubParam"
         - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
@@ -126,7 +127,6 @@ paths:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/hubParam"
         - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
@@ -153,7 +153,6 @@ paths:
         - $ref: "#/components/parameters/summaryParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/hubParam"
         - $ref: "#/components/parameters/versionParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
@@ -201,9 +200,8 @@ components:
       in: query
       schema:
         type: string
-        default: all
       required: false
-      description: Comma separated list of fields to return
+      description: "Comma separated list of fields to return [default: all]"
     resultParam:
       name: result
       in: query
@@ -220,38 +218,48 @@ components:
         type: string
         enum:
           - ncbi
-      required: true
-      description: The taxonomy to search against
-    hubParam:
-      name: hub
-      in: query
-      schema:
-        type: string
-        enum:
-          - demo
-      required: true
-      description: GenomeHub name
+      required: false
+      description: "The taxonomy to search against [default: ncbi]"
     versionParam:
       name: version
       in: query
       schema:
         type: string
         enum:
+          - "latest"
           - "v0.1"
-      required: true
-      description: GenomeHub version number
+      required: false
+      description: "GenomeHub version number [default: latest]"
     includeEstimatesParam:
       name: includeEstimates
       in: query
       schema:
         type: boolean
-      description: Include estimated values in search results
+      description: "Include estimated values in search results [default: false]"
     rawValuesParam:
       name: rawValues
       in: query
       schema:
         type: boolean
-      description: Include raw values in search results
+      description: "Include raw values in search results [default: false]"
+    summaryValuesParam:
+      name: summaryValues
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+          enum:
+            - count
+            - mean
+            - median
+            - mode
+            - max
+            - min
+      style: form
+      explode: true
+      required: false
+      description: Summary values to return
     summaryParam:
       name: summary
       in: query
@@ -261,6 +269,8 @@ components:
           type: string
           enum:
             - histogram
+      style: form
+      explode: false
       required: true
       description: The summary type to return
     prefixQueryParam:
@@ -268,7 +278,7 @@ components:
       in: query
       schema:
         type: boolean
-      description: Treat search term as a prefix
+      description: "Treat search term as a prefix [default: false]"
     lineageParam:
       name: lineage
       in: query
@@ -276,15 +286,42 @@ components:
         type: string
       required: false
       description: Lineage (name or taxon ID) to restrict search to
+    sortByParam:
+      name: sortBy
+      in: query
+      schema:
+        type: string
+      required: false
+      description: Field name to sort by
+    sortOrderParam:
+      name: sortOrder
+      in: query
+      schema:
+        type: string
+        enum:
+          - asc
+          - desc
+      required: false
+      description: "Sort order [default: asc]"
+    sortModeParam:
+      name: sortMode
+      in: query
+      schema:
+        type: string
+        enum:
+          - avg
+          - max
+          - min
+      required: false
+      description: Method to summarise multiple values for sorting
     suggestParam:
       name: suggest
       in: query
       schema:
         type: integer
-        default: 0
         minimum: 0
       required: false
-      description: Number of valid terms to suggest
+      description: "Number of valid terms to suggest [default: 0]"
       style: form
       explode: false
     indentParam:
@@ -292,11 +329,10 @@ components:
       in: query
       schema:
         type: integer
-        default: 0
         minimum: 0
         maximum: 8
       required: false
-      description: Format output with indented lines
+      description: "Format output with indented lines [default: 0]"
       style: form
       explode: false
     sizeParam:
@@ -304,11 +340,10 @@ components:
       in: query
       schema:
         type: integer
-        default: 10
         minimum: 0
         maximum: 1000
       required: false
-      description: Maximum number of results to return
+      description: "Maximum number of results to return [default: 10]"
       style: form
       explode: false
     suggestSizeParam:
@@ -316,11 +351,10 @@ components:
       in: query
       schema:
         type: integer
-        default: 3
         minimum: 0
         maximum: 10
       required: false
-      description: Number of similar terms to suggest
+      description: "Number of similar terms to suggest [default: 3]"
       style: form
       explode: false
     gramSizeParam:
@@ -328,11 +362,10 @@ components:
       in: query
       schema:
         type: integer
-        default: 3
         minimum: 2
         maximum: 4
       required: false
-      description: Size of N-grams used by tokeniser
+      description: "Size of N-grams used by tokeniser [default: 3]"
       style: form
       explode: false
     maxErrorsParam:
@@ -340,11 +373,10 @@ components:
       in: query
       schema:
         type: integer
-        default: 3
         minimum: 0
         maximum: 10
       required: false
-      description: Maximumum error percentage when matching terms
+      description: "Maximumum error percentage when matching terms [default: 3]"
       style: form
       explode: false
     confidenceParam:
@@ -352,11 +384,10 @@ components:
       in: query
       schema:
         type: number
-        default: 1
         minimum: 0
         maximum: 2
       required: false
-      description: Threshold for candidate suggestions relative to input phrase
+      description: "Threshold for candidate suggestions relative to input phrase [default: 1]"
       style: form
       explode: false
     preTagParam:
@@ -364,9 +395,8 @@ components:
       in: query
       schema:
         type: string
-        default: <em>
       required: false
-      description: Tag to place before matching portion of query term
+      description: "Tag to place before matching portion of query term [default: \\<em\\>]"
       style: form
       explode: false
     postTagParam:
@@ -374,9 +404,8 @@ components:
       in: query
       schema:
         type: string
-        default: </em>
       required: false
-      description: Tag to place after matching portion of query term
+      description: "Tag to place after matching portion of query term [default: \\<\/em\\>]"
       style: form
       explode: false
   schemas:

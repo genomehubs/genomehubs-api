@@ -12,6 +12,10 @@ export const getRecordsByTaxon = async ({
   includeEstimates,
   rawValues,
   rank,
+  depth,
+  filters,
+  summaryValues,
+  sortBy,
 }) => {
   const { body } = await client
     .search({
@@ -23,6 +27,10 @@ export const getRecordsByTaxon = async ({
         includeEstimates,
         rawValues,
         rank,
+        depth,
+        filters,
+        summaryValues,
+        sortBy,
       }),
       rest_total_hits_as_int: true,
     })
@@ -30,10 +38,10 @@ export const getRecordsByTaxon = async ({
       console.log(err.meta.body.error);
       return err.meta;
     });
-  let records = [];
+  let results = [];
   let status = checkResponse({ body });
   if (status.hits) {
-    records = processHits({ body, inner_hits: true });
+    results = processHits({ body, inner_hits: true });
   }
-  return { status, records };
+  return { status, results };
 };

@@ -6,23 +6,70 @@ import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
 import { typesMap } from "../functions/typesMap";
 import { indexName } from "../functions/indexName";
 
+const operations = (str) => {
+  const translate = {
+    ">": ["gt"],
+    ">=": ["gte"],
+    "<": ["lt"],
+    "<=": ["lte"],
+    "=": ["gte", "lte"],
+    "==": ["gte", "lte"],
+  };
+  let operator = translate[str];
+  return operator;
+};
+
 const generateQuery = ({
   query,
   result,
   fields,
   includeEstimates,
   rawValues,
+  summaryValues,
+  sortBy,
+  sortOrder,
+  sortMode,
 }) => {
-  if (fields == "all") {
+  if (!fields || fields == "all") {
     fields = Object.keys(typesMap);
   } else {
-    fields = fields.split(",");
+    fields = fields.split(/\s*,\s*/);
   }
-  let taxTerm = query.match(/tax_([^r]\w+)\((.+?)\)/);
-  let taxRank = query.match(/tax_rank\((.+?)\)/);
-  let rank;
-  if (taxRank) {
-    rank = taxRank[1];
+  let taxTerm, rank, depth;
+  let filters = {};
+  query.split(/\s*AND\s*/).forEach((term) => {
+    let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
+    if (taxQuery) {
+      if (taxQuery[1] == "rank") {
+        rank = taxQuery[2];
+      } else if (taxQuery[1] == "depth") {
+        depth = taxQuery[2];
+      } else {
+        taxTerm = taxQuery;
+      }
+    } else {
+      let parts = term.split(/\s*([\>\<=]+)\s*/);
+      if (typesMap[parts[0]]) {
+        if (!filters[parts[0]]) {
+          filters[parts[0]] = {};
+        }
+        operations(parts[1]).forEach((operator) => {
+          filters[parts[0]][operator] = parts[2];
+        });
+      }
+    }
+  });
+  let sort;
+  if (sortBy) {
+    sort = {};
+    sort.by = sortBy;
+    if (sortOrder) {
+      sort.order = sortOrder;
+    }
+    if (sortMode) {
+      sort.mode = sortMode;
+    }
+    sortBy = sort;
   }
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
@@ -32,8 +79,13 @@ const generateQuery = ({
           recordId: taxTerm[2],
           result,
           fields,
-          includeEstimates,
+          ancestral: false,
+          includeEstimates: true,
           rawValues,
+          filters,
+          rank,
+          summaryValues,
+          sortBy,
         },
       };
     }
@@ -44,8 +96,13 @@ const generateQuery = ({
           searchTerm: taxTerm[2],
           result,
           fields,
-          includeEstimates,
+          ancestral: false,
+          includeEstimates: true,
           rawValues,
+          filters,
+          rank,
+          summaryValues,
+          sortBy,
         },
       };
     }
@@ -60,6 +117,10 @@ const generateQuery = ({
           includeEstimates,
           rawValues,
           rank,
+          depth,
+          filters,
+          summaryValues,
+          sortBy,
         },
       };
     }

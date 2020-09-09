@@ -1,4 +1,5 @@
 import express from "express";
+import cors from "cors";
 import path from "path";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
@@ -10,6 +11,7 @@ import YAML from "yamljs";
 
 const port = 3000;
 const app = express();
+app.use(cors());
 const apiSpec = path.join(__dirname, "api/v0/api.yaml");
 const swaggerDocument = YAML.load(apiSpec);
 

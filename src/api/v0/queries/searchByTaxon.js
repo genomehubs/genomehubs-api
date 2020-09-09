@@ -5,15 +5,26 @@ export const searchByTaxon = ({
   ancestral,
   fields,
   rank,
+  depth,
   includeEstimates,
   rawValues,
+  filters,
+  summaryValues,
+  sortBy,
 }) => {
+  fields.filter((field) => Object.keys(typesMap).includes(field));
   let types = fields.map((field) => typesMap[field]);
-  types = [...new Set(types)];
+  types = [...new Set(types.map((type) => type.type))];
   let aggregation_source = [];
   if (!includeEstimates) {
     aggregation_source = [
       { match: { "attributes.aggregation_source": "direct" } },
+      { exists: { field: "attributes.aggregation_method" } },
+    ];
+  } else {
+    aggregation_source = [
+      { exists: { field: "attributes.aggregation_source" } },
+      { exists: { field: "attributes.aggregation_method" } },
     ];
   }
   let ranks = [];
@@ -26,6 +37,16 @@ export const searchByTaxon = ({
       },
     ];
   }
+  let depths = [];
+  if (depth) {
+    depths = [
+      {
+        range: {
+          "lineage.node_depth": { gte: depth, lte: depth },
+        },
+      },
+    ];
+  }
   let lineage = [];
   if (ancestral) {
     lineage = [
@@ -33,38 +54,43 @@ export const searchByTaxon = ({
         nested: {
           path: "lineage",
           query: {
-            multi_match: {
-              query: searchTerm,
-              fields: ["lineage.taxon_id", "lineage.scientific_name"],
+            bool: {
+              filter: [
+                {
+                  multi_match: {
+                    query: searchTerm,
+                    fields: ["lineage.taxon_id", "lineage.scientific_name"],
+                  },
+                },
+              ].concat(depths),
             },
           },
         },
       },
     ];
   }
+  let sort;
+  if (sortBy) {
+    sort = [
+      {
+        [`attributes.${typesMap[sortBy.by].type}_value`]: {
+          mode: sortBy.mode || "max",
+          order: sortBy.order || "asc",
+          nested: {
+            path: "attributes",
+            filter: {
+              term: { "attributes.key": sortBy.by },
+            },
+          },
+        },
+      },
+    ];
+    console.log(sort);
+  }
   return {
     query: {
       bool: {
         filter: [
-          {
-            bool: {
-              should: [
-                {
-                  match: { taxon_id: searchTerm },
-                },
-                {
-                  nested: {
-                    path: "taxon_names",
-                    query: {
-                      match: {
-                        "taxon_names.name.raw": searchTerm,
-                      },
-                    },
-                  },
-                },
-              ].concat(lineage),
-            },
-          },
           {
             nested: {
               path: "attributes",
@@ -76,7 +102,7 @@ export const searchByTaxon = ({
                         { match: { "attributes.key": field } },
                         {
                           exists: {
-                            field: `attributes.${typesMap[field]}_value`,
+                            field: `attributes.${typesMap[field].type}_value`,
                           },
                         },
                       ].concat(aggregation_source),
@@ -84,27 +110,76 @@ export const searchByTaxon = ({
                   })),
                 },
               },
-              inner_hits: {
-                _source: false,
-                docvalue_fields: [
-                  {
-                    field: "attributes.key",
-                    format: "use_field_mapping",
-                  },
-                ].concat(
-                  types.map((type) => ({
-                    field: `attributes.${type}_value`,
-                    format: "use_field_mapping",
-                  }))
-                ),
-              },
             },
           },
-        ].concat(ranks),
+        ]
+          .concat(ranks)
+          .concat(
+            depths.length > 0
+              ? lineage
+              : [
+                  {
+                    bool: {
+                      should: [
+                        {
+                          match: { taxon_id: searchTerm },
+                        },
+                        {
+                          nested: {
+                            path: "taxon_names",
+                            query: {
+                              match: {
+                                "taxon_names.name.raw": searchTerm,
+                              },
+                            },
+                          },
+                        },
+                      ].concat(lineage),
+                    },
+                  },
+                ]
+          )
+          .concat(
+            Object.keys(filters).length == 0
+              ? []
+              : [
+                  {
+                    nested: {
+                      path: "attributes",
+                      query: {
+                        bool: {
+                          filter: []
+                            .concat(
+                              Object.keys(filters).map((field) => ({
+                                range: {
+                                  [`attributes.${typesMap[field].type}_value`]: filters[
+                                    field
+                                  ],
+                                },
+                              }))
+                            )
+                            .concat(aggregation_source),
+                        },
+                      },
+                    },
+                  },
+                ]
+          ),
       },
     },
     _source: {
-      include: ["taxon_id", "scientific_name", "rank"],
+      include: [
+        "taxon_id",
+        "scientific_name",
+        "taxon_rank",
+        "attributes.key",
+        "attributes.aggregation*",
+        "attributes.*_value",
+      ].concat(
+        summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
+      ),
+      exclude: [].concat(rawValues ? [] : ["attributes.values.*_value"]),
     },
+    sort: [].concat(sort ? sort : []),
   };
 };

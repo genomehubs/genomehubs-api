@@ -13,6 +13,39 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
       result.result = processDoc({ doc: hit._source });
     } else {
       result.result = hit._source;
+      if (result.result.attributes) {
+        let fields = {};
+        result.result.attributes.forEach((attribute) => {
+          let name;
+          let field = {};
+
+          Object.keys(attribute).forEach((key) => {
+            if (key == "key") {
+              name = attribute[key];
+            } else if (key.match(/_value$/)) {
+              field.value = attribute[key];
+            } else if (key == "values") {
+              field.rawValues = attribute[key].map((value) => {
+                let retValue;
+                Object.keys(value).forEach((vkey) => {
+                  if (vkey.match(/_value$/)) retValue = value[vkey];
+                });
+                return retValue;
+              });
+            } else {
+              field[key] = attribute[key];
+            }
+          });
+
+          if (name) {
+            fields[name] = field;
+          }
+        });
+        if (Object.keys(fields).length > 0) {
+          result.result.fields = fields;
+        }
+        delete result.result.attributes;
+      }
     }
     if (reason && hit.inner_hits) {
       let reason = [];
@@ -31,24 +64,27 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
         hit.inner_hits[key].hits.hits.forEach((inner_hit) => {
           let name;
           let field = {};
-          Object.keys(inner_hit.fields).forEach((ikey) => {
-            if (ikey.match(/\.key$/)) {
-              name = inner_hit.fields[ikey][0];
-            } else if (ikey.match(/_value$/)) {
-              if (inner_hit.fields[ikey].length == 1) {
-                field.value = inner_hit.fields[ikey][0];
+          if (inner_hit.fields) {
+            Object.keys(inner_hit.fields).forEach((ikey) => {
+              if (ikey.match(/\.key$/)) {
+                name = inner_hit.fields[ikey][0];
+              } else if (ikey.match(/_value$/)) {
+                if (inner_hit.fields[ikey].length == 1) {
+                  field.value = inner_hit.fields[ikey][0];
+                } else {
+                  field.value = inner_hit.fields[ikey];
+                }
               } else {
-                field.value = inner_hit.fields[ikey];
+                if (inner_hit.fields[ikey].length == 1) {
+                  field[ikey.replace(/attributes\./, "")] =
+                    inner_hit.fields[ikey][0];
+                } else {
+                  field[ikey.replace(/attributes\./, "")] =
+                    inner_hit.fields[ikey];
+                }
               }
-            } else {
-              if (inner_hit.fields[ikey].length == 1) {
-                field[ikey.replace(/attribute\./, "")] =
-                  inner_hit.fields[ikey][0];
-              } else {
-                field[ikey.replace(/attribute\./, "")] = inner_hit.fields[ikey];
-              }
-            }
-          });
+            });
+          }
           if (name) {
             fields[name] = field;
           }
