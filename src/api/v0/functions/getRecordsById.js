@@ -8,9 +8,9 @@ export const getRecordsById = async ({
   result,
   taxonomy,
   hub,
-  version,
+  release,
 }) => {
-  let index = indexName({ result, taxonomy, hub, version });
+  let index = indexName({ result, taxonomy, hub, release });
   let ids = Array.isArray(recordId) ? recordId : [recordId];
   if (result == "taxon") {
     ids = ids.map((id) => (id.match(/^taxon_id-/) ? id : `taxon_id-${id}`));

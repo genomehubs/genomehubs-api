@@ -77,22 +77,37 @@ const suggest = async (params) => {
 module.exports = {
   getIdentifiers: async (req, res) => {
     let response = {};
-    if (req.query.prefixQuery) {
-      response = await sayt(req.query);
-    } else {
-      if (!req.query.size || req.query.size > 0) {
-        response = await lookup(req.query);
-      }
-      if (
-        !response.status ||
-        !response.status.success ||
-        response.status.hits == 0
-      ) {
-        if (!req.query.suggestSize || req.query.suggestSize > 0) {
-          response = await suggest(req.query);
-        }
-      }
+    response = await sayt(req.query);
+    if (
+      !response.status ||
+      !response.status.success ||
+      response.status.hits == 0
+    ) {
+      response = await lookup(req.query);
     }
+    if (
+      !response.status ||
+      !response.status.success ||
+      response.status.hits == 0
+    ) {
+      response = await suggest(req.query);
+    }
+    // if (req.query.prefixQuery) {
+    //   response = await sayt(req.query);
+    // } else {
+    //   if (!req.query.size || req.query.size > 0) {
+    //     response = await lookup(req.query);
+    //   }
+    //   if (
+    //     !response.status ||
+    //     !response.status.success ||
+    //     response.status.hits == 0
+    //   ) {
+    //     if (!req.query.suggestSize || req.query.suggestSize > 0) {
+    //       response = await suggest(req.query);
+    //     }
+    //   }
+    // }
     return res.status(200).send(formatJson(response, req.query.indent));
   },
 };

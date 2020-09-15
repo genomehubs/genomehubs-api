@@ -1,35 +1,40 @@
 import express from "express";
-import cors from "cors";
 import path from "path";
+import compression from "compression";
 import cookieParser from "cookie-parser";
 import swaggerUi from "swagger-ui-express";
 import bodyParser from "body-parser";
-const logger = require("morgan");
-import http from "http";
+import { config } from "./api/v0/functions/config.js";
 import { OpenApiValidator } from "express-openapi-validator";
 import YAML from "yamljs";
 
-const port = 3000;
-const app = express();
-app.use(cors());
+const port = config.port;
 const apiSpec = path.join(__dirname, "api/v0/api.yaml");
-const swaggerDocument = YAML.load(apiSpec);
-
-app.use(bodyParser.urlencoded({ extended: false }));
-app.use(bodyParser.text());
-app.use(bodyParser.json());
-
-// app.use(logger("dev"));
-app.use(cookieParser());
-app.use(express.static(path.join(__dirname, "public")));
-
-app.use("/spec", express.static(apiSpec));
-
-let swaggerOptions = {
+let swaggerDocument = YAML.load(apiSpec);
+swaggerDocument.info.description = config.description;
+swaggerDocument.info.title = config.title;
+swaggerDocument.info.contactName = config.contactName;
+swaggerDocument.info.contactEmail = config.contactEmail;
+swaggerDocument.servers[0].url = config.url;
+console.log(swaggerDocument);
+const swaggerOptions = {
   customCss:
     ".swagger-ui .topbar, .information-container, .scheme-container { display: none }",
 };
 
+const app = express();
+app.use(compression());
+if (config.cors) {
+  const cors = require("cors");
+  app.use(cors(config.cors));
+}
+
+app.use(bodyParser.urlencoded({ extended: true }));
+app.use(bodyParser.text());
+app.use(bodyParser.json());
+app.use(cookieParser());
+app.use(express.static(path.join(__dirname, "public")));
+app.use("/api-spec", express.static(apiSpec));
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -51,8 +56,22 @@ new OpenApiValidator({
       });
     });
 
-    http.createServer(app).listen(port);
-    console.log(`Listening on port ${port}`);
+    if (config.https) {
+      const https = require("https");
+      const fs = require("fs");
+      const options = {
+        key: fs.readFileSync(config.keyFile),
+        cert: fs.readFileSync(config.certFile),
+      };
+      https.createServer(options, app).listen(port, () => {
+        console.log(`Listening on https port ${port}`);
+      });
+    } else {
+      const http = require("http");
+      http.createServer(app).listen(port, () => {
+        console.log(`Listening on http port ${port}`);
+      });
+    }
   });
 
 module.exports = app;

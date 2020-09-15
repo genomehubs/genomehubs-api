@@ -1,35 +1,51 @@
-import { checkDocResponse } from "../functions/checkDocResponse";
+import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
+import { typesMap } from "../functions/typesMap";
+import { indexName } from "../functions/indexName";
+import { aggregateRawValuesByTaxon } from "../queries/aggregateRawValuesByTaxon";
 
 const getSummary = async (params) => {
-  console.log("summary");
-  console.log(params);
-  return {};
-  // const { body } = await client
-  //   .mget({
-  //     index: `${params.result}--ncbi--demo--v0.1`,
-  //     body: { ids },
-  //   })
-  //   .catch((err) => {
-  //     return err.meta;
-  //   });
-  // let status = checkDocResponse({ body });
-  // let records = [];
-  // if (status.hits) {
-  //   body.docs.forEach((doc) => {
-  //     let obj = { id: doc._id, index: doc._index, found: doc.found };
-  //     if (doc.found && doc._source) {
-  //       obj.record = processDoc({ doc: doc._source });
-  //     }
-  //     records.push(obj);
-  //   });
-  // }
-  // return { status, records };
+  let index = indexName({ ...params });
+  let ids = Array.isArray(params.recordId)
+    ? params.recordId
+    : [params.recordId];
+  if (params.result == "taxon") {
+    ids = ids.map((id) => id.replace(/^taxon_id-/, ""));
+  }
+  let fields = [];
+  if (!fields || fields == "all") {
+    fields = Object.keys(typesMap);
+  } else {
+    fields = params.fields.split(/\s*,\s*/);
+  }
+  fields.filter((field) => Object.keys(typesMap).includes(field));
+  const { body } = await client
+    .search({
+      index,
+      body: aggregateRawValuesByTaxon({ lineage: ids[0], fields }),
+      rest_total_hits_as_int: true,
+    })
+    .catch((err) => {
+      return err.meta;
+    });
+  let summaries = [];
+  let status = checkResponse({ body });
+  if (status.hits) {
+    summaries = [
+      {
+        name: "histogram",
+        field: fields[0],
+        lineage: ids[0],
+        summary: body.aggregations.attributes[fields[0]].summary.histogram,
+      },
+    ];
+  }
+  return { status, summaries };
 };
 
 module.exports = {
-  getSearchSummary: async (req, res) => {
+  getFieldSummary: async (req, res) => {
     let response = {};
     response = await getSummary(req.query);
     return res.status(200).send(formatJson(response, req.query.indent));

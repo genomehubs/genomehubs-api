@@ -85,7 +85,6 @@ export const searchByTaxon = ({
         },
       },
     ];
-    console.log(sort);
   }
   return {
     query: {

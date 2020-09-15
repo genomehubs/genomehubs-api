@@ -74,9 +74,9 @@ const generateQuery = ({
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
       return {
-        func: getRecordsById,
+        func: getRecordsByTaxon,
         params: {
-          recordId: taxTerm[2],
+          searchTerm: taxTerm[2],
           result,
           fields,
           ancestral: false,

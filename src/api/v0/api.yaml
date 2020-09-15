@@ -29,7 +29,7 @@ paths:
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/lineageParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/suggestSizeParam"
         - $ref: "#/components/parameters/gramSizeParam"
         - $ref: "#/components/parameters/maxErrorsParam"
@@ -65,7 +65,7 @@ paths:
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -100,7 +100,7 @@ paths:
         - $ref: "#/components/parameters/sortOrderParam"
         - $ref: "#/components/parameters/sortModeParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -127,7 +127,7 @@ paths:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -144,16 +144,17 @@ paths:
     get:
       tags:
         - "GoaT API"
-      summary: "Search result summary"
-      description: "Returns summary of search results"
-      operationId: "getSearchSummary"
+      summary: "Field value summary"
+      description: "Returns a summary of raw field values"
+      operationId: "getFieldSummary"
       x-eov-operation-handler: "api/v0/routes/summary"
       parameters:
-        - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/recordIdParam"
         - $ref: "#/components/parameters/summaryParam"
         - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/fieldsParam"
         - $ref: "#/components/parameters/taxonomyParam"
-        - $ref: "#/components/parameters/versionParam"
+        - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":
@@ -220,8 +221,8 @@ components:
           - ncbi
       required: false
       description: "The taxonomy to search against [default: ncbi]"
-    versionParam:
-      name: version
+    releaseParam:
+      name: release
       in: query
       schema:
         type: string
@@ -229,7 +230,7 @@ components:
           - "latest"
           - "v0.1"
       required: false
-      description: "GenomeHub version number [default: latest]"
+      description: "GenomeHub release number [default: latest]"
     includeEstimatesParam:
       name: includeEstimates
       in: query
@@ -458,6 +459,8 @@ components:
         type: object
         properties:
           name:
+            type: string
+          field:
             type: string
           summary:
             type: object
