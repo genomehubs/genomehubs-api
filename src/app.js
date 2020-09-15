@@ -10,13 +10,14 @@ import YAML from "yamljs";
 
 const port = config.port;
 const apiSpec = path.join(__dirname, "api/v0/api.yaml");
+
 let swaggerDocument = YAML.load(apiSpec);
 swaggerDocument.info.description = config.description;
 swaggerDocument.info.title = config.title;
 swaggerDocument.info.contactName = config.contactName;
 swaggerDocument.info.contactEmail = config.contactEmail;
 swaggerDocument.servers[0].url = config.url;
-console.log(swaggerDocument);
+
 const swaggerOptions = {
   customCss:
     ".swagger-ui .topbar, .information-container, .scheme-container { display: none }",
