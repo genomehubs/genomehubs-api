@@ -3,8 +3,6 @@ import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
 
 const getResultCount = async (params) => {
-  console.log("count");
-  console.log(params);
   return {};
   // const { body } = await client
   //   .mget({
