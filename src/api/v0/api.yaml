@@ -92,7 +92,8 @@ paths:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/fieldsParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
-        - $ref: "#/components/parameters/rawValuesParam"
+        - $ref: "#/components/parameters/includeRawValuesParam"
+        - $ref: "#/components/parameters/searchRawValuesParam"
         - $ref: "#/components/parameters/summaryValuesParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
@@ -237,12 +238,18 @@ components:
       schema:
         type: boolean
       description: "Include estimated values in search results [default: false]"
-    rawValuesParam:
-      name: rawValues
+    includeRawValuesParam:
+      name: includeRawValues
       in: query
       schema:
         type: boolean
       description: "Include raw values in search results [default: false]"
+    searchRawValuesParam:
+      name: searchRawValues
+      in: query
+      schema:
+        type: boolean
+      description: "Apply search filters to raw values [default: false]"
     summaryValuesParam:
       name: summaryValues
       in: query

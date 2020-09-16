@@ -2,6 +2,7 @@ import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
 import { processHits } from "./processHits";
 import { searchByTaxon } from "../queries/searchByTaxon";
+import { searchByTaxonRawValues } from "../queries/searchByTaxonRawValues";
 
 export const getRecordsByTaxon = async ({
   index,
@@ -10,22 +11,24 @@ export const getRecordsByTaxon = async ({
   ancestral,
   fields,
   includeEstimates,
-  rawValues,
+  includeRawValues,
+  searchRawValues,
   rank,
   depth,
   filters,
   summaryValues,
   sortBy,
 }) => {
+  const searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
   const { body } = await client
     .search({
       index,
-      body: searchByTaxon({
+      body: searchBy({
         searchTerm,
         ancestral,
         fields,
         includeEstimates,
-        rawValues,
+        includeRawValues,
         rank,
         depth,
         filters,

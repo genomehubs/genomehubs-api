@@ -78,6 +78,7 @@ module.exports = {
   getIdentifiers: async (req, res) => {
     let response = {};
     response = await sayt(req.query);
+    console.log(response);
     if (
       !response.status ||
       !response.status.success ||

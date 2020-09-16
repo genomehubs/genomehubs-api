@@ -1,6 +1,6 @@
 import { typesMap } from "../functions/typesMap";
 
-export const searchByTaxon = ({
+export const searchByTaxonRawValues = ({
   searchTerm,
   ancestral,
   fields,
@@ -147,17 +147,26 @@ export const searchByTaxon = ({
                       path: "attributes",
                       query: {
                         bool: {
-                          filter: []
-                            .concat(
-                              Object.keys(filters).map((field) => ({
-                                range: {
-                                  [`attributes.${typesMap[field].type}_value`]: filters[
-                                    field
-                                  ],
+                          filter: [
+                            {
+                              nested: {
+                                path: "attributes.values",
+                                query: {
+                                  bool: {
+                                    filter: [].concat(
+                                      Object.keys(filters).map((field) => ({
+                                        range: {
+                                          [`attributes.values.${typesMap[field].type}_value`]: filters[
+                                            field
+                                          ],
+                                        },
+                                      }))
+                                    ),
+                                  },
                                 },
-                              }))
-                            )
-                            .concat(aggregation_source),
+                              },
+                            },
+                          ],
                         },
                       },
                     },
