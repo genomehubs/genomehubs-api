@@ -27,6 +27,9 @@ export const processDoc = ({ doc }) => {
         }
       });
       attributes[name] = attribute;
+      if (name == "assembly_span") {
+        attributes.genome_size = attribute;
+      }
     });
   }
   doc.attributes = attributes;

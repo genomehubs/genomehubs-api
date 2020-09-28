@@ -35,6 +35,9 @@ const generateQuery = ({
     fields = Object.keys(typesMap);
   } else {
     fields = fields.split(/\s*,\s*/);
+    if (fields.includes("genome_size")) {
+      fields.push("assembly_span");
+    }
   }
   let taxTerm, rank, depth;
   let filters = {};

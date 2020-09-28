@@ -36,9 +36,11 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
               field[key] = attribute[key];
             }
           });
-
           if (name) {
             fields[name] = field;
+            if (name == "assembly_span") {
+              fields.genome_size = field;
+            }
           }
         });
         if (Object.keys(fields).length > 0) {
@@ -92,6 +94,7 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
       });
       if (Object.keys(fields).length > 0) {
         result.fields = fields;
+        console.log(fields);
       }
     }
     results.push(result);
