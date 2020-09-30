@@ -1,11 +1,12 @@
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
-import { typesMap } from "../functions/typesMap";
+import { attrTypes } from "../functions/attrTypes";
 import { indexName } from "../functions/indexName";
 import { aggregateRawValuesByTaxon } from "../queries/aggregateRawValuesByTaxon";
 
 const getSummary = async (params) => {
+  let typesMap = await attrTypes();
   let index = indexName({ ...params });
   let ids = Array.isArray(params.recordId)
     ? params.recordId
@@ -20,10 +21,15 @@ const getSummary = async (params) => {
     fields = params.fields.split(/\s*,\s*/);
   }
   fields.filter((field) => Object.keys(typesMap).includes(field));
+  const query = await aggregateRawValuesByTaxon({
+    lineage: ids[0],
+    field: fields[0],
+    summary: params.summary[0],
+  });
   const { body } = await client
     .search({
       index,
-      body: aggregateRawValuesByTaxon({ lineage: ids[0], fields }),
+      body: query,
       rest_total_hits_as_int: true,
     })
     .catch((err) => {
@@ -34,10 +40,12 @@ const getSummary = async (params) => {
   if (status.hits) {
     summaries = [
       {
-        name: "histogram",
+        name: params.summary[0],
         field: fields[0],
         lineage: ids[0],
-        summary: body.aggregations.attributes[fields[0]].summary.histogram,
+        meta: typesMap[fields[0]],
+        summary:
+          body.aggregations.attributes[fields[0]].summary[params.summary[0]],
       },
     ];
   }

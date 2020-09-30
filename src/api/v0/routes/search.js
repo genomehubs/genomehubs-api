@@ -3,7 +3,7 @@ import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
 import { getRecordsById } from "../functions/getRecordsById";
 import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
-import { typesMap } from "../functions/typesMap";
+import { attrTypes } from "../functions/attrTypes";
 import { indexName } from "../functions/indexName";
 
 const operations = (str) => {
@@ -19,7 +19,7 @@ const operations = (str) => {
   return operator;
 };
 
-const generateQuery = ({
+const generateQuery = async ({
   query,
   result,
   fields,
@@ -31,6 +31,7 @@ const generateQuery = ({
   sortOrder,
   sortMode,
 }) => {
+  let typesMap = await attrTypes();
   if (!fields || fields == "all") {
     fields = Object.keys(typesMap);
   } else {
@@ -132,7 +133,7 @@ const generateQuery = ({
 };
 
 const getResults = async (params) => {
-  let query = generateQuery({ ...params });
+  let query = await generateQuery({ ...params });
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });
 };

@@ -1,16 +1,58 @@
-import { typesMap } from "../functions/typesMap";
+import { attrTypes } from "../functions/attrTypes";
 
 const scales = {
   log10: "Math.log10(_value)",
   sqrt: "Math.sqrt(_value)",
 };
 
-export const aggregateRawValuesByTaxon = ({
+const histogramAgg = async (field) => {
+  let typesMap = await attrTypes();
+  if (!typesMap[field]) {
+    return;
+  }
+  let { scale, min, max, count } = typesMap[field].bins;
+  let interval;
+  if (count) {
+    interval = (max - min) / count;
+  }
+  return {
+    histogram: {
+      field: `attributes.values.${typesMap[field].type}_value`,
+      ...(scales[scale] && { script: scales[scale] }),
+      ...(interval && { interval }),
+      extended_bounds: {
+        min,
+        max,
+      },
+    },
+  };
+};
+
+const termsAgg = async (field) => {
+  let typesMap = await attrTypes();
+  if (!typesMap[field]) {
+    return;
+  }
+  return {
+    terms: {
+      field: `attributes.values.${typesMap[field].type}_value`,
+    },
+  };
+};
+
+export const aggregateRawValuesByTaxon = async ({
   lineage,
-  fields,
-  scale = "log10",
-  interval = 0.5,
+  field,
+  summary,
 }) => {
+  let histogram, terms;
+  let typesMap = await attrTypes();
+  if (summary == "histogram") {
+    histogram = await histogramAgg(field);
+  }
+  if (summary == "terms") {
+    terms = await termsAgg(field);
+  }
   return {
     size: 0,
     query: {
@@ -36,12 +78,12 @@ export const aggregateRawValuesByTaxon = ({
           path: "attributes",
         },
         aggs: {
-          [fields[0]]: {
+          [field]: {
             filter: {
               bool: {
                 filter: [
                   {
-                    term: { "attributes.key": fields[0] },
+                    term: { "attributes.key": field },
                   },
                   {
                     term: { "attributes.aggregation_source": "direct" },
@@ -55,19 +97,8 @@ export const aggregateRawValuesByTaxon = ({
                   path: "attributes.values",
                 },
                 aggs: {
-                  histogram: {
-                    histogram: {
-                      field: `attributes.values.${
-                        typesMap[fields[0]].type
-                      }_value`,
-                      ...(scales[scale] && { script: scales[scale] }),
-                      ...(interval && { interval }),
-                      extended_bounds: {
-                        min: 6,
-                        max: 11,
-                      },
-                    },
-                  },
+                  histogram,
+                  terms,
                 },
               },
             },

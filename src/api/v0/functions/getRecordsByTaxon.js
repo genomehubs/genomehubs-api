@@ -23,7 +23,7 @@ export const getRecordsByTaxon = async ({
   const { body } = await client
     .search({
       index,
-      body: searchBy({
+      body: await searchBy({
         searchTerm,
         ancestral,
         fields,

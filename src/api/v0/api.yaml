@@ -277,6 +277,7 @@ components:
           type: string
           enum:
             - histogram
+            - terms
       style: form
       explode: false
       required: true
