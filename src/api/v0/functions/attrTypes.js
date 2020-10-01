@@ -1,6 +1,7 @@
 import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
 import { indexName } from "./indexName";
+import { config } from "../functions/config.js";
 
 const fetchTypes = async ({ result, taxonomy, hub, release }) => {
   let index = indexName({ result: "attributes", hub, release });
@@ -34,9 +35,9 @@ const fetchTypes = async ({ result, taxonomy, hub, release }) => {
 export const attrTypes = async () =>
   await fetchTypes({
     result: "taxon",
-    taxonomy: "ncbi",
-    hub: "demo",
-    release: "v0.1",
+    taxonomy: config.taxonomy,
+    hub: config.hub,
+    release: config.release,
   });
 
 // export const typesMap = {
