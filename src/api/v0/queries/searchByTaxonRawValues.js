@@ -148,26 +148,27 @@ export const searchByTaxonRawValues = async ({
                       path: "attributes",
                       query: {
                         bool: {
-                          filter: [
-                            {
-                              nested: {
-                                path: "attributes.values",
-                                query: {
-                                  bool: {
-                                    filter: [].concat(
-                                      Object.keys(filters).map((field) => ({
+                          filter: [].concat(
+                            Object.keys(filters).map((field) => ({
+                              bool: {
+                                filter: [
+                                  { match: { "attributes.key": field } },
+                                  {
+                                    nested: {
+                                      path: "attributes.values",
+                                      query: {
                                         range: {
                                           [`attributes.values.${typesMap[field].type}_value`]: filters[
                                             field
                                           ],
                                         },
-                                      }))
-                                    ),
+                                      },
+                                    },
                                   },
-                                },
+                                ],
                               },
-                            },
-                          ],
+                            }))
+                          ),
                         },
                       },
                     },

@@ -20,21 +20,22 @@ export const getRecordsByTaxon = async ({
   sortBy,
 }) => {
   const searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
+  const query = await searchBy({
+    searchTerm,
+    ancestral,
+    fields,
+    includeEstimates,
+    includeRawValues,
+    rank,
+    depth,
+    filters,
+    summaryValues,
+    sortBy,
+  });
   const { body } = await client
     .search({
       index,
-      body: await searchBy({
-        searchTerm,
-        ancestral,
-        fields,
-        includeEstimates,
-        includeRawValues,
-        rank,
-        depth,
-        filters,
-        summaryValues,
-        sortBy,
-      }),
+      body: query,
       rest_total_hits_as_int: true,
     })
     .catch((err) => {
@@ -46,5 +47,5 @@ export const getRecordsByTaxon = async ({
   if (status.hits) {
     results = processHits({ body, inner_hits: true });
   }
-  return { status, results };
+  return { status, results, query };
 };
