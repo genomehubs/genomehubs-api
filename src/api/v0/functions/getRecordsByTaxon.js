@@ -17,6 +17,8 @@ export const getRecordsByTaxon = async ({
   depth,
   filters,
   summaryValues,
+  size,
+  offset,
   sortBy,
 }) => {
   const searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
@@ -30,6 +32,8 @@ export const getRecordsByTaxon = async ({
     depth,
     filters,
     summaryValues,
+    size,
+    offset,
     sortBy,
   });
   const { body } = await client
@@ -44,6 +48,8 @@ export const getRecordsByTaxon = async ({
     });
   let results = [];
   let status = checkResponse({ body });
+  status.size = size;
+  status.offset = offset;
   if (status.hits) {
     results = processHits({ body, inner_hits: true });
   }

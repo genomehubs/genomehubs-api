@@ -27,6 +27,8 @@ const generateQuery = async ({
   includeRawValues,
   searchRawValues,
   summaryValues,
+  size = 10,
+  offset = 0,
   sortBy,
   sortOrder,
   sortMode,
@@ -88,6 +90,8 @@ const generateQuery = async ({
           filters,
           rank,
           summaryValues,
+          size,
+          offset,
           sortBy,
         },
       };
@@ -106,6 +110,8 @@ const generateQuery = async ({
           filters,
           rank,
           summaryValues,
+          size,
+          offset,
           sortBy,
         },
       };
@@ -125,6 +131,8 @@ const generateQuery = async ({
           depth,
           filters,
           summaryValues,
+          size,
+          offset,
           sortBy,
         },
       };

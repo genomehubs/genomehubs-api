@@ -10,6 +10,8 @@ export const searchByTaxonRawValues = async ({
   includeRawValues,
   filters,
   summaryValues,
+  size,
+  offset,
   sortBy,
 }) => {
   let typesMap = await attrTypes();
@@ -88,6 +90,8 @@ export const searchByTaxonRawValues = async ({
     ];
   }
   return {
+    size,
+    from: offset,
     query: {
       bool: {
         filter: [

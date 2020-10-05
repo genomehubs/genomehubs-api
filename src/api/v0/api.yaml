@@ -122,6 +122,7 @@ paths:
         - $ref: "#/components/parameters/summaryValuesParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
+        - $ref: "#/components/parameters/offsetParam"
         - $ref: "#/components/parameters/sortByParam"
         - $ref: "#/components/parameters/sortOrderParam"
         - $ref: "#/components/parameters/sortModeParam"
@@ -375,9 +376,20 @@ components:
       schema:
         type: integer
         minimum: 0
-        maximum: 1000
+        maximum: 10000
       required: false
       description: "Maximum number of results to return [default: 10]"
+      style: form
+      explode: false
+    offsetParam:
+      name: offset
+      in: query
+      schema:
+        type: integer
+        minimum: 0
+        maximum: 1000
+      required: false
+      description: "Offset when returning a page of results [default: 0]"
       style: form
       explode: false
     suggestSizeParam:
