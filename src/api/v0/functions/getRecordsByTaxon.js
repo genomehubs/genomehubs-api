@@ -53,5 +53,5 @@ export const getRecordsByTaxon = async ({
   if (status.hits) {
     results = processHits({ body, inner_hits: true });
   }
-  return { status, results, query };
+  return { status, results };
 };

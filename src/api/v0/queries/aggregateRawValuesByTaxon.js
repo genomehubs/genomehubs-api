@@ -1,6 +1,7 @@
 import { attrTypes } from "../functions/attrTypes";
 
 const scales = {
+  log2: "Math.log(_value)/Math.log(2)",
   log10: "Math.log10(_value)",
   sqrt: "Math.sqrt(_value)",
 };
