@@ -152,6 +152,9 @@ paths:
       x-eov-operation-handler: "api/v0/routes/count"
       parameters:
         - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/includeEstimatesParam"
+        - $ref: "#/components/parameters/searchRawValuesParam"
+        - $ref: "#/components/parameters/summaryValuesParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
@@ -165,6 +168,8 @@ paths:
                 anyOf:
                   - status:
                     $ref: "#/components/schemas/Status"
+                  - count:
+                    $ref: "#/components/schemas/Count"
         "400":
           description: "Invalid query"
   /summary:
@@ -467,6 +472,9 @@ components:
           type: string
         hits:
           type: integer
+    Count:
+      type: integer
+      description: Number of records matching query
     Records:
       type: array
       items:

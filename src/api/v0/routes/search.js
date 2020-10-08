@@ -140,7 +140,7 @@ const generateQuery = async ({
   }
 };
 
-const getResults = async (params) => {
+export const getResults = async (params) => {
   let query = await generateQuery({ ...params });
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });
