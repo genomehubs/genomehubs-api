@@ -2,6 +2,7 @@ import { attrTypes } from "../functions/attrTypes";
 
 export const searchByTaxon = async ({
   searchTerm,
+  result,
   ancestral,
   fields,
   rank,
@@ -19,12 +20,12 @@ export const searchByTaxon = async ({
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
   let aggregation_source = [];
-  if (!includeEstimates) {
+  if (result == "taxon" && !includeEstimates) {
     aggregation_source = [
       { match: { "attributes.aggregation_source": "direct" } },
       { exists: { field: "attributes.aggregation_method" } },
     ];
-  } else {
+  } else if (result == "taxon") {
     aggregation_source = [
       { exists: { field: "attributes.aggregation_source" } },
       { exists: { field: "attributes.aggregation_method" } },

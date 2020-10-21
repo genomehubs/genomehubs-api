@@ -14,6 +14,8 @@ export const getRecordsById = async ({
   let ids = Array.isArray(recordId) ? recordId : [recordId];
   if (result == "taxon") {
     ids = ids.map((id) => (id.match(/^taxon_id-/) ? id : `taxon_id-${id}`));
+  } else if (result == "assembly") {
+    ids = ids.map((id) => (id.match(/^assembly-/) ? id : `assembly-${id}`));
   }
   const { body } = await client
     .mget({

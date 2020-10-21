@@ -24,6 +24,7 @@ export const getRecordsByTaxon = async ({
   const searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
   const query = await searchBy({
     searchTerm,
+    result,
     ancestral,
     fields,
     includeEstimates,
