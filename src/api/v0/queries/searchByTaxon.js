@@ -10,6 +10,7 @@ export const searchByTaxon = async ({
   includeEstimates,
   includeRawValues,
   filters,
+  exclusions,
   summaryValues,
   size,
   offset,
@@ -41,6 +42,30 @@ export const searchByTaxon = async ({
       },
     ];
   }
+  let excluded = [];
+  Object.keys(exclusions).forEach((source) => {
+    exclusions[source].forEach((field) => {
+      excluded.push({
+        nested: {
+          path: "attributes",
+          query: {
+            bool: {
+              filter: [
+                {
+                  match: { "attributes.key": field },
+                },
+                {
+                  match: {
+                    "attributes.aggregation_source": source,
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
+    });
+  });
   let depths = [];
   if (depth) {
     depths = [
@@ -75,26 +100,38 @@ export const searchByTaxon = async ({
   }
   let sort;
   if (sortBy) {
-    sort = [
-      {
-        [`attributes.${typesMap[sortBy.by].type}_value`]: {
-          mode: sortBy.mode || "max",
-          order: sortBy.order || "asc",
-          nested: {
-            path: "attributes",
-            filter: {
-              term: { "attributes.key": sortBy.by },
+    if (sortBy.by == "scientific_name" || sortBy.by == "taxon_id") {
+      sort = [
+        {
+          [sortBy.by]: {
+            mode: sortBy.mode || "max",
+            order: sortBy.order || "asc",
+          },
+        },
+      ];
+    } else {
+      sort = [
+        {
+          [`attributes.${typesMap[sortBy.by].type}_value`]: {
+            mode: sortBy.mode || "max",
+            order: sortBy.order || "asc",
+            nested: {
+              path: "attributes",
+              filter: {
+                term: { "attributes.key": sortBy.by },
+              },
             },
           },
         },
-      },
-    ];
+      ];
+    }
   }
   return {
     size,
     from: offset,
     query: {
       bool: {
+        must_not: excluded,
         filter: [
           {
             nested: {
@@ -147,28 +184,25 @@ export const searchByTaxon = async ({
           .concat(
             Object.keys(filters).length == 0
               ? []
-              : [
-                  {
-                    nested: {
-                      path: "attributes",
-                      query: {
-                        bool: {
-                          filter: []
-                            .concat(
-                              Object.keys(filters).map((field) => ({
-                                range: {
-                                  [`attributes.${typesMap[field].type}_value`]: filters[
-                                    field
-                                  ],
-                                },
-                              }))
-                            )
-                            .concat(aggregation_source),
-                        },
+              : Object.keys(filters).map((field) => ({
+                  nested: {
+                    path: "attributes",
+                    query: {
+                      bool: {
+                        filter: [
+                          { match: { "attributes.key": field } },
+                          {
+                            range: {
+                              [`attributes.${typesMap[field].type}_value`]: filters[
+                                field
+                              ],
+                            },
+                          },
+                        ].concat(aggregation_source),
                       },
                     },
                   },
-                ]
+                }))
           ),
       },
     },
@@ -180,10 +214,11 @@ export const searchByTaxon = async ({
         "attributes.key",
         "attributes.aggregation*",
         "attributes.*_value",
+        "attributes.*",
       ].concat(
         summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
       ),
-      exclude: [].concat(includeRawValues ? [] : ["attributes.values.*_value"]),
+      exclude: [].concat(includeRawValues ? [] : ["attributes.values*"]),
     },
     sort: [].concat(sort ? sort : []),
   };

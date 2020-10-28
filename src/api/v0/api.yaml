@@ -120,6 +120,9 @@ paths:
         - $ref: "#/components/parameters/includeRawValuesParam"
         - $ref: "#/components/parameters/searchRawValuesParam"
         - $ref: "#/components/parameters/summaryValuesParam"
+        - $ref: "#/components/parameters/excludeAncestralParam"
+        - $ref: "#/components/parameters/excludeDescendantParam"
+        - $ref: "#/components/parameters/excludeDirectParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/offsetParam"
@@ -129,6 +132,8 @@ paths:
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
+        - $ref: "#/components/parameters/tidyDataParam"
+        - $ref: "#/components/parameters/filenameParam"
       responses:
         "200":
           description: "successful operation"
@@ -140,6 +145,12 @@ paths:
                     $ref: "#/components/schemas/Status"
                   - results:
                     $ref: "#/components/schemas/Records"
+            text/csv:
+              schema:
+                type: string
+            text/tab-separated-values:
+              schema:
+                type: string
         "400":
           description: "Invalid query"
   /count:
@@ -155,6 +166,9 @@ paths:
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/searchRawValuesParam"
         - $ref: "#/components/parameters/summaryValuesParam"
+        - $ref: "#/components/parameters/excludeAncestralParam"
+        - $ref: "#/components/parameters/excludeDescendantParam"
+        - $ref: "#/components/parameters/excludeDirectParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
@@ -283,6 +297,42 @@ components:
       schema:
         type: boolean
       description: "Apply search filters to raw values [default: false]"
+    excludeAncestralParam:
+      name: excludeAncestral
+      in: query
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      style: form
+      explode: true
+      required: false
+      description: "Exclude values estimated from ancestors from results [default: false]"
+    excludeDescendantParam:
+      name: excludeDescendant
+      in: query
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      style: form
+      explode: true
+      required: false
+      description: "Exclude values estimated from descendants from results [default: false]"
+    excludeDirectParam:
+      name: excludeDirect
+      in: query
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      style: form
+      explode: true
+      required: false
+      description: "Exclude directly measured values from results [default: false]"
     summaryValuesParam:
       name: summaryValues
       in: query
@@ -377,6 +427,18 @@ components:
       description: "Format output with indented lines [default: 0]"
       style: form
       explode: false
+    tidyDataParam:
+      name: tidyData
+      in: query
+      schema:
+        type: boolean
+      description: "Format delimited text output as Tidy Data [default: false]"
+    filenameParam:
+      name: filename
+      in: query
+      schema:
+        type: string
+      description: "Specify a filename to download"
     sizeParam:
       name: size
       in: query

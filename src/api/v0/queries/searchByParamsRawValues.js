@@ -1,6 +1,6 @@
 import { attrTypes } from "../functions/attrTypes";
 
-export const searchByTaxonRawValues = async ({
+export const searchByParamsRawValues = async ({
   searchTerm,
   ancestral,
   fields,
@@ -58,14 +58,7 @@ export const searchByTaxonRawValues = async ({
           path: "lineage",
           query: {
             bool: {
-              filter: [
-                {
-                  multi_match: {
-                    query: searchTerm,
-                    fields: ["lineage.taxon_id", "lineage.scientific_name"],
-                  },
-                },
-              ].concat(depths),
+              filter: [].concat(depths),
             },
           },
         },
@@ -124,21 +117,7 @@ export const searchByTaxonRawValues = async ({
               : [
                   {
                     bool: {
-                      should: [
-                        {
-                          match: { taxon_id: searchTerm },
-                        },
-                        {
-                          nested: {
-                            path: "taxon_names",
-                            query: {
-                              match: {
-                                "taxon_names.name.raw": searchTerm,
-                              },
-                            },
-                          },
-                        },
-                      ].concat(lineage),
+                      should: [].concat(lineage),
                     },
                   },
                 ]
@@ -189,11 +168,10 @@ export const searchByTaxonRawValues = async ({
         "attributes.key",
         "attributes.aggregation*",
         "attributes.*_value",
-        "attributes.values.*",
       ].concat(
         summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
       ),
-      exclude: [].concat(includeRawValues ? [] : ["attributes.values.*"]),
+      exclude: [].concat(includeRawValues ? [] : ["attributes.values.*_value"]),
     },
     sort: [].concat(sort ? sort : []),
   };

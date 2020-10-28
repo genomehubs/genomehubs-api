@@ -26,9 +26,13 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
               field.value = attribute[key];
             } else if (key == "values") {
               field.rawValues = attribute[key].map((value) => {
-                let retValue;
+                let retValue = {};
                 Object.keys(value).forEach((vkey) => {
-                  if (vkey.match(/_value$/)) retValue = value[vkey];
+                  if (vkey.match(/_value$/)) {
+                    retValue.value = value[vkey];
+                  } else {
+                    retValue[vkey] = value[vkey];
+                  }
                 });
                 return retValue;
               });

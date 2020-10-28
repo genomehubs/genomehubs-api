@@ -3,6 +3,8 @@ import { client } from "./connection";
 import { processHits } from "./processHits";
 import { searchByTaxon } from "../queries/searchByTaxon";
 import { searchByTaxonRawValues } from "../queries/searchByTaxonRawValues";
+import { searchByParams } from "../queries/searchByParams";
+import { searchByParamsRawValues } from "../queries/searchByParamsRawValues";
 
 export const getRecordsByTaxon = async ({
   index,
@@ -16,12 +18,16 @@ export const getRecordsByTaxon = async ({
   rank,
   depth,
   filters,
+  exclusions,
   summaryValues,
   size,
   offset,
   sortBy,
 }) => {
-  const searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
+  let searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
+  if (!searchTerm) {
+    searchBy = searchRawValues ? searchByParamsRawValues : searchByParams;
+  }
   const query = await searchBy({
     searchTerm,
     result,
@@ -32,6 +38,7 @@ export const getRecordsByTaxon = async ({
     rank,
     depth,
     filters,
+    exclusions,
     summaryValues,
     size,
     offset,
@@ -54,5 +61,5 @@ export const getRecordsByTaxon = async ({
   if (status.hits) {
     results = processHits({ body, inner_hits: true });
   }
-  return { status, results };
+  return { status, results, query };
 };

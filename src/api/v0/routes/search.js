@@ -1,6 +1,7 @@
 import { checkDocResponse } from "../functions/checkDocResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
+import { formatCsv } from "../functions/formatCsv";
 import { getRecordsById } from "../functions/getRecordsById";
 import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
 import { attrTypes } from "../functions/attrTypes";
@@ -19,6 +20,16 @@ const operations = (str) => {
   return operator;
 };
 
+const parseFields = async (fields) => {
+  if (!fields || fields == "all") {
+    let typesMap = await attrTypes();
+    fields = Object.keys(typesMap);
+  } else {
+    fields = fields.split(/\s*,\s*/);
+  }
+  return fields;
+};
+
 const generateQuery = async ({
   query,
   result,
@@ -27,6 +38,9 @@ const generateQuery = async ({
   includeRawValues,
   searchRawValues,
   summaryValues,
+  excludeAncestral,
+  excludeDescendant,
+  excludeDirect,
   size = 10,
   offset = 0,
   sortBy,
@@ -34,10 +48,16 @@ const generateQuery = async ({
   sortMode,
 }) => {
   let typesMap = await attrTypes();
-  if (!fields || fields == "all") {
-    fields = Object.keys(typesMap);
-  } else {
-    fields = fields.split(/\s*,\s*/);
+  fields = await parseFields(fields);
+  let exclusions = {};
+  if (excludeAncestral) {
+    exclusions.ancestor = excludeAncestral;
+  }
+  if (excludeDescendant) {
+    exclusions.descendant = excludeDescendant;
+  }
+  if (excludeDirect) {
+    exclusions.direct = excludeDirect;
   }
   let taxTerm, rank, depth;
   let filters = {};
@@ -88,6 +108,7 @@ const generateQuery = async ({
           includeRawValues,
           searchRawValues,
           filters,
+          exclusions,
           rank,
           summaryValues,
           size,
@@ -95,8 +116,7 @@ const generateQuery = async ({
           sortBy,
         },
       };
-    }
-    if (taxTerm[1] == "name") {
+    } else if (taxTerm[1] == "name") {
       return {
         func: getRecordsByTaxon,
         params: {
@@ -108,6 +128,7 @@ const generateQuery = async ({
           includeRawValues,
           searchRawValues,
           filters,
+          exclusions,
           rank,
           summaryValues,
           size,
@@ -115,8 +136,7 @@ const generateQuery = async ({
           sortBy,
         },
       };
-    }
-    if (taxTerm[1] == "tree") {
+    } else if (taxTerm[1] == "tree") {
       return {
         func: getRecordsByTaxon,
         params: {
@@ -130,6 +150,7 @@ const generateQuery = async ({
           rank,
           depth,
           filters,
+          exclusions,
           summaryValues,
           size,
           offset,
@@ -137,6 +158,27 @@ const generateQuery = async ({
         },
       };
     }
+  } else {
+    return {
+      func: getRecordsByTaxon,
+      params: {
+        searchTerm: false,
+        result,
+        ancestral: true,
+        fields,
+        includeEstimates,
+        includeRawValues,
+        searchRawValues,
+        rank,
+        depth,
+        filters,
+        exclusions,
+        summaryValues,
+        size,
+        offset,
+        sortBy,
+      },
+    };
   }
 };
 
@@ -150,6 +192,43 @@ module.exports = {
   getSearchResults: async (req, res) => {
     let response = {};
     response = await getResults(req.query);
-    return res.status(200).send(formatJson(response, req.query.indent));
+    return res.format({
+      json: () => {
+        if (req.query.filename) {
+          let filename = `${req.query.filename.replace(/\.json$/, "")}.json`;
+          res.attachment(filename);
+        }
+        res.status(200).send(formatJson(response, req.query.indent));
+      },
+      csv: async () => {
+        let opts = {
+          delimiter: ",",
+          fields: await parseFields(req.query.fields),
+          tidyData: req.query.tidyData,
+          includeRawValues: req.query.includeRawValues,
+        };
+        let csv = await formatCsv(response, opts);
+        if (req.query.filename) {
+          let filename = `${req.query.filename.replace(/\.csv$/, "")}.csv`;
+          res.attachment(filename);
+        }
+        res.status(200).send(csv);
+      },
+
+      tsv: async () => {
+        let opts = {
+          delimiter: "\t",
+          fields: await parseFields(req.query.fields),
+          tidyData: req.query.tidyData,
+          includeRawValues: req.query.includeRawValues,
+        };
+        let tsv = await formatCsv(response, opts);
+        if (req.query.filename) {
+          let filename = `${req.query.filename.replace(/\.tsv$/, "")}.tsv`;
+          res.attachment(filename);
+        }
+        res.status(200).send(tsv);
+      },
+    });
   },
 };

@@ -1,7 +1,7 @@
 import { attrTypes } from "../functions/attrTypes";
 
-export const searchByTaxonRawValues = async ({
-  searchTerm,
+export const searchByParams = async ({
+  result,
   ancestral,
   fields,
   rank,
@@ -19,12 +19,12 @@ export const searchByTaxonRawValues = async ({
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
   let aggregation_source = [];
-  if (!includeEstimates) {
+  if (result == "taxon" && !includeEstimates) {
     aggregation_source = [
       { match: { "attributes.aggregation_source": "direct" } },
       { exists: { field: "attributes.aggregation_method" } },
     ];
-  } else {
+  } else if (result == "taxon") {
     aggregation_source = [
       { exists: { field: "attributes.aggregation_source" } },
       { exists: { field: "attributes.aggregation_method" } },
@@ -58,14 +58,7 @@ export const searchByTaxonRawValues = async ({
           path: "lineage",
           query: {
             bool: {
-              filter: [
-                {
-                  multi_match: {
-                    query: searchTerm,
-                    fields: ["lineage.taxon_id", "lineage.scientific_name"],
-                  },
-                },
-              ].concat(depths),
+              filter: [].concat(depths),
             },
           },
         },
@@ -124,21 +117,7 @@ export const searchByTaxonRawValues = async ({
               : [
                   {
                     bool: {
-                      should: [
-                        {
-                          match: { taxon_id: searchTerm },
-                        },
-                        {
-                          nested: {
-                            path: "taxon_names",
-                            query: {
-                              match: {
-                                "taxon_names.name.raw": searchTerm,
-                              },
-                            },
-                          },
-                        },
-                      ].concat(lineage),
+                      should: [].concat(lineage),
                     },
                   },
                 ]
@@ -146,38 +125,54 @@ export const searchByTaxonRawValues = async ({
           .concat(
             Object.keys(filters).length == 0
               ? []
-              : [
-                  {
-                    nested: {
-                      path: "attributes",
-                      query: {
-                        bool: {
-                          filter: [].concat(
-                            Object.keys(filters).map((field) => ({
-                              bool: {
-                                filter: [
-                                  { match: { "attributes.key": field } },
-                                  {
-                                    nested: {
-                                      path: "attributes.values",
-                                      query: {
-                                        range: {
-                                          [`attributes.values.${typesMap[field].type}_value`]: filters[
-                                            field
-                                          ],
-                                        },
-                                      },
-                                    },
-                                  },
-                                ],
-                              },
-                            }))
-                          ),
-                        },
+              : Object.keys(filters).map((field) => ({
+                  nested: {
+                    path: "attributes",
+                    query: {
+                      bool: {
+                        filter: [
+                          { match: { "attributes.key": field } },
+                          {
+                            range: {
+                              [`attributes.${typesMap[field].type}_value`]: filters[
+                                field
+                              ],
+                            },
+                          },
+                        ].concat(aggregation_source),
                       },
                     },
                   },
-                ]
+                }))
+            // : [
+            //     {
+            //       nested: {
+            //         path: "attributes",
+            //         query: {
+            //           bool: {
+            //             filter: []
+            //               .concat(
+            //                 Object.keys(filters).map((field) => ({
+            //                   bool: {
+            //                     filter: [
+            //                       { match: { "attributes.key": field } },
+            //                       {
+            //                         range: {
+            //                           [`attributes.${typesMap[field].type}_value`]: filters[
+            //                             field
+            //                           ],
+            //                         },
+            //                       },
+            //                     ],
+            //                   },
+            //                 }))
+            //               )
+            //               .concat(aggregation_source),
+            //           },
+            //         },
+            //       },
+            //     },
+            //   ]
           ),
       },
     },
@@ -189,11 +184,10 @@ export const searchByTaxonRawValues = async ({
         "attributes.key",
         "attributes.aggregation*",
         "attributes.*_value",
-        "attributes.values.*",
       ].concat(
         summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
       ),
-      exclude: [].concat(includeRawValues ? [] : ["attributes.values.*"]),
+      exclude: [].concat(includeRawValues ? [] : ["attributes.values.*_value"]),
     },
     sort: [].concat(sort ? sort : []),
   };
