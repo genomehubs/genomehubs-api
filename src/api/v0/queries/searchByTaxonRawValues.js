@@ -9,6 +9,7 @@ export const searchByTaxonRawValues = async ({
   includeEstimates,
   includeRawValues,
   filters,
+  exclusions,
   summaryValues,
   size,
   offset,
@@ -40,6 +41,30 @@ export const searchByTaxonRawValues = async ({
       },
     ];
   }
+  let excluded = [];
+  Object.keys(exclusions).forEach((source) => {
+    exclusions[source].forEach((field) => {
+      excluded.push({
+        nested: {
+          path: "attributes",
+          query: {
+            bool: {
+              filter: [
+                {
+                  match: { "attributes.key": field },
+                },
+                {
+                  match: {
+                    "attributes.aggregation_source": source,
+                  },
+                },
+              ],
+            },
+          },
+        },
+      });
+    });
+  });
   let depths = [];
   if (depth) {
     depths = [
@@ -94,6 +119,7 @@ export const searchByTaxonRawValues = async ({
     from: offset,
     query: {
       bool: {
+        must_not: excluded,
         filter: [
           {
             nested: {
