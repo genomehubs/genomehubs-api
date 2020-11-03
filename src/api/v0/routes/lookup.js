@@ -77,7 +77,7 @@ const suggest = async (params) => {
 module.exports = {
   getIdentifiers: async (req, res) => {
     let response = {};
-    response = await sayt(req.query);
+    // response = await sayt(req.query);
     if (
       !response.status ||
       !response.status.success ||
