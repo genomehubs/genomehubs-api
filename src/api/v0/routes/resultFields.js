@@ -7,7 +7,7 @@ module.exports = {
     let fields = {};
     let status = {};
     try {
-      fields = await attrTypes();
+      fields = await attrTypes({ ...req.query });
       status = { success: true };
     } catch {
       status = { success: false, error: "Unable to fetch fields" };

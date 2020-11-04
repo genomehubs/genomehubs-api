@@ -20,9 +20,9 @@ const operations = (str) => {
   return operator;
 };
 
-const parseFields = async (fields) => {
+const parseFields = async ({ result, fields }) => {
   if (!fields || fields == "all") {
-    let typesMap = await attrTypes();
+    let typesMap = await attrTypes({ result });
     fields = Object.keys(typesMap);
   } else {
     fields = fields.split(/\s*,\s*/);
@@ -47,8 +47,8 @@ const generateQuery = async ({
   sortOrder,
   sortMode,
 }) => {
-  let typesMap = await attrTypes();
-  fields = await parseFields(fields);
+  let typesMap = await attrTypes({ ...query });
+  fields = await parseFields({ result, fields });
   let exclusions = {};
   if (excludeAncestral) {
     exclusions.ancestor = excludeAncestral;

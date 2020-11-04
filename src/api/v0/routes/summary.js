@@ -6,7 +6,7 @@ import { indexName } from "../functions/indexName";
 import { aggregateRawValuesByTaxon } from "../queries/aggregateRawValuesByTaxon";
 
 const getSummary = async (params) => {
-  let typesMap = await attrTypes();
+  let typesMap = await attrTypes({ ...params });
   let index = indexName({ ...params });
   let ids = Array.isArray(params.recordId)
     ? params.recordId

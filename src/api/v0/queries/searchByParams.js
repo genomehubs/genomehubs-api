@@ -14,7 +14,7 @@ export const searchByParams = async ({
   offset,
   sortBy,
 }) => {
-  let typesMap = await attrTypes();
+  let typesMap = await attrTypes({ result });
   fields.filter((field) => Object.keys(typesMap).includes(field));
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];

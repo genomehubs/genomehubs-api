@@ -16,10 +16,11 @@ export const searchByTaxon = async ({
   offset,
   sortBy,
 }) => {
-  let typesMap = await attrTypes();
-  fields.filter((field) => Object.keys(typesMap).includes(field));
+  let typesMap = await attrTypes({ result });
+  fields = fields.filter((field) => typesMap[field] !== undefined);
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
+
   let aggregation_source = [];
   if (result == "taxon" && !includeEstimates) {
     aggregation_source = [

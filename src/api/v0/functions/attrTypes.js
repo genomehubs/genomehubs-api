@@ -32,9 +32,9 @@ const fetchTypes = async ({ result, taxonomy, hub, release }) => {
   return types;
 };
 
-export const attrTypes = async () =>
+export const attrTypes = async ({ result = "taxon" }) =>
   await fetchTypes({
-    result: "taxon",
+    result,
     taxonomy: config.taxonomy,
     hub: config.hub,
     release: config.release,

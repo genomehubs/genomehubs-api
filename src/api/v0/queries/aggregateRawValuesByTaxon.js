@@ -7,7 +7,7 @@ const scales = {
 };
 
 const histogramAgg = async (field) => {
-  let typesMap = await attrTypes();
+  let typesMap = await attrTypes({});
   if (!typesMap[field]) {
     return;
   }
@@ -30,7 +30,7 @@ const histogramAgg = async (field) => {
 };
 
 const termsAgg = async (field) => {
-  let typesMap = await attrTypes();
+  let typesMap = await attrTypes({});
   if (!typesMap[field]) {
     return;
   }
@@ -47,7 +47,7 @@ export const aggregateRawValuesByTaxon = async ({
   summary,
 }) => {
   let histogram, terms;
-  let typesMap = await attrTypes();
+  let typesMap = await attrTypes({});
   if (summary == "histogram") {
     histogram = await histogramAgg(field);
   }
