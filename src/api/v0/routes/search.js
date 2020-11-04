@@ -203,7 +203,7 @@ module.exports = {
       csv: async () => {
         let opts = {
           delimiter: ",",
-          fields: await parseFields(req.query.fields),
+          fields: await parseFields({ ...req.query }),
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
         };
@@ -218,7 +218,7 @@ module.exports = {
       tsv: async () => {
         let opts = {
           delimiter: "\t",
-          fields: await parseFields(req.query.fields),
+          fields: await parseFields({ ...req.query }),
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
         };
