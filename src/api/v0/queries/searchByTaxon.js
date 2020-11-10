@@ -212,6 +212,7 @@ export const searchByTaxon = async ({
         "taxon_id",
         "scientific_name",
         "taxon_rank",
+        "lineage.*",
         "attributes.key",
         "attributes.aggregation*",
         "attributes.*_value",
