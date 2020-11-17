@@ -257,7 +257,8 @@ components:
         enum:
           - assembly
           - taxon
-        default: taxon
+          - multi
+        default: multi
       required: true
       description: The result type (data set) to search against
     taxonomyParam:

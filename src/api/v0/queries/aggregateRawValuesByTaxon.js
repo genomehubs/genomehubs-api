@@ -6,8 +6,8 @@ const scales = {
   sqrt: "Math.sqrt(_value)",
 };
 
-const histogramAgg = async (field) => {
-  let typesMap = await attrTypes({});
+const histogramAgg = async (field, result) => {
+  let typesMap = await attrTypes({ result });
   if (!typesMap[field]) {
     return;
   }
@@ -29,8 +29,8 @@ const histogramAgg = async (field) => {
   };
 };
 
-const termsAgg = async (field) => {
-  let typesMap = await attrTypes({});
+const termsAgg = async (field, result) => {
+  let typesMap = await attrTypes({ result });
   if (!typesMap[field]) {
     return;
   }
@@ -44,15 +44,16 @@ const termsAgg = async (field) => {
 export const aggregateRawValuesByTaxon = async ({
   lineage,
   field,
+  result,
   summary,
 }) => {
   let histogram, terms;
-  let typesMap = await attrTypes({});
+  let typesMap = await attrTypes({ result });
   if (summary == "histogram") {
-    histogram = await histogramAgg(field);
+    histogram = await histogramAgg(field, result);
   }
   if (summary == "terms") {
-    terms = await termsAgg(field);
+    terms = await termsAgg(field, result);
   }
   return {
     size: 0,

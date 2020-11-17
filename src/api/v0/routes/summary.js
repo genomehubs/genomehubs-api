@@ -23,6 +23,7 @@ const getSummary = async (params) => {
   fields.filter((field) => Object.keys(typesMap).includes(field));
   const query = await aggregateRawValuesByTaxon({
     lineage: ids[0],
+    result: params.result,
     field: fields[0],
     summary: params.summary[0],
   });

@@ -4,12 +4,17 @@ import { client } from "../functions/connection";
 import { indexName } from "../functions/indexName";
 import { processHits } from "../functions/processHits";
 
-const sayt = async (params) => {
-  let index = indexName({ ...params });
+const sayt = async (params, iter = 0) => {
+  let result = params.result;
+  if (result == "multi") {
+    result = iter == 0 ? "taxon" : "assembly";
+  }
+  let newParams = { ...params, result };
+  let index = indexName(newParams);
   const { body } = await client
     .searchTemplate({
       index,
-      body: { id: `${params.result}_sayt`, params },
+      body: { id: `${result}_sayt`, params: newParams },
       rest_total_hits_as_int: true,
     })
     .catch((err) => {
@@ -17,14 +22,24 @@ const sayt = async (params) => {
     });
   let results = [];
   let status = checkResponse({ body });
-  if (status.hits) {
-    results = processHits({ body, reason: false });
+  status.result = result;
+  if (status.hits && status.hits > 0) {
+    results = processHits({ body, reason: true });
+  } else if (iter < 1 && params.result == "multi") {
+    let updated = await sayt(params, (iter = 1));
+    status = updated.status;
+    results = updated.results;
   }
   return { status, results };
 };
 
-const lookup = async (params) => {
-  let index = indexName({ ...params });
+const lookup = async (params, iter = 0) => {
+  let result = params.result;
+  if (result == "multi") {
+    result = iter == 0 ? "taxon" : "assembly";
+  }
+  let newParams = { ...params, result };
+  let index = indexName(newParams);
   let id = `${params.result}_lookup`;
   if (params.lineage) {
     id = `${id}_by_lineage`;
@@ -32,7 +47,7 @@ const lookup = async (params) => {
   const { body } = await client
     .searchTemplate({
       index,
-      body: { id, params },
+      body: { id, params: newParams },
       rest_total_hits_as_int: true,
     })
     .catch((err) => {
@@ -40,8 +55,13 @@ const lookup = async (params) => {
     });
   let results = [];
   let status = checkResponse({ body });
-  if (status.hits) {
+  status.result = result;
+  if (status.hits && status.hits > 0) {
     results = processHits({ body, reason: true });
+  } else if (iter < 1 && params.result == "multi") {
+    let updated = await sayt(params, (iter = 1));
+    status = updated.status;
+    results = updated.results;
   }
   return { status, results };
 };
@@ -77,7 +97,7 @@ const suggest = async (params) => {
 module.exports = {
   getIdentifiers: async (req, res) => {
     let response = {};
-    // response = await sayt(req.query);
+    response = await sayt(req.query);
     if (
       !response.status ||
       !response.status.success ||
