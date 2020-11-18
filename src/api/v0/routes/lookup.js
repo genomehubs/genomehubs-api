@@ -26,7 +26,7 @@ const sayt = async (params, iter = 0) => {
   if (status.hits && status.hits > 0) {
     results = processHits({ body, reason: true });
   } else if (iter < 1 && params.result == "multi") {
-    let updated = await sayt(params, (iter = 1));
+    let updated = await sayt(params, 1);
     status = updated.status;
     results = updated.results;
   }
@@ -40,7 +40,7 @@ const lookup = async (params, iter = 0) => {
   }
   let newParams = { ...params, result };
   let index = indexName(newParams);
-  let id = `${params.result}_lookup`;
+  let id = `${result}_lookup`;
   if (params.lineage) {
     id = `${id}_by_lineage`;
   }
@@ -59,19 +59,24 @@ const lookup = async (params, iter = 0) => {
   if (status.hits && status.hits > 0) {
     results = processHits({ body, reason: true });
   } else if (iter < 1 && params.result == "multi") {
-    let updated = await sayt(params, (iter = 1));
+    let updated = await lookup(params, 1);
     status = updated.status;
     results = updated.results;
   }
   return { status, results };
 };
 
-const suggest = async (params) => {
-  let index = indexName({ ...params });
+const suggest = async (params, iter = 0) => {
+  let result = params.result;
+  if (result == "multi") {
+    result = iter == 0 ? "taxon" : "assembly";
+  }
+  let newParams = { ...params, result };
+  let index = indexName(newParams);
   const { body } = await client
     .searchTemplate({
       index,
-      body: { id: `${params.result}_suggest`, params },
+      body: { id: `${result}_suggest`, params: newParams },
       rest_total_hits_as_int: true,
     })
     .catch((err) => {
@@ -90,6 +95,11 @@ const suggest = async (params) => {
         }
       });
     });
+  }
+  if (iter < 1 && params.result == "multi" && suggestions.length == 0) {
+    let updated = await suggest(params, 1);
+    status = updated.status;
+    suggestions = updated.suggestions;
   }
   return { status, suggestions };
 };
