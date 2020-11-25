@@ -1,7 +1,7 @@
 import { attrTypes } from "../functions/typesMap";
 
-export const searchByTaxon = ({ searchTerm, fields }) => {
-  let typesMap = await attrTypes({})
+export const searchByTaxon = ({ searchTerm, fields, result="taxon" }) => {
+  let typesMap = await attrTypes({result})
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types)];
   return {

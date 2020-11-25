@@ -1,10 +1,10 @@
+import { attrTypes } from "../functions/attrTypes";
 import { checkDocResponse } from "../functions/checkDocResponse";
 import { client } from "../functions/connection";
-import { formatJson } from "../functions/formatJson";
 import { formatCsv } from "../functions/formatCsv";
+import { formatJson } from "../functions/formatJson";
 import { getRecordsById } from "../functions/getRecordsById";
 import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
-import { attrTypes } from "../functions/attrTypes";
 import { indexName } from "../functions/indexName";
 
 const operations = (str) => {
@@ -73,7 +73,7 @@ const generateQuery = async ({
       }
     } else {
       let parts = term.split(/\s*([\>\<=]+)\s*/);
-      if (typesMap[parts[0]]) {
+      if (typesMap[result][parts[0]]) {
         if (!filters[parts[0]]) {
           filters[parts[0]] = {};
         }

@@ -2,6 +2,7 @@ import { attrTypes } from "../functions/attrTypes";
 
 export const searchByTaxonRawValues = async ({
   searchTerm,
+  result = "taxon",
   ancestral,
   fields,
   rank,
@@ -15,7 +16,8 @@ export const searchByTaxonRawValues = async ({
   offset,
   sortBy,
 }) => {
-  let typesMap = await attrTypes({});
+  console.log(filters);
+  let typesMap = await attrTypes({ result });
   fields.filter((field) => Object.keys(typesMap).includes(field));
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
@@ -212,10 +214,11 @@ export const searchByTaxonRawValues = async ({
         "taxon_id",
         "scientific_name",
         "taxon_rank",
+        "lineage.*",
         "attributes.key",
         "attributes.aggregation*",
         "attributes.*_value",
-        "attributes.values.*",
+        "attributes.*",
       ].concat(
         summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
       ),
