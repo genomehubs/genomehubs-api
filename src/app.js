@@ -1,12 +1,12 @@
-import express from "express";
-import path from "path";
-import compression from "compression";
-import cookieParser from "cookie-parser";
-import swaggerUi from "swagger-ui-express";
-import bodyParser from "body-parser";
-import { config } from "./api/v0/functions/config.js";
 import { OpenApiValidator } from "express-openapi-validator";
 import YAML from "yamljs";
+import bodyParser from "body-parser";
+import compression from "compression";
+import { config } from "./api/v0/functions/config.js";
+import cookieParser from "cookie-parser";
+import express from "express";
+import path from "path";
+import swaggerUi from "swagger-ui-express";
 
 const port = config.port;
 const apiSpec = path.join(__dirname, "api/v0/api.yaml");
@@ -21,6 +21,7 @@ swaggerDocument.servers[0].url = config.url;
 const swaggerOptions = {
   customCss:
     ".swagger-ui .topbar, .information-container, .scheme-container { display: none }",
+  customSiteTitle: `${config.title} API`,
 };
 
 const app = express();

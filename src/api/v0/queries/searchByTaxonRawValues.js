@@ -16,7 +16,6 @@ export const searchByTaxonRawValues = async ({
   offset,
   sortBy,
 }) => {
-  console.log(filters);
   let typesMap = await attrTypes({ result });
   fields.filter((field) => Object.keys(typesMap).includes(field));
   let types = fields.map((field) => typesMap[field]);

@@ -123,6 +123,7 @@ paths:
         - $ref: "#/components/parameters/excludeAncestralParam"
         - $ref: "#/components/parameters/excludeDescendantParam"
         - $ref: "#/components/parameters/excludeDirectParam"
+        - $ref: "#/components/parameters/excludeMissingParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/sizeParam"
         - $ref: "#/components/parameters/offsetParam"
@@ -169,6 +170,7 @@ paths:
         - $ref: "#/components/parameters/excludeAncestralParam"
         - $ref: "#/components/parameters/excludeDescendantParam"
         - $ref: "#/components/parameters/excludeDirectParam"
+        - $ref: "#/components/parameters/excludeMissingParam"
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
@@ -334,6 +336,18 @@ components:
       explode: true
       required: false
       description: "Exclude directly measured values from results [default: false]"
+    excludeMissingParam:
+      name: excludeMissing
+      in: query
+      in: query
+      schema:
+        type: array
+        items:
+          type: string
+      style: form
+      explode: true
+      required: false
+      description: "Exclude missing values from results [default: false]"
     summaryValuesParam:
       name: summaryValues
       in: query

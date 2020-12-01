@@ -46,6 +46,22 @@ export const searchByTaxon = async ({
   let excluded = [];
   Object.keys(exclusions).forEach((source) => {
     exclusions[source].forEach((field) => {
+      if (source == "missing") {
+        delete fields[field];
+        excluded.push({
+          bool: {
+            must_not: {
+              nested: {
+                path: "attributes",
+                query: {
+                  match: { "attributes.key": field },
+                },
+              },
+            },
+          },
+        });
+        return;
+      }
       excluded.push({
         nested: {
           path: "attributes",

@@ -21,7 +21,12 @@ const operations = (str) => {
 };
 
 const parseFields = async ({ result, fields }) => {
-  if (!fields || fields == "all") {
+  if (!fields) {
+    let typesMap = await attrTypes({ result });
+    fields = Object.keys(typesMap).filter(
+      (key) => typesMap[key].display_level == 1
+    );
+  } else if (fields == "all") {
     let typesMap = await attrTypes({ result });
     fields = Object.keys(typesMap);
   } else {
@@ -41,6 +46,7 @@ const generateQuery = async ({
   excludeAncestral,
   excludeDescendant,
   excludeDirect,
+  excludeMissing,
   size = 10,
   offset = 0,
   sortBy,
@@ -58,6 +64,9 @@ const generateQuery = async ({
   }
   if (excludeDirect) {
     exclusions.direct = excludeDirect;
+  }
+  if (excludeMissing) {
+    exclusions.missing = excludeMissing;
   }
   let taxTerm, rank, depth;
   let filters = {};
