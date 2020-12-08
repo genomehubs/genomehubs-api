@@ -1,6 +1,6 @@
 import { attrTypes } from "../functions/attrTypes";
 
-export const searchByTaxon = async ({
+export const searchByNameList = async ({
   searchTerm,
   result,
   ancestral,
@@ -16,34 +16,10 @@ export const searchByTaxon = async ({
   offset,
   sortBy,
 }) => {
-  console.log(searchTerm);
   let typesMap = await attrTypes({ result });
   fields = fields.filter((field) => typesMap[field] !== undefined);
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
-
-  let aggregation_source = [];
-  if (result == "taxon" && !includeEstimates) {
-    aggregation_source = [
-      { match: { "attributes.aggregation_source": "direct" } },
-      { exists: { field: "attributes.aggregation_method" } },
-    ];
-  } else if (result == "taxon") {
-    aggregation_source = [
-      { exists: { field: "attributes.aggregation_source" } },
-      { exists: { field: "attributes.aggregation_method" } },
-    ];
-  }
-  let ranks = [];
-  if (rank) {
-    ranks = [
-      {
-        match: {
-          taxon_rank: rank,
-        },
-      },
-    ];
-  }
   let excluded = [];
   Object.keys(exclusions).forEach((source) => {
     exclusions[source].forEach((field) => {
@@ -84,38 +60,6 @@ export const searchByTaxon = async ({
       });
     });
   });
-  let depths = [];
-  if (depth) {
-    depths = [
-      {
-        range: {
-          "lineage.node_depth": { gte: depth, lte: depth },
-        },
-      },
-    ];
-  }
-  let lineage = [];
-  if (ancestral) {
-    lineage = [
-      {
-        nested: {
-          path: "lineage",
-          query: {
-            bool: {
-              filter: [
-                {
-                  multi_match: {
-                    query: searchTerm,
-                    fields: ["lineage.taxon_id", "lineage.scientific_name"],
-                  },
-                },
-              ].concat(depths),
-            },
-          },
-        },
-      },
-    ];
-  }
   let sort;
   if (sortBy) {
     if (sortBy.by == "scientific_name" || sortBy.by == "taxon_id") {
@@ -165,63 +109,59 @@ export const searchByTaxon = async ({
                             field: `attributes.${typesMap[field].type}_value`,
                           },
                         },
-                      ].concat(aggregation_source),
+                      ],
                     },
                   })),
                 },
               },
             },
           },
-        ]
-          .concat(ranks)
-          .concat(
-            depths.length > 0
-              ? lineage
-              : [
-                  {
-                    bool: {
-                      should: [
-                        {
-                          match: { taxon_id: searchTerm },
-                        },
-                        {
-                          nested: {
-                            path: "taxon_names",
-                            query: {
-                              match: {
-                                "taxon_names.name.raw": searchTerm,
-                              },
-                            },
-                          },
-                        },
-                      ].concat(lineage),
+          {
+            bool: {
+              should: searchTerm.map((term) => ({
+                bool: {
+                  should: [
+                    {
+                      match: { taxon_id: term },
                     },
-                  },
-                ]
-          )
-          .concat(
-            Object.keys(filters).length == 0
-              ? []
-              : Object.keys(filters).map((field) => ({
-                  nested: {
-                    path: "attributes",
-                    query: {
-                      bool: {
-                        filter: [
-                          { match: { "attributes.key": field } },
-                          {
-                            range: {
-                              [`attributes.${typesMap[field].type}_value`]: filters[
-                                field
-                              ],
-                            },
+                    {
+                      nested: {
+                        path: "taxon_names",
+                        query: {
+                          match: {
+                            "taxon_names.name.raw": term,
                           },
-                        ].concat(aggregation_source),
+                        },
                       },
                     },
+                  ],
+                },
+              })),
+            },
+          },
+        ].concat(
+          Object.keys(filters).length == 0
+            ? []
+            : Object.keys(filters).map((field) => ({
+                nested: {
+                  path: "attributes",
+                  query: {
+                    bool: {
+                      filter: [
+                        { match: { "attributes.key": field } },
+                        {
+                          range: {
+                            [`attributes.${typesMap[field].type}_value`]: filters[
+                              field
+                            ],
+                          },
+                        },
+                      ].concat(aggregation_source),
+                    },
                   },
-                }))
-          ),
+                },
+              }))
+        ),
       },
     },
     _source: {

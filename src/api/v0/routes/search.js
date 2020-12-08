@@ -68,30 +68,35 @@ const generateQuery = async ({
   if (excludeMissing) {
     exclusions.missing = excludeMissing;
   }
-  let taxTerm, rank, depth;
+  let taxTerm, rank, depth, multiTerm;
   let filters = {};
-  query.split(/\s*AND\s*/).forEach((term) => {
-    let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
-    if (taxQuery) {
-      if (taxQuery[1] == "rank") {
-        rank = taxQuery[2];
-      } else if (taxQuery[1] == "depth") {
-        depth = taxQuery[2];
-      } else {
-        taxTerm = taxQuery;
-      }
-    } else {
-      let parts = term.split(/\s*([\>\<=]+)\s*/);
-      if (typesMap[result][parts[0]]) {
-        if (!filters[parts[0]]) {
-          filters[parts[0]] = {};
+  if (query.match(/\n/)) {
+    multiTerm = query.split(/\n/);
+  } else {
+    query.split(/\s*AND\s*/).forEach((term) => {
+      let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
+      if (taxQuery) {
+        if (taxQuery[1] == "rank") {
+          rank = taxQuery[2];
+        } else if (taxQuery[1] == "depth") {
+          depth = taxQuery[2];
+        } else {
+          taxTerm = taxQuery;
         }
-        operations(parts[1]).forEach((operator) => {
-          filters[parts[0]][operator] = parts[2];
-        });
+      } else {
+        let parts = term.split(/\s*([\>\<=]+)\s*/);
+        if (typesMap[result][parts[0]]) {
+          if (!filters[parts[0]]) {
+            filters[parts[0]] = {};
+          }
+          operations(parts[1]).forEach((operator) => {
+            filters[parts[0]][operator] = parts[2];
+          });
+        }
       }
-    }
-  });
+    });
+  }
+
   let sort;
   if (sortBy) {
     sort = {};
@@ -167,6 +172,26 @@ const generateQuery = async ({
         },
       };
     }
+  } else if (multiTerm) {
+    return {
+      func: getRecordsByTaxon,
+      params: {
+        multiTerm,
+        result,
+        fields,
+        ancestral: false,
+        includeEstimates,
+        includeRawValues,
+        searchRawValues,
+        filters,
+        exclusions,
+        rank,
+        summaryValues,
+        size,
+        offset,
+        sortBy,
+      },
+    };
   } else {
     return {
       func: getRecordsByTaxon,
