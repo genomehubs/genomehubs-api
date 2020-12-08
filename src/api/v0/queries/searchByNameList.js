@@ -129,7 +129,7 @@ export const searchByNameList = async ({
                         path: "taxon_names",
                         query: {
                           match: {
-                            "taxon_names.name.raw": term,
+                            "taxon_names.name": term,
                           },
                         },
                       },
