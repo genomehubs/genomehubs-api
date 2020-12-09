@@ -16,7 +16,6 @@ export const searchByTaxon = async ({
   offset,
   sortBy,
 }) => {
-  console.log(searchTerm);
   let typesMap = await attrTypes({ result });
   fields = fields.filter((field) => typesMap[field] !== undefined);
   let types = fields.map((field) => typesMap[field]);
