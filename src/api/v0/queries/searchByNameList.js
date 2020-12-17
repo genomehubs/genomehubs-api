@@ -118,25 +118,48 @@ export const searchByNameList = async ({
           },
           {
             bool: {
-              should: searchTerm.map((term) => ({
-                bool: {
-                  should: [
-                    {
-                      match: { taxon_id: term },
+              should: searchTerm.map((term) => {
+                if (term.match(/\*/)) {
+                  return {
+                    bool: {
+                      should: [
+                        {
+                          wildcard: { taxon_id: term },
+                        },
+                        {
+                          nested: {
+                            path: "taxon_names",
+                            query: {
+                              wildcard: {
+                                "taxon_names.name": term,
+                              },
+                            },
+                          },
+                        },
+                      ],
                     },
-                    {
-                      nested: {
-                        path: "taxon_names",
-                        query: {
-                          match: {
-                            "taxon_names.name": term,
+                  };
+                }
+                return {
+                  bool: {
+                    should: [
+                      {
+                        match: { taxon_id: term },
+                      },
+                      {
+                        nested: {
+                          path: "taxon_names",
+                          query: {
+                            match: {
+                              "taxon_names.name": term,
+                            },
                           },
                         },
                       },
-                    },
-                  ],
-                },
-              })),
+                    ],
+                  },
+                };
+              }),
             },
           },
         ].concat(

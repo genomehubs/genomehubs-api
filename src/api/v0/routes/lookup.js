@@ -1,6 +1,6 @@
 import { checkResponse } from "../functions/checkResponse";
-import { formatJson } from "../functions/formatJson";
 import { client } from "../functions/connection";
+import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
 import { processHits } from "../functions/processHits";
 
@@ -10,6 +10,16 @@ const sayt = async (params, iter = 0) => {
     result = iter == 0 ? "taxon" : "assembly";
   }
   let newParams = { ...params, result };
+  if (result == "taxon" && params.searchTerm.match(/\s/)) {
+    if (params.searchTerm.match(/\*/)) {
+      newParams.wildcardTerm = params.searchTerm;
+    } else {
+      let parts = params.searchTerm.split(/\s+/);
+      if (parts.length == 2) {
+        newParams.wildcardTerm = `${parts.join(" * ")}*`;
+      }
+    }
+  }
   let index = indexName(newParams);
   const { body } = await client
     .searchTemplate({

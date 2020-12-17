@@ -70,7 +70,7 @@ const generateQuery = async ({
   }
   let taxTerm, rank, depth, multiTerm;
   let filters = {};
-  if (query.match(/\n/)) {
+  if (query.match(/[\n\*]/)) {
     multiTerm = query.split(/\n/);
   } else {
     query.split(/\s*AND\s*/).forEach((term) => {
