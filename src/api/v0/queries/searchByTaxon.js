@@ -188,7 +188,7 @@ export const searchByTaxon = async ({
                             path: "taxon_names",
                             query: {
                               match: {
-                                "taxon_names.name.raw": searchTerm,
+                                "taxon_names.name": searchTerm,
                               },
                             },
                           },
