@@ -35,26 +35,12 @@ const parseFields = async ({ result, fields }) => {
   return fields;
 };
 
-const generateQuery = async ({
-  query,
-  result,
-  fields,
-  includeEstimates,
-  includeRawValues,
-  searchRawValues,
-  summaryValues,
+const setExclusions = ({
   excludeAncestral,
   excludeDescendant,
   excludeDirect,
   excludeMissing,
-  size = 10,
-  offset = 0,
-  sortBy,
-  sortOrder,
-  sortMode,
 }) => {
-  let typesMap = await attrTypes({ ...query });
-  fields = await parseFields({ result, fields });
   let exclusions = {};
   if (excludeAncestral) {
     exclusions.ancestor = excludeAncestral;
@@ -68,7 +54,40 @@ const generateQuery = async ({
   if (excludeMissing) {
     exclusions.missing = excludeMissing;
   }
-  let taxTerm, rank, depth, multiTerm;
+  return exclusions;
+};
+
+const setSortBy = ({ sortBy, sortOrder, sortMode }) => {
+  if (sortBy) {
+    let sort = {};
+    sort.by = sortBy;
+    if (sortOrder) {
+      sort.order = sortOrder;
+    }
+    if (sortMode) {
+      sort.mode = sortMode;
+    }
+    sortBy = sort;
+  }
+  return sortBy;
+};
+
+const generateQuery = async ({
+  query,
+  result,
+  fields,
+  includeEstimates,
+  includeRawValues,
+  searchRawValues,
+  summaryValues,
+  exclusions,
+  size = 10,
+  offset = 0,
+  sortBy,
+}) => {
+  let typesMap = await attrTypes({ ...query });
+  fields = await parseFields({ result, fields });
+  let taxTerm, rank, depth, multiTerm, idTerm;
   let filters = {};
   if (query.match(/[\n\*]/)) {
     multiTerm = query.split(/\n/);
@@ -83,7 +102,7 @@ const generateQuery = async ({
         } else {
           taxTerm = taxQuery;
         }
-      } else {
+      } else if (term.match(/[\>\<=]/)) {
         let parts = term.split(/\s*([\>\<=]+)\s*/);
         if (typesMap[result][parts[0]]) {
           if (!filters[parts[0]]) {
@@ -93,82 +112,55 @@ const generateQuery = async ({
             filters[parts[0]][operator] = parts[2];
           });
         }
+      } else {
+        idTerm = term;
       }
     });
   }
 
-  let sort;
-  if (sortBy) {
-    sort = {};
-    sort.by = sortBy;
-    if (sortOrder) {
-      sort.order = sortOrder;
-    }
-    if (sortMode) {
-      sort.mode = sortMode;
-    }
-    sortBy = sort;
-  }
+  let params = {
+    idTerm,
+    result,
+    fields,
+    depth,
+    ancestral: false,
+    includeEstimates,
+    includeRawValues,
+    searchRawValues,
+    filters,
+    exclusions,
+    rank,
+    summaryValues,
+    size,
+    offset,
+    sortBy,
+  };
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
       return {
         func: getRecordsByTaxon,
         params: {
+          ...params,
           searchTerm: taxTerm[2],
-          result,
-          fields,
-          ancestral: false,
           includeEstimates: true,
-          includeRawValues,
-          searchRawValues,
-          filters,
-          exclusions,
-          rank,
-          summaryValues,
-          size,
-          offset,
-          sortBy,
         },
       };
     } else if (taxTerm[1] == "name") {
       return {
         func: getRecordsByTaxon,
         params: {
+          ...params,
           searchTerm: taxTerm[2],
-          result,
-          fields,
-          ancestral: false,
           includeEstimates: true,
-          includeRawValues,
-          searchRawValues,
-          filters,
-          exclusions,
-          rank,
-          summaryValues,
-          size,
-          offset,
-          sortBy,
         },
       };
     } else if (taxTerm[1] == "tree") {
       return {
         func: getRecordsByTaxon,
         params: {
+          ...params,
           searchTerm: taxTerm[2],
-          result,
           ancestral: true,
-          fields,
-          includeEstimates,
-          includeRawValues,
-          searchRawValues,
-          rank,
-          depth,
-          filters,
-          exclusions,
-          summaryValues,
-          size,
-          offset,
-          sortBy,
         },
       };
     }
@@ -176,41 +168,17 @@ const generateQuery = async ({
     return {
       func: getRecordsByTaxon,
       params: {
+        ...params,
         multiTerm,
-        result,
-        fields,
-        ancestral: false,
-        includeEstimates,
-        includeRawValues,
-        searchRawValues,
-        filters,
-        exclusions,
-        rank,
-        summaryValues,
-        size,
-        offset,
-        sortBy,
       },
     };
   } else {
     return {
       func: getRecordsByTaxon,
       params: {
+        ...params,
         searchTerm: false,
-        result,
         ancestral: true,
-        fields,
-        includeEstimates,
-        includeRawValues,
-        searchRawValues,
-        rank,
-        depth,
-        filters,
-        exclusions,
-        summaryValues,
-        size,
-        offset,
-        sortBy,
       },
     };
   }
@@ -225,7 +193,9 @@ export const getResults = async (params) => {
 module.exports = {
   getSearchResults: async (req, res) => {
     let response = {};
-    response = await getResults(req.query);
+    let exclusions = setExclusions(req.query);
+    let sortBy = setSortBy(req.query);
+    response = await getResults({ ...req.query, exclusions, sortBy });
     return res.format({
       json: () => {
         if (req.query.filename) {

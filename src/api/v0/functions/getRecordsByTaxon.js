@@ -1,16 +1,13 @@
 import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
 import { processHits } from "./processHits";
-import { searchByNameList } from "../queries/searchByNameList";
-import { searchByParams } from "../queries/searchByParams";
-import { searchByParamsRawValues } from "../queries/searchByParamsRawValues";
 import { searchByTaxon } from "../queries/searchByTaxon";
-import { searchByTaxonRawValues } from "../queries/searchByTaxonRawValues";
 
 export const getRecordsByTaxon = async ({
   index,
   multiTerm,
   searchTerm,
+  idTerm,
   result,
   ancestral,
   fields,
@@ -26,22 +23,17 @@ export const getRecordsByTaxon = async ({
   offset,
   sortBy,
 }) => {
-  let searchBy = searchRawValues ? searchByTaxonRawValues : searchByTaxon;
-  if (!searchTerm) {
-    if (multiTerm) {
-      searchBy = searchByNameList;
-      searchTerm = multiTerm;
-    } else {
-      searchBy = searchRawValues ? searchByParamsRawValues : searchByParams;
-    }
-  }
+  let searchBy = searchByTaxon;
   const query = await searchBy({
     searchTerm,
+    multiTerm,
+    idTerm,
     result,
     ancestral,
     fields,
     includeEstimates,
     includeRawValues,
+    searchRawValues,
     rank,
     depth,
     filters,

@@ -32,6 +32,11 @@ export const getRecordsById = async ({
       let obj = { id: doc._id, index: doc._index, found: doc.found };
       if (doc.found && doc._source) {
         obj.record = processDoc({ doc: doc._source });
+        if (result == "taxon") {
+          obj.record.record_id = obj.record.taxon_id;
+        } else if (result == "assembly") {
+          obj.record.record_id = obj.record.assembly_id;
+        }
       }
       records.push(obj);
     });

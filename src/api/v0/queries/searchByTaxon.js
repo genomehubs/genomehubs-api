@@ -1,7 +1,18 @@
 import { attrTypes } from "../functions/attrTypes";
+import { excludeSources } from "./queryFragments/excludeSources";
+import { filterAssemblies } from "./queryFragments/filterAssemblies";
+import { filterAttributes } from "./queryFragments/filterAttributes";
+import { filterTaxa } from "./queryFragments/filterTaxa";
+import { matchAttributes } from "./queryFragments/matchAttributes";
+import { restrictToRank } from "./queryFragments/restrictToRank";
+import { setAggregationSource } from "./queryFragments/setAggregationSource";
+import { setIncludes } from "./queryFragments/setIncludes";
+import { setSortOrder } from "./queryFragments/setSortOrder";
 
 export const searchByTaxon = async ({
   searchTerm,
+  idTerm,
+  multiTerm,
   result,
   ancestral,
   fields,
@@ -9,6 +20,7 @@ export const searchByTaxon = async ({
   depth,
   includeEstimates,
   includeRawValues,
+  searchRawValues,
   filters,
   exclusions,
   summaryValues,
@@ -21,223 +33,42 @@ export const searchByTaxon = async ({
   let types = fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
 
-  let aggregation_source = [];
-  if (result == "taxon" && !includeEstimates) {
-    aggregation_source = [
-      { match: { "attributes.aggregation_source": "direct" } },
-      { exists: { field: "attributes.aggregation_method" } },
-    ];
-  } else if (result == "taxon") {
-    aggregation_source = [
-      { exists: { field: "attributes.aggregation_source" } },
-      { exists: { field: "attributes.aggregation_method" } },
-    ];
+  let aggregation_source = setAggregationSource(result, includeEstimates);
+  let excludedSources = excludeSources(exclusions, fields);
+  let attributesExist = matchAttributes(fields, typesMap, aggregation_source);
+  let attributeValues = filterAttributes(
+    filters,
+    typesMap,
+    aggregation_source,
+    searchRawValues
+  );
+  let taxonFilter = filterTaxa(depth, searchTerm, multiTerm, ancestral);
+  let assemblyFilter = [];
+  if (result == "assembly") {
+    assemblyFilter = filterAssemblies(searchTerm, multiTerm, idTerm);
   }
-  let ranks = [];
-  if (rank) {
-    ranks = [
-      {
-        match: {
-          taxon_rank: rank,
-        },
-      },
-    ];
-  }
-  let excluded = [];
-  Object.keys(exclusions).forEach((source) => {
-    exclusions[source].forEach((field) => {
-      if (source == "missing") {
-        delete fields[field];
-        excluded.push({
-          bool: {
-            must_not: {
-              nested: {
-                path: "attributes",
-                query: {
-                  match: { "attributes.key": field },
-                },
-              },
-            },
-          },
-        });
-        return;
-      }
-      excluded.push({
-        nested: {
-          path: "attributes",
-          query: {
-            bool: {
-              filter: [
-                {
-                  match: { "attributes.key": field },
-                },
-                {
-                  match: {
-                    "attributes.aggregation_source": source,
-                  },
-                },
-              ],
-            },
-          },
-        },
-      });
-    });
-  });
-  let depths = [];
-  if (depth) {
-    depths = [
-      {
-        range: {
-          "lineage.node_depth": { gte: depth, lte: depth },
-        },
-      },
-    ];
-  }
-  let lineage = [];
-  if (ancestral) {
-    lineage = [
-      {
-        nested: {
-          path: "lineage",
-          query: {
-            bool: {
-              filter: [
-                {
-                  multi_match: {
-                    query: searchTerm,
-                    fields: ["lineage.taxon_id", "lineage.scientific_name"],
-                  },
-                },
-              ].concat(depths),
-            },
-          },
-        },
-      },
-    ];
-  }
-  let sort;
-  if (sortBy) {
-    if (sortBy.by == "scientific_name" || sortBy.by == "taxon_id") {
-      sort = [
-        {
-          [sortBy.by]: {
-            mode: sortBy.mode || "max",
-            order: sortBy.order || "asc",
-          },
-        },
-      ];
-    } else {
-      sort = [
-        {
-          [`attributes.${typesMap[sortBy.by].type}_value`]: {
-            mode: sortBy.mode || "max",
-            order: sortBy.order || "asc",
-            nested: {
-              path: "attributes",
-              filter: {
-                term: { "attributes.key": sortBy.by },
-              },
-            },
-          },
-        },
-      ];
-    }
-  }
+  let rankRestriction = restrictToRank(rank);
+  let include = setIncludes(result, summaryValues);
+  let exclude = includeRawValues ? [] : ["attributes.values*"];
+  let sort = setSortOrder(sortBy, typesMap);
+
   return {
     size,
     from: offset,
     query: {
       bool: {
-        must_not: excluded,
-        filter: [
-          {
-            nested: {
-              path: "attributes",
-              query: {
-                bool: {
-                  should: fields.map((field) => ({
-                    bool: {
-                      filter: [
-                        { match: { "attributes.key": field } },
-                        {
-                          exists: {
-                            field: `attributes.${typesMap[field].type}_value`,
-                          },
-                        },
-                      ].concat(aggregation_source),
-                    },
-                  })),
-                },
-              },
-            },
-          },
-        ]
-          .concat(ranks)
-          .concat(
-            depths.length > 0
-              ? lineage
-              : [
-                  {
-                    bool: {
-                      should: [
-                        {
-                          match: { taxon_id: searchTerm },
-                        },
-                        {
-                          nested: {
-                            path: "taxon_names",
-                            query: {
-                              match: {
-                                "taxon_names.name": searchTerm,
-                              },
-                            },
-                          },
-                        },
-                      ].concat(lineage),
-                    },
-                  },
-                ]
-          )
-          .concat(
-            Object.keys(filters).length == 0
-              ? []
-              : Object.keys(filters).map((field) => ({
-                  nested: {
-                    path: "attributes",
-                    query: {
-                      bool: {
-                        filter: [
-                          { match: { "attributes.key": field } },
-                          {
-                            range: {
-                              [`attributes.${typesMap[field].type}_value`]: filters[
-                                field
-                              ],
-                            },
-                          },
-                        ].concat(aggregation_source),
-                      },
-                    },
-                  },
-                }))
-          ),
+        must_not: excludedSources,
+        filter: attributesExist
+          .concat(attributeValues)
+          .concat(taxonFilter)
+          .concat(rankRestriction)
+          .concat(assemblyFilter),
       },
     },
     _source: {
-      include: [
-        "taxon_id",
-        "scientific_name",
-        "taxon_rank",
-        "lineage.*",
-        "attributes.key",
-        "attributes.aggregation*",
-        "attributes.*_value",
-        "attributes.*",
-      ].concat(
-        summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
-      ),
-      exclude: [].concat(includeRawValues ? [] : ["attributes.values*"]),
+      include,
+      exclude,
     },
-    sort: [].concat(sort ? sort : []),
+    sort,
   };
 };
