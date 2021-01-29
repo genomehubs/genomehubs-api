@@ -3,6 +3,25 @@ import { client } from "./connection";
 import { indexName } from "./indexName";
 import { processDoc } from "./processDoc";
 
+const convertIdsToDocIds = (recordId, result) => {
+  /**
+   * Converts a set of entry IDs into document IDs
+   * @param {string|Array} recordId - One or more record IDs.
+   * @param {string} result - The index type.
+   */
+  let ids = Array.isArray(recordId) ? recordId : [recordId];
+  if (result == "taxon") {
+    ids = ids.map((id) => (id.match(/^taxon_id-/) ? id : `taxon_id-${id}`));
+  } else if (result == "assembly") {
+    ids = ids.map((id) => (id.match(/^assembly-/) ? id : `assembly-${id}`));
+  } else if (result == "analysis") {
+    ids = ids.map((id) => (id.match(/^analysis-/) ? id : `analysis-${id}`));
+  } else if (result == "file") {
+    ids = ids.map((id) => (id.match(/^file-/) ? id : `file-${id}`));
+  }
+  return ids;
+};
+
 export const getRecordsById = async ({
   recordId,
   result,
@@ -10,13 +29,17 @@ export const getRecordsById = async ({
   hub,
   release,
 }) => {
+  /**
+   * Get specified records from an index by entry or document ID.
+   * @param {Object} recordInfo Information about the record.
+   * @param {string|Array} recordInfo.recordId - One or more record IDs.
+   * @param {string} recordInfo.result - The index type.
+   * @param {string} recordInfo.taxonomy - Backbone taxonomy name.
+   * @param {string} recordInfo.hub - Hub name.
+   * @param {string} recordInfo.release - Hub release version.
+   */
   let index = indexName({ result, taxonomy, hub, release });
-  let ids = Array.isArray(recordId) ? recordId : [recordId];
-  if (result == "taxon") {
-    ids = ids.map((id) => (id.match(/^taxon_id-/) ? id : `taxon_id-${id}`));
-  } else if (result == "assembly") {
-    ids = ids.map((id) => (id.match(/^assembly-/) ? id : `assembly-${id}`));
-  }
+  let ids = convertIdsToDocIds(recordId, result);
   const { body } = await client
     .mget({
       index,
@@ -32,11 +55,7 @@ export const getRecordsById = async ({
       let obj = { id: doc._id, index: doc._index, found: doc.found };
       if (doc.found && doc._source) {
         obj.record = processDoc({ doc: doc._source });
-        if (result == "taxon") {
-          obj.record.record_id = obj.record.taxon_id;
-        } else if (result == "assembly") {
-          obj.record.record_id = obj.record.assembly_id;
-        }
+        obj.record.record_id = obj.record[`${result}_id`];
       }
       records.push(obj);
     });

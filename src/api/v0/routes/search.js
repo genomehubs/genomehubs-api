@@ -14,25 +14,28 @@ const operations = (str) => {
     "<": ["lt"],
     "<=": ["lte"],
     "=": ["gte", "lte"],
-    "==": ["gte", "lte"],
   };
   let operator = translate[str];
-  return operator;
+  return operator || [];
 };
 
 const parseFields = async ({ result, fields }) => {
-  if (!fields) {
-    let typesMap = await attrTypes({ result });
-    fields = Object.keys(typesMap).filter(
-      (key) => typesMap[key].display_level == 1
-    );
-  } else if (fields == "all") {
-    let typesMap = await attrTypes({ result });
-    fields = Object.keys(typesMap);
-  } else {
-    fields = fields.split(/\s*,\s*/);
+  try {
+    if (!fields) {
+      let typesMap = await attrTypes({ result });
+      fields = Object.keys(typesMap).filter(
+        (key) => typesMap[key].display_level == 1
+      );
+    } else if (fields == "all") {
+      let typesMap = await attrTypes({ result });
+      fields = Object.keys(typesMap);
+    } else {
+      fields = fields.split(/\s*,\s*/);
+    }
+    return fields;
+  } catch (error) {
+    return [];
   }
-  return fields;
 };
 
 const setExclusions = ({
@@ -72,6 +75,23 @@ const setSortBy = ({ sortBy, sortOrder, sortMode }) => {
   return sortBy;
 };
 
+const addCondition = (conditions, parts) => {
+  if (!conditions) {
+    conditions = {};
+  }
+  if (!conditions[parts[0]]) {
+    conditions[parts[0]] = {};
+  }
+  if (parts[1] == "==") {
+    conditions[parts[0]] = parts[2];
+  } else {
+    operations(parts[1]).forEach((operator) => {
+      conditions[parts[0]][operator] = parts[2];
+    });
+  }
+  return conditions;
+};
+
 const generateQuery = async ({
   query,
   result,
@@ -89,6 +109,7 @@ const generateQuery = async ({
   fields = await parseFields({ result, fields });
   let taxTerm, rank, depth, multiTerm, idTerm;
   let filters = {};
+  let properties = {};
   if (query.match(/[\n\*]/)) {
     multiTerm = query.split(/\n/);
   } else {
@@ -104,13 +125,10 @@ const generateQuery = async ({
         }
       } else if (term.match(/[\>\<=]/)) {
         let parts = term.split(/\s*([\>\<=]+)\s*/);
-        if (typesMap[result][parts[0]]) {
-          if (!filters[parts[0]]) {
-            filters[parts[0]] = {};
-          }
-          operations(parts[1]).forEach((operator) => {
-            filters[parts[0]][operator] = parts[2];
-          });
+        if (typesMap[result]) {
+          filters = addCondition(filters, parts);
+        } else {
+          properties = addCondition(properties, parts);
         }
       } else {
         idTerm = term;
@@ -128,6 +146,7 @@ const generateQuery = async ({
     includeRawValues,
     searchRawValues,
     filters,
+    properties,
     exclusions,
     rank,
     summaryValues,

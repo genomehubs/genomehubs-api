@@ -217,6 +217,37 @@ paths:
                     $ref: "#/components/schemas/Summaries"
         "400":
           description: "Invalid query"
+  /download:
+    get:
+      tags:
+        - "GoaT API"
+      summary: "Download file"
+      description: "Returns indexed files"
+      operationId: "getFile"
+      x-eov-operation-handler: "api/v0/routes/download"
+      parameters:
+        - $ref: "#/components/parameters/recordIdParam"
+        - $ref: "#/components/parameters/filenameParam"
+        - $ref: "#/components/parameters/previewParam"
+        - $ref: "#/components/parameters/streamFileParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            image/*:
+              schema:
+                format: binary
+            text/*:
+              schema:
+                type: string
+            application/*:
+              schema:
+                format: binary
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: "Invalid query"
 components:
   parameters:
     searchTermParam:
@@ -257,7 +288,9 @@ components:
       schema:
         type: string
         enum:
+          - analysis
           - assembly
+          - file
           - taxon
           - multi
         default: multi
@@ -538,6 +571,18 @@ components:
       description: "Tag to place after matching portion of query term [default: \\<\/em\\>]"
       style: form
       explode: false
+    previewParam:
+      name: preview
+      in: query
+      schema:
+        type: boolean
+      description: "Return a file preview [default: false]"
+    streamFileParam:
+      name: streamFile
+      in: query
+      schema:
+        type: boolean
+      description: "Stream file rather than download [default: false]"
   schemas:
     Status:
       type: object

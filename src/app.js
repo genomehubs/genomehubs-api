@@ -52,10 +52,12 @@ new OpenApiValidator({
   .install(app)
   .then(() => {
     app.use((err, req, res, next) => {
-      res.status(err.status || 500).json({
+      let error = {
         message: err.message,
         errors: err.errors,
-      });
+      };
+      res.status(err.status || 500).json(error);
+      console.log(error);
     });
 
     if (config.https) {

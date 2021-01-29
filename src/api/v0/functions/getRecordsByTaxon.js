@@ -3,49 +3,12 @@ import { client } from "./connection";
 import { processHits } from "./processHits";
 import { searchByTaxon } from "../queries/searchByTaxon";
 
-export const getRecordsByTaxon = async ({
-  index,
-  multiTerm,
-  searchTerm,
-  idTerm,
-  result,
-  ancestral,
-  fields,
-  includeEstimates,
-  includeRawValues,
-  searchRawValues,
-  rank,
-  depth,
-  filters,
-  exclusions,
-  summaryValues,
-  size,
-  offset,
-  sortBy,
-}) => {
+export const getRecordsByTaxon = async (props) => {
   let searchBy = searchByTaxon;
-  const query = await searchBy({
-    searchTerm,
-    multiTerm,
-    idTerm,
-    result,
-    ancestral,
-    fields,
-    includeEstimates,
-    includeRawValues,
-    searchRawValues,
-    rank,
-    depth,
-    filters,
-    exclusions,
-    summaryValues,
-    size,
-    offset,
-    sortBy,
-  });
+  const query = await searchBy(props);
   const { body } = await client
     .search({
-      index,
+      index: props.index,
       body: query,
       rest_total_hits_as_int: true,
     })
@@ -55,8 +18,8 @@ export const getRecordsByTaxon = async ({
     });
   let results = [];
   let status = checkResponse({ body });
-  status.size = size;
-  status.offset = offset;
+  status.size = props.size;
+  status.offset = props.offset;
   if (status.hits) {
     results = processHits({ body, inner_hits: true });
   }

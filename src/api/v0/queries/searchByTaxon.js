@@ -2,6 +2,8 @@ import { attrTypes } from "../functions/attrTypes";
 import { excludeSources } from "./queryFragments/excludeSources";
 import { filterAssemblies } from "./queryFragments/filterAssemblies";
 import { filterAttributes } from "./queryFragments/filterAttributes";
+import { filterProperties } from "./queryFragments/filterProperties";
+import { filterTaxId } from "./queryFragments/filterTaxId";
 import { filterTaxa } from "./queryFragments/filterTaxa";
 import { matchAttributes } from "./queryFragments/matchAttributes";
 import { restrictToRank } from "./queryFragments/restrictToRank";
@@ -22,6 +24,7 @@ export const searchByTaxon = async ({
   includeRawValues,
   searchRawValues,
   filters,
+  properties,
   exclusions,
   summaryValues,
   size,
@@ -42,10 +45,16 @@ export const searchByTaxon = async ({
     aggregation_source,
     searchRawValues
   );
-  let taxonFilter = filterTaxa(depth, searchTerm, multiTerm, ancestral);
+  let propertyValues = filterProperties(properties);
   let assemblyFilter = [];
-  if (result == "assembly") {
-    assemblyFilter = filterAssemblies(searchTerm, multiTerm, idTerm);
+  let taxonFilter = [];
+  if (result == "taxon" || result == "assembly") {
+    if (result == "assembly") {
+      assemblyFilter = filterAssemblies(searchTerm, multiTerm, idTerm);
+    }
+    taxonFilter = filterTaxa(depth, searchTerm, multiTerm, ancestral);
+  } else {
+    taxonFilter = filterTaxId(searchTerm);
   }
   let rankRestriction = restrictToRank(rank);
   let include = setIncludes(result, summaryValues);
@@ -60,6 +69,7 @@ export const searchByTaxon = async ({
         must_not: excludedSources,
         filter: attributesExist
           .concat(attributeValues)
+          .concat(propertyValues)
           .concat(taxonFilter)
           .concat(rankRestriction)
           .concat(assemblyFilter),

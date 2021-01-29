@@ -1,4 +1,5 @@
 export const matchAttributes = (fields, typesMap, aggregation_source) => {
+  if (fields.length == 0) return [];
   return [
     {
       nested: {

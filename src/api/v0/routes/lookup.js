@@ -4,10 +4,37 @@ import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
 import { processHits } from "../functions/processHits";
 
+const indices = {
+  taxon: "taxon_id",
+  assembly: "assembly",
+  analysis: "analysis",
+  file: "file",
+};
+
+const setResult = (iter) => {
+  /**
+   * Set result index for multi queries.
+   * @param {Number} iter - Iterator to keep track of recursive function calls.
+   */
+  let keys = Object.keys(indices);
+  if (iter < keys.length) {
+    return keys[iter];
+  }
+  return false;
+};
+
 const sayt = async (params, iter = 0) => {
+  /**
+   * Lookup using search-as-you-type fields.
+   * @param {Object} params - Query parameters.
+   * @param {string} params.result - The index type.
+   * @param {string} params.searchTerm - The search term to look up.
+   * @param {Number} iter - Iterator to keep track of recursive function calls.
+   */
   let result = params.result;
   if (result == "multi") {
-    result = iter == 0 ? "taxon" : "assembly";
+    result = setResult(iter);
+    if (!result) return { status: undefined, results: [] };
   }
   let newParams = { ...params, result };
   if (result == "taxon" && params.searchTerm.match(/\s/)) {
@@ -35,8 +62,9 @@ const sayt = async (params, iter = 0) => {
   status.result = result;
   if (status.hits && status.hits > 0) {
     results = processHits({ body, reason: true });
-  } else if (iter < 1 && params.result == "multi") {
-    let updated = await sayt(params, 1);
+  } else if (params.result == "multi") {
+    iter++;
+    let updated = await sayt(params, iter);
     status = updated.status;
     results = updated.results;
   }
@@ -44,9 +72,17 @@ const sayt = async (params, iter = 0) => {
 };
 
 const lookup = async (params, iter = 0) => {
+  /**
+   * Lookup using search-as-you-type fields.
+   * @param {Object} params - Query parameters.
+   * @param {string} params.result - The index type.
+   * @param {string} params.searchTerm - The search term to look up.
+   * @param {Number} iter - Iterator to keep track of recursive function calls.
+   */
   let result = params.result;
   if (result == "multi") {
-    result = iter == 0 ? "taxon" : "assembly";
+    result = setResult(iter);
+    if (!result) return { status: undefined, results: [] };
   }
   let newParams = { ...params, result };
   let index = indexName(newParams);
@@ -68,8 +104,9 @@ const lookup = async (params, iter = 0) => {
   status.result = result;
   if (status.hits && status.hits > 0) {
     results = processHits({ body, reason: true });
-  } else if (iter < 1 && params.result == "multi") {
-    let updated = await lookup(params, 1);
+  } else if (params.result == "multi") {
+    iter++;
+    let updated = await lookup(params, iter);
     status = updated.status;
     results = updated.results;
   }
@@ -79,7 +116,8 @@ const lookup = async (params, iter = 0) => {
 const suggest = async (params, iter = 0) => {
   let result = params.result;
   if (result == "multi") {
-    result = iter == 0 ? "taxon" : "assembly";
+    result = setResult(iter);
+    if (!result) return { status: undefined, results: [] };
   }
   let newParams = { ...params, result };
   let index = indexName(newParams);
@@ -106,8 +144,9 @@ const suggest = async (params, iter = 0) => {
       });
     });
   }
-  if (iter < 1 && params.result == "multi" && suggestions.length == 0) {
-    let updated = await suggest(params, 1);
+  if (params.result == "multi" && suggestions.length == 0) {
+    iter++;
+    let updated = await suggest(params, iter);
     status = updated.status;
     suggestions = updated.suggestions;
   }
