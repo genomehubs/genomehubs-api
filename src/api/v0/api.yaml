@@ -248,6 +248,8 @@ paths:
                 type: string
         "400":
           description: "Invalid query"
+        "404":
+          description: "Not Found"
 components:
   parameters:
     searchTermParam:

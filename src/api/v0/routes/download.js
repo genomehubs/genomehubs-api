@@ -29,7 +29,9 @@ const locateFile = async (params) => {
       let fileStream = createReadStream(file);
       return { file, fileStream, fileName, mime: record.mime_type };
     } catch (error) {
-      if (record.url) {
+      if (params.streamFile) {
+        return false;
+      } else if (record.url) {
         return { redirect: record.url };
       }
     }
@@ -41,7 +43,8 @@ module.exports = {
   getFile: async (req, res) => {
     let response = {};
     response = await locateFile(req.query);
-    if (response) {
+    if (response && response != {}) {
+      console.log(response);
       if (response.redirect) {
         return res.redirect(response.redirect);
       }
@@ -51,6 +54,6 @@ module.exports = {
       }
       return response.fileStream.pipe(res);
     }
-    return res.status(200).send({ status: "error" });
+    return res.status(404).send({ status: "error" });
   },
 };
