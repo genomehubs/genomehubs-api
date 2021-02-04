@@ -9,12 +9,15 @@ export const indexName = ({ result, taxonomy, hub, release }) => {
    * @param {string} indexInfo.hub - Hub name.
    * @param {string} indexInfo.release - Hub release version.
    */
+  let parts = [result];
+  if (taxonomy === undefined) {
+    taxonomy = config.taxonomy;
+  }
+  if (taxonomy) parts.push(taxonomy);
   if (!hub) hub = config.hub;
-  if (!taxonomy) taxonomy = config.taxonomy;
+  parts.push(hub);
   if (!release || release == "latest") release = config.release;
+  parts.push(release);
   let sep = config.separator;
-  // if (result == "taxon" || result == "assembly") {
-  return `${result}${sep}${taxonomy}${sep}${hub}${sep}${release}`;
-  // }
-  // return `${result}${sep}${hub}${sep}${release}`;
+  return `${parts.join(sep)}`;
 };

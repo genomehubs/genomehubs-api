@@ -4,7 +4,12 @@ import { config } from "../functions/config.js";
 import { indexName } from "./indexName";
 
 const fetchTypes = async ({ result, taxonomy, hub, release }) => {
-  let index = indexName({ result: "attributes", hub, release });
+  let index = indexName({
+    result: "attributes",
+    taxonomy: false,
+    hub,
+    release,
+  });
   let query = {
     match: {
       group: {
