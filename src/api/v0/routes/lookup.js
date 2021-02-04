@@ -132,7 +132,7 @@ const suggest = async (params, iter = 0) => {
     });
   let suggestions = [];
   let status = checkResponse({ body });
-  if (status.success) {
+  if (status.success && body.suggest) {
     body.suggest.simple_phrase.forEach((suggestion) => {
       suggestion.options.forEach((option) => {
         if (option.collate_match) {
