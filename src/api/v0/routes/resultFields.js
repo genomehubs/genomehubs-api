@@ -1,6 +1,5 @@
-import { formatJson } from "../functions/formatJson";
-import { getRecordsById } from "../functions/getRecordsById";
 import { attrTypes } from "../functions/attrTypes";
+import { formatJson } from "../functions/formatJson";
 
 module.exports = {
   getResultFields: async (req, res) => {
