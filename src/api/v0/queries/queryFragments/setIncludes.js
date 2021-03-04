@@ -1,5 +1,8 @@
-export const setIncludes = (result, summaryValues) => {
+export const setIncludes = (result, summaryValues, non_attr_fields) => {
   let include = [];
+  if (non_attr_fields) {
+    return non_attr_fields;
+  }
   if (result == "assembly") {
     include.concat(["assembly_id"]);
   }

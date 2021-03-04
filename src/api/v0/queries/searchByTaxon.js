@@ -32,10 +32,16 @@ export const searchByTaxon = async ({
   sortBy,
 }) => {
   let typesMap = await attrTypes({ result });
-  fields = fields.filter((field) => typesMap[field] !== undefined);
-  let types = fields.map((field) => typesMap[field]);
+  let attr_fields = fields.filter((field) => typesMap[field] !== undefined);
+  let non_attr_fields;
+  let types = attr_fields.map((field) => typesMap[field]);
   types = [...new Set(types.map((type) => type.type))];
-
+  if (attr_fields.length > 0) {
+    fields = attr_fields;
+  } else {
+    non_attr_fields = fields;
+    fields = [];
+  }
   let aggregation_source = setAggregationSource(result, includeEstimates);
   let excludedSources = excludeSources(exclusions, fields);
   let attributesExist = matchAttributes(fields, typesMap, aggregation_source);
@@ -57,7 +63,7 @@ export const searchByTaxon = async ({
     taxonFilter = filterTaxId(searchTerm);
   }
   let rankRestriction = restrictToRank(rank);
-  let include = setIncludes(result, summaryValues);
+  let include = setIncludes(result, summaryValues, non_attr_fields);
   let exclude = includeRawValues ? [] : ["attributes.values*"];
   let sort = setSortOrder(sortBy, typesMap);
 
