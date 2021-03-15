@@ -7,6 +7,7 @@ export const config = {
   separator: process.env.GH_SEPARATOR || "--",
   taxonomy: process.env.GH_TAXONOMY || "ncbi",
   release: process.env.GH_RELEASE || "v0.1",
+  source: process.env.GH_SOURCE || undefined,
   port: process.env.GH_PORT || 3000,
   cors: process.env.GH_ORIGINS.split(" "),
   https: String(process.env.GH_HTTPS) === "true",
