@@ -16,5 +16,5 @@ export const config = {
   title: process.env.GH_TITLE || "GoaT",
   contactName: process.env.GH_CONTACTNAME || "GoaT",
   contactEmail: process.env.GH_CONTACTEMAIL || "goat@genomehubs.org",
-  url: process.env.GH_URL || "https://goat.genomehubs.org/api/v0.0.1",
+  url: process.env.GH_URL || "http://localhost:3000/api/v0.0.1",
 };

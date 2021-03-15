@@ -1,6 +1,5 @@
 import { OpenApiValidator } from "express-openapi-validator";
 import YAML from "yamljs";
-import bodyParser from "body-parser";
 import compression from "compression";
 import { config } from "./api/v0/functions/config.js";
 import cookieParser from "cookie-parser";
@@ -14,13 +13,13 @@ const apiSpec = path.join(__dirname, "api/v0/api.yaml");
 let swaggerDocument = YAML.load(apiSpec);
 swaggerDocument.info.description = config.description;
 swaggerDocument.info.title = config.title;
-swaggerDocument.info.contactName = config.contactName;
-swaggerDocument.info.contactEmail = config.contactEmail;
+swaggerDocument.info.version = config.url.replace(/.+\//, "");
+swaggerDocument.info.contact.name = config.contactName;
+swaggerDocument.info.contact.email = config.contactEmail;
 swaggerDocument.servers[0].url = config.url;
 
 const swaggerOptions = {
-  customCss:
-    ".swagger-ui .topbar, .information-container, .scheme-container { display: none }",
+  customCss: ".swagger-ui .topbar { display: none }",
   customSiteTitle: `${config.title} API`,
 };
 
@@ -31,12 +30,15 @@ if (config.cors) {
   app.use(cors(config.cors));
 }
 
-app.use(bodyParser.urlencoded({ extended: true }));
-app.use(bodyParser.text());
-app.use(bodyParser.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(express.text());
+app.use(express.json());
 app.use(cookieParser());
 app.use(express.static(path.join(__dirname, "public")));
-app.use("/api-spec", express.static(apiSpec));
+app.get("/api-spec", function (req, res) {
+  res.header("Content-Type", "text/yaml");
+  res.send(YAML.stringify(swaggerDocument, 8, 4));
+});
 app.use(
   "/api-docs",
   swaggerUi.serve,
@@ -44,7 +46,7 @@ app.use(
 );
 
 new OpenApiValidator({
-  apiSpec,
+  apiSpec: swaggerDocument,
   validateRequests: true,
   validateResponses: true,
   operationHandlers: path.join(__dirname),
