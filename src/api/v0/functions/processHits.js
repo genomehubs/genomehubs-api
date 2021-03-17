@@ -1,6 +1,12 @@
 import { processDoc } from "./processDoc";
 
-export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
+export const processHits = ({
+  body,
+  ranks,
+  reason,
+  inner_hits,
+  processAsDoc,
+}) => {
   let results = [];
   body.hits.hits.forEach((hit) => {
     let result = {
@@ -13,6 +19,26 @@ export const processHits = ({ body, reason, inner_hits, processAsDoc }) => {
       result.result = processDoc({ doc: hit._source });
     } else {
       result.result = hit._source;
+
+      if (result.result.lineage) {
+        if (ranks) {
+          let taxonRanks = { ...ranks };
+          result.result.lineage.forEach((anc) => {
+            if (taxonRanks[anc.taxon_rank]) {
+              taxonRanks[anc.taxon_rank] = anc;
+            }
+          });
+          if (taxonRanks[result.result.taxon_rank]) {
+            taxonRanks[result.result.taxon_rank] = {
+              scientific_name: result.result.scientific_name,
+              taxon_id: result.result.taxon_id,
+              taxon_rank: result.result.taxon_rank,
+            };
+          }
+          result.result.ranks = taxonRanks;
+          delete result.result.lineage;
+        }
+      }
       if (result.result.attributes) {
         let fields = {};
         result.result.attributes.forEach((attribute) => {

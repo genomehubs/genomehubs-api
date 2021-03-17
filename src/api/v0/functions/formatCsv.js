@@ -2,6 +2,12 @@ import { Parser } from "json2csv";
 
 export const formatCsv = async (response, opts) => {
   const fields = ["taxon_id", "taxon_rank", "scientific_name"];
+  let ranks = [];
+  if (opts.ranks) {
+    opts.ranks.forEach((rank) => {
+      ranks.push(rank);
+    });
+  }
   let meta = ["aggregation_source", "aggregation_method"];
   let raw = ["source"];
   let usedFields = {};
@@ -11,6 +17,11 @@ export const formatCsv = async (response, opts) => {
     fields.forEach((key) => {
       datum[key] = fullResult.result[key];
     });
+    if (opts.ranks) {
+      opts.ranks.forEach((rank) => {
+        datum[rank] = fullResult.result.ranks[rank].scientific_name;
+      });
+    }
     if (opts.fields) {
       opts.fields.forEach((key) => {
         if (fullResult.result.fields.hasOwnProperty(key)) {
@@ -65,17 +76,24 @@ export const formatCsv = async (response, opts) => {
   if (opts.tidyData) {
     if (Object.keys(usedFields).length > 0) {
       if (opts.includeRawValues) {
-        opts.fields = fields.concat(["field", "value"]).concat(raw);
+        opts.fields = fields
+          .concat(ranks)
+          .concat(["field", "value"])
+          .concat(raw);
       } else {
-        opts.fields = fields.concat(["field", "value"]).concat(meta);
+        opts.fields = fields
+          .concat(ranks)
+          .concat(["field", "value"])
+          .concat(meta);
       }
     }
   } else {
-    opts.fields = fields.concat(Object.keys(usedFields));
+    opts.fields = fields.concat(ranks).concat(Object.keys(usedFields));
   }
 
   try {
     const parser = new Parser(opts);
+    console.log(data);
     const csv = parser.parse(data);
     return csv;
   } catch (err) {

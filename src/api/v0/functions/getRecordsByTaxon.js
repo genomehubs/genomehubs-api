@@ -21,7 +21,7 @@ export const getRecordsByTaxon = async (props) => {
   status.size = props.size;
   status.offset = props.offset;
   if (status.hits) {
-    results = processHits({ body, inner_hits: true });
+    results = processHits({ body, inner_hits: true, ranks: props.ranks });
   }
   return { status, results, query };
 };

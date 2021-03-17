@@ -116,6 +116,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/fieldsParam"
+        - $ref: "#/components/parameters/ranksParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/includeRawValuesParam"
         - $ref: "#/components/parameters/searchRawValuesParam"
@@ -284,6 +285,13 @@ components:
         type: string
       required: false
       description: "Comma separated list of fields to return [default: all]"
+    ranksParam:
+      name: ranks
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Comma separated list of ancestral ranks to return"
     resultParam:
       name: result
       in: query

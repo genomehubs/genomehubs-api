@@ -96,6 +96,7 @@ const generateQuery = async ({
   query,
   result,
   fields,
+  ranks,
   includeEstimates,
   includeRawValues,
   searchRawValues,
@@ -107,6 +108,13 @@ const generateQuery = async ({
 }) => {
   let typesMap = await attrTypes({ ...query });
   fields = await parseFields({ result, fields });
+  if (ranks) {
+    let rankNames = ranks.split(/\s*,\s*/);
+    ranks = {};
+    rankNames.forEach((name) => {
+      ranks[name] = true;
+    });
+  }
   let taxTerm, rank, depth, multiTerm, idTerm;
   let filters = {};
   let properties = {};
@@ -140,6 +148,7 @@ const generateQuery = async ({
     idTerm,
     result,
     fields,
+    ranks,
     depth,
     ancestral: false,
     includeEstimates,
@@ -227,6 +236,7 @@ module.exports = {
         let opts = {
           delimiter: ",",
           fields: await parseFields({ ...req.query }),
+          ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
         };
@@ -242,6 +252,7 @@ module.exports = {
         let opts = {
           delimiter: "\t",
           fields: await parseFields({ ...req.query }),
+          ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
         };
