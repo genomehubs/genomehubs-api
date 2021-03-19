@@ -117,6 +117,7 @@ paths:
         - $ref: "#/components/parameters/queryParam"
         - $ref: "#/components/parameters/fieldsParam"
         - $ref: "#/components/parameters/ranksParam"
+        - $ref: "#/components/parameters/namesParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/includeRawValuesParam"
         - $ref: "#/components/parameters/searchRawValuesParam"
@@ -285,6 +286,13 @@ components:
         type: string
       required: false
       description: "Comma separated list of fields to return [default: all]"
+    namesParam:
+      name: names
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Comma separated list of taxon name classes to return"
     ranksParam:
       name: ranks
       in: query

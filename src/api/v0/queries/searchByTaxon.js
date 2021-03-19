@@ -32,6 +32,7 @@ export const searchByTaxon = async ({
   sortBy,
 }) => {
   let typesMap = await attrTypes({ result });
+  let namesMap = await attrTypes({ result, indexType: "identifiers" });
   let attr_fields = fields.filter((field) => typesMap[field] !== undefined);
   let non_attr_fields;
   let types = attr_fields.map((field) => typesMap[field]);
@@ -65,7 +66,7 @@ export const searchByTaxon = async ({
   let rankRestriction = restrictToRank(rank);
   let include = setIncludes(result, summaryValues, non_attr_fields);
   let exclude = includeRawValues ? [] : ["attributes.values*"];
-  let sort = setSortOrder(sortBy, typesMap);
+  let sort = setSortOrder(sortBy, typesMap, namesMap);
 
   return {
     size,

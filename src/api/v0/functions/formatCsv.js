@@ -2,6 +2,12 @@ import { Parser } from "json2csv";
 
 export const formatCsv = async (response, opts) => {
   const fields = ["taxon_id", "taxon_rank", "scientific_name"];
+  let names = [];
+  if (opts.names) {
+    opts.names.forEach((nameClass) => {
+      names.push(nameClass);
+    });
+  }
   let ranks = [];
   if (opts.ranks) {
     opts.ranks.forEach((rank) => {
@@ -17,6 +23,11 @@ export const formatCsv = async (response, opts) => {
     fields.forEach((key) => {
       datum[key] = fullResult.result[key];
     });
+    if (opts.names) {
+      opts.names.forEach((nameClass) => {
+        datum[nameClass] = fullResult.result.names[nameClass].name;
+      });
+    }
     if (opts.ranks) {
       opts.ranks.forEach((rank) => {
         datum[rank] = fullResult.result.ranks[rank].scientific_name;
@@ -77,18 +88,23 @@ export const formatCsv = async (response, opts) => {
     if (Object.keys(usedFields).length > 0) {
       if (opts.includeRawValues) {
         opts.fields = fields
+          .concat(names)
           .concat(ranks)
           .concat(["field", "value"])
           .concat(raw);
       } else {
         opts.fields = fields
+          .concat(names)
           .concat(ranks)
           .concat(["field", "value"])
           .concat(meta);
       }
     }
   } else {
-    opts.fields = fields.concat(ranks).concat(Object.keys(usedFields));
+    opts.fields = fields
+      .concat(names)
+      .concat(ranks)
+      .concat(Object.keys(usedFields));
   }
 
   try {

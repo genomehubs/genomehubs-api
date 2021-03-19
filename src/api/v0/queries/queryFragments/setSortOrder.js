@@ -10,7 +10,7 @@ const ranks = {
   subspecies: true,
 };
 
-export const setSortOrder = (sortBy, typesMap) => {
+export const setSortOrder = (sortBy, typesMap, namesMap) => {
   if (sortBy) {
     if (sortBy.by == "scientific_name" || sortBy.by == "taxon_id") {
       return [
@@ -31,6 +31,21 @@ export const setSortOrder = (sortBy, typesMap) => {
               path: "lineage",
               filter: {
                 term: { "lineage.taxon_rank": sortBy.by },
+              },
+            },
+          },
+        },
+      ];
+    } else if (namesMap[sortBy.by]) {
+      return [
+        {
+          [`taxon_names.name`]: {
+            mode: sortBy.mode || "max",
+            order: sortBy.order || "asc",
+            nested: {
+              path: "taxon_names",
+              filter: {
+                term: { "taxon_names.class": sortBy.by },
               },
             },
           },

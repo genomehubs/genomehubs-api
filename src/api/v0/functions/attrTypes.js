@@ -3,9 +3,9 @@ import { client } from "./connection";
 import { config } from "../functions/config.js";
 import { indexName } from "./indexName";
 
-const fetchTypes = async ({ result, taxonomy, hub, release }) => {
+const fetchTypes = async ({ result, taxonomy, hub, release, indexType }) => {
   let index = indexName({
-    result: "attributes",
+    result: indexType,
     taxonomy: false,
     hub,
     release,
@@ -49,10 +49,14 @@ const fetchTypes = async ({ result, taxonomy, hub, release }) => {
   return types;
 };
 
-export const attrTypes = async ({ result = "multi" }) =>
+export const attrTypes = async ({
+  result = "multi",
+  indexType = "attributes",
+}) =>
   await fetchTypes({
     result,
     taxonomy: config.taxonomy,
     hub: config.hub,
     release: config.release,
+    indexType,
   });

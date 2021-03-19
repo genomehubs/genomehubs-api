@@ -96,6 +96,7 @@ const generateQuery = async ({
   query,
   result,
   fields,
+  names,
   ranks,
   includeEstimates,
   includeRawValues,
@@ -113,6 +114,13 @@ const generateQuery = async ({
     ranks = {};
     rankNames.forEach((name) => {
       ranks[name] = true;
+    });
+  }
+  if (names) {
+    let nameClasses = names.split(/\s*,\s*/);
+    names = {};
+    nameClasses.forEach((nameClass) => {
+      names[nameClass] = true;
     });
   }
   let taxTerm, rank, depth, multiTerm, idTerm;
@@ -148,6 +156,7 @@ const generateQuery = async ({
     idTerm,
     result,
     fields,
+    names,
     ranks,
     depth,
     ancestral: false,
@@ -236,6 +245,7 @@ module.exports = {
         let opts = {
           delimiter: ",",
           fields: await parseFields({ ...req.query }),
+          names: req.query.names ? req.query.names.split(/\s*,\s*/) : [],
           ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
@@ -252,6 +262,7 @@ module.exports = {
         let opts = {
           delimiter: "\t",
           fields: await parseFields({ ...req.query }),
+          names: req.query.names ? req.query.names.split(/\s*,\s*/) : [],
           ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,

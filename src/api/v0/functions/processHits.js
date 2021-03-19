@@ -2,6 +2,7 @@ import { processDoc } from "./processDoc";
 
 export const processHits = ({
   body,
+  names,
   ranks,
   reason,
   inner_hits,
@@ -20,6 +21,18 @@ export const processHits = ({
     } else {
       result.result = hit._source;
 
+      if (result.result.taxon_names) {
+        if (names) {
+          let taxonNames = { ...names };
+          result.result.taxon_names.forEach((obj) => {
+            if (taxonNames[obj.class]) {
+              taxonNames[obj.class] = obj;
+            }
+          });
+          result.result.names = taxonNames;
+          delete result.result.taxon_names;
+        }
+      }
       if (result.result.lineage) {
         if (ranks) {
           let taxonRanks = { ...ranks };
