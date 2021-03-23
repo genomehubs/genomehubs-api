@@ -10,7 +10,7 @@ const ranks = {
   subspecies: true,
 };
 
-export const setSortOrder = (sortBy, typesMap, namesMap) => {
+export const setSortOrder = (sortBy, typesMap, namesMap = {}) => {
   if (sortBy) {
     if (sortBy.by == "scientific_name" || sortBy.by == "taxon_id") {
       return [
