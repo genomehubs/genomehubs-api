@@ -3,7 +3,7 @@ import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
 import { getResults } from "./search";
 
-const getResultCount = async (params) => {
+export const getResultCount = async (params) => {
   params.size = 0;
   let result = await getResults(params);
   let response = { status: {}, count: 0 };
