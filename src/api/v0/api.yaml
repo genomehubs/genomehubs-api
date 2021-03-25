@@ -252,6 +252,45 @@ paths:
           description: "Invalid query"
         "404":
           description: "Not Found"
+  /report:
+    get:
+      tags:
+        - "GoaT API"
+      summary: "Generate a report"
+      description: "Generates reports on records and sets of records"
+      operationId: "getReport"
+      x-eov-operation-handler: "api/v0/routes/report"
+      parameters:
+        - $ref: "#/components/parameters/resultParam"
+        - $ref: "#/components/parameters/reportParam"
+        - $ref: "#/components/parameters/xParam"
+        - $ref: "#/components/parameters/yParam"
+        - $ref: "#/components/parameters/zParam"
+        - $ref: "#/components/parameters/catParam"
+        - $ref: "#/components/parameters/ranksParam"
+        - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/releaseParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          description: "successful operation"
+          content:
+            image/*:
+              schema:
+                format: binary
+            text/*:
+              schema:
+                type: string
+            application/*:
+              schema:
+                format: binary
+            application/json:
+              schema:
+                type: string
+        "400":
+          description: "Invalid query"
+        "404":
+          description: "Not Found"
 components:
   parameters:
     searchTermParam:
@@ -601,6 +640,43 @@ components:
       schema:
         type: boolean
       description: "Stream file rather than download [default: false]"
+    reportParam:
+      name: report
+      in: query
+      schema:
+        type: string
+        enum:
+          - xiny
+      required: false
+      description: Method to summarise multiple values for sorting
+    xParam:
+      name: x
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "X value source"
+    yParam:
+      name: y
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Y value source"
+    zParam:
+      name: z
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Z value source"
+    catParam:
+      name: cat
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Category value source"
   schemas:
     Status:
       type: object
