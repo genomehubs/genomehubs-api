@@ -109,7 +109,6 @@ export const formatCsv = async (response, opts) => {
 
   try {
     const parser = new Parser(opts);
-    console.log(data);
     const csv = parser.parse(data);
     return csv;
   } catch (err) {

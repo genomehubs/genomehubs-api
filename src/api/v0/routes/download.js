@@ -44,7 +44,6 @@ module.exports = {
     let response = {};
     response = await locateFile(req.query);
     if (response && response != {}) {
-      console.log(response);
       if (response.redirect) {
         return res.redirect(response.redirect);
       }
