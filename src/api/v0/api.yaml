@@ -267,7 +267,7 @@ paths:
         - $ref: "#/components/parameters/yParam"
         - $ref: "#/components/parameters/zParam"
         - $ref: "#/components/parameters/catParam"
-        - $ref: "#/components/parameters/ranksParam"
+        - $ref: "#/components/parameters/rankParam"
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
@@ -677,6 +677,13 @@ components:
         type: string
       required: false
       description: "Category value source"
+    rankParam:
+      name: rank
+      in: query
+      schema:
+        type: string
+      required: false
+      description: "Rank to report at"
   schemas:
     Status:
       type: object

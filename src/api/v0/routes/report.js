@@ -1,14 +1,14 @@
 import { formatJson } from "../functions/formatJson";
 import { getResultCount } from "./count";
 
-export const xInY = async ({ x, y, result, ranks }) => {
+export const xInY = async ({ x, y, result, rank }) => {
   let params = {
     result,
     query: y,
     includeEstimates: false,
   };
-  if (ranks) {
-    params.query += ` AND tax_rank(${ranks})`;
+  if (rank) {
+    params.query += ` AND tax_rank(${rank})`;
     let field = y.replace(/[^\w_].+$/, "");
     params.includeEstimates = true;
     params.excludeAncestral = [field];
@@ -29,6 +29,9 @@ export const xInY = async ({ x, y, result, ranks }) => {
         xiny: xCount.count > 0 ? xCount.count / yCount.count : 0,
         x: xCount.count,
         y: yCount.count,
+        xTerm: x,
+        yTerm: y,
+        ...(rank && { rank }),
       },
     };
   }
