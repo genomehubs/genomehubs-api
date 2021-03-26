@@ -20,8 +20,8 @@ export const xInY = async ({ x, y, result, rank }) => {
   if (rank) {
     let field = x.replace(/[^\w_].+$/, "");
     params.includeEstimates = true;
-    params.excludeAncestral.push(field);
-    params.excludeMissing.push(field);
+    params.excludeAncestral = [...yQuery.excludeAncestral, field];
+    params.excludeMissing = [...yQuery.excludeMissing, field];
   }
   let xCount = await getResultCount({ ...params });
   if (
