@@ -17,6 +17,12 @@ export const xInY = async ({ x, y, result, rank }) => {
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   params.query += ` AND ${x}`;
+  if (rank) {
+    let field = x.replace(/[^\w_].+$/, "");
+    params.includeEstimates = true;
+    params.excludeAncestral.push(field);
+    params.excludeMissing.push(field);
+  }
   let xCount = await getResultCount({ ...params });
   if (
     xCount.status &&
