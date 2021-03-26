@@ -14,9 +14,10 @@ export const xInY = async ({ x, y, result, rank }) => {
     params.excludeAncestral = [field];
     params.excludeMissing = [field];
   }
-  let yCount = await getResultCount(params);
+  let yCount = await getResultCount({ ...params });
+  let yQuery = { ...params };
   params.query += ` AND ${x}`;
-  let xCount = await getResultCount(params);
+  let xCount = await getResultCount({ ...params });
   if (
     xCount.status &&
     xCount.status.success &&
@@ -32,6 +33,8 @@ export const xInY = async ({ x, y, result, rank }) => {
         xTerm: x,
         yTerm: y,
         ...(rank && { rank }),
+        xQuery: params,
+        yQuery,
       },
     };
   }
