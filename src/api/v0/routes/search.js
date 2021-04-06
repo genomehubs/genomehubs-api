@@ -79,8 +79,17 @@ const addCondition = (conditions, parts) => {
   if (!conditions) {
     conditions = {};
   }
+  let segments = parts[0].split(/[\(\)]/);
+  let stat;
+  if (segments.length > 1) {
+    stat = segments[0];
+    parts[0] = segments[1];
+  }
   if (!conditions[parts[0]]) {
     conditions[parts[0]] = {};
+  }
+  if (stat) {
+    conditions[parts[0]]["stat"] = stat;
   }
   if (parts[1] == "==") {
     conditions[parts[0]] = parts[2];

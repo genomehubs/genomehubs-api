@@ -9,22 +9,34 @@ export const filterAttributes = (
   }
   let rangeQuery;
   if (searchRawValues) {
-    rangeQuery = (field) => ({
-      nested: {
-        path: "attributes.values",
-        query: {
-          range: {
-            [`attributes.values.${typesMap[field].type}_value`]: filters[field],
+    rangeQuery = (field) => {
+      return {
+        nested: {
+          path: "attributes.values",
+          query: {
+            range: {
+              [`attributes.values.${typesMap[field].type}_value`]: filters[
+                field
+              ],
+            },
           },
         },
-      },
-    });
+      };
+    };
   } else {
-    rangeQuery = (field) => ({
-      range: {
-        [`attributes.${typesMap[field].type}_value`]: filters[field],
-      },
-    });
+    rangeQuery = (field) => {
+      let stat = `${typesMap[field].type}_value`;
+      let filter = { ...filters[field] };
+      if (filter.stat) {
+        stat = filter.stat;
+        delete filter.stat;
+      }
+      return {
+        range: {
+          [`attributes.${stat}`]: filter,
+        },
+      };
+    };
   }
 
   return Object.keys(filters).length == 0
