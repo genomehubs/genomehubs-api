@@ -15,7 +15,11 @@ export const processDoc = ({ doc }) => {
             let value = {};
             Object.keys(val).forEach((vkey) => {
               if (vkey.match(/_value$/)) {
-                value.value = val[vkey];
+                if (vkey == "is_primary_value") {
+                  value.is_primary = true;
+                } else {
+                  value.value = val[vkey];
+                }
               } else {
                 value[vkey] = val[vkey];
               }

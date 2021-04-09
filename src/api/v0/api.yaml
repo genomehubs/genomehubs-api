@@ -275,18 +275,13 @@ paths:
         "200":
           description: "successful operation"
           content:
-            image/*:
-              schema:
-                format: binary
-            text/*:
-              schema:
-                type: string
-            application/*:
-              schema:
-                format: binary
             application/json:
               schema:
-                type: string
+                anyOf:
+                  - status:
+                    $ref: "#/components/schemas/Status"
+                  - results:
+                    $ref: "#/components/schemas/Summaries"
         "400":
           description: "Invalid query"
         "404":
@@ -647,6 +642,7 @@ components:
         type: string
         enum:
           - xiny
+          - sources
       required: false
       description: Method to summarise multiple values for sorting
     xParam:

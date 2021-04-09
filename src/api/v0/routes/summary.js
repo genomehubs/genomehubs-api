@@ -1,9 +1,9 @@
+import { aggregateRawValuesByTaxon } from "../queries/aggregateRawValuesByTaxon";
+import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
-import { attrTypes } from "../functions/attrTypes";
 import { indexName } from "../functions/indexName";
-import { aggregateRawValuesByTaxon } from "../queries/aggregateRawValuesByTaxon";
 
 const getSummary = async (params) => {
   let typesMap = await attrTypes({ ...params });
