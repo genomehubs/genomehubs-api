@@ -121,9 +121,11 @@ module.exports = {
     switch (req.query.report) {
       case "xiny": {
         response = await xInY({ ...req.query });
+        break;
       }
       case "sources": {
         response = await getSources({ ...req.query });
+        break;
       }
     }
     if (response && response != {}) {
