@@ -1,11 +1,12 @@
 import { checkDocResponse } from "../functions/checkDocResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
-import { getResults } from "./search";
+import { getResults, setExclusions } from "./search";
 
 export const getResultCount = async (params) => {
   params.size = 0;
-  let result = await getResults(params);
+  let exclusions = setExclusions(params);
+  let result = await getResults({ ...params, exclusions });
   let response = { status: {}, count: 0 };
   ["success", "error"].forEach((key) => {
     if (result.status.hasOwnProperty(key)) {

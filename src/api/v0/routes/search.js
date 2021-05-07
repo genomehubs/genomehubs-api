@@ -38,7 +38,7 @@ const parseFields = async ({ result, fields }) => {
   }
 };
 
-const setExclusions = ({
+export const setExclusions = ({
   excludeAncestral,
   excludeDescendant,
   excludeDirect,
@@ -135,9 +135,9 @@ const generateQuery = async ({
   let taxTerm, rank, depth, multiTerm, idTerm;
   let filters = {};
   let properties = {};
-  if (query.match(/[\n\*]/)) {
+  if (query && query.match(/[\n\*]/)) {
     multiTerm = query.split(/\n/);
-  } else {
+  } else if (query) {
     query.split(/\s*AND\s*/).forEach((term) => {
       let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
       if (taxQuery) {

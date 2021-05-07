@@ -641,8 +641,9 @@ components:
       schema:
         type: string
         enum:
-          - xiny
           - sources
+          - xInY
+          - xPerRank
       required: false
       description: Method to summarise multiple values for sorting
     xParam:

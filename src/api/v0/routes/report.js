@@ -6,27 +6,60 @@ import { formatJson } from "../functions/formatJson";
 import { getResultCount } from "./count";
 import { indexName } from "../functions/indexName";
 
-export const xInY = async ({ x, y, result, rank }) => {
+const setRanks = (rank) => {
+  if (rank) {
+    return rank.split(/[,;\s]+/);
+  } else {
+    return [
+      "superkingdom",
+      "kingdom",
+      "phylum",
+      "class",
+      "order",
+      "family",
+      "genus",
+      "species",
+      "subspecies",
+    ];
+  }
+};
+const queryParams = ({ term, result, rank, includeEstimates = false }) => {
   let params = {
     result,
-    query: y,
-    includeEstimates: false,
+    query: term,
+    includeEstimates,
   };
   if (rank) {
-    params.query += ` AND tax_rank(${rank})`;
-    let field = y.replace(/[^\w_].+$/, "");
-    params.includeEstimates = true;
-    params.excludeAncestral = [field];
-    params.excludeMissing = [field];
+    if (params.query) {
+      params.query += ` AND tax_rank(${rank})`;
+      let field = term.replace(/[^\w_].+$/, "");
+      params.includeEstimates = true;
+      params.excludeAncestral = [field];
+      params.excludeMissing = [field];
+    } else {
+      params.includeEstimates = true;
+      params.query = `tax_rank(${rank})`;
+    }
   }
+  return params;
+};
+
+export const xInY = async ({ x, y, result, rank }) => {
+  let params = queryParams({ term: y, result, rank });
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   params.query += ` AND ${x}`;
   if (rank) {
     let field = x.replace(/[^\w_].+$/, "");
     params.includeEstimates = true;
-    params.excludeAncestral = [...yQuery.excludeAncestral, field];
-    params.excludeMissing = [...yQuery.excludeMissing, field];
+    params.excludeAncestral = [
+      ...(yQuery.excludeAncestral ? yQuery.excludeAncestral : []),
+      field,
+    ];
+    params.excludeMissing = [
+      ...(yQuery.excludeMissing ? yQuery.excludeMissing : []),
+      field,
+    ];
   }
   let xCount = await getResultCount({ ...params });
   if (
@@ -49,6 +82,39 @@ export const xInY = async ({ x, y, result, rank }) => {
       },
     };
   }
+};
+
+export const xInYPerRank = async ({ x, y, result, rank }) => {
+  // Return xInY at a list of ranks
+  let ranks = setRanks(rank);
+  let perRank = [];
+  for (rank of ranks) {
+    let res = await xInY({ x, y, result, rank });
+    perRank.push(res.report);
+  }
+  let report = perRank.length == 1 ? perRank[0] : perRank;
+  return {
+    status: { success: true },
+    report,
+  };
+};
+
+export const xPerRank = async ({ x, result, rank }) => {
+  // Return counts at a list of ranks
+  let ranks = setRanks(rank);
+  let perRank = [];
+  let includeEstimates = x ? false : true;
+  for (rank of ranks) {
+    let params = queryParams({ term: x, result, rank, includeEstimates });
+    let xCount = await getResultCount({ ...params });
+    perRank.push({ x: xCount.count, xTerm: x, rank, xQuery: params });
+  }
+  return {
+    status: { success: true },
+    report: {
+      xPerRank: perRank,
+    },
+  };
 };
 
 export const getRawSources = async (params) => {
@@ -117,19 +183,27 @@ export const getSources = async (params) => {
 
 module.exports = {
   getReport: async (req, res) => {
-    let response = {};
+    let report = {};
     switch (req.query.report) {
-      case "xiny": {
-        response = await xInY({ ...req.query });
+      case "sources": {
+        report = await getSources({ ...req.query });
         break;
       }
-      case "sources": {
-        response = await getSources({ ...req.query });
+      case "xInY": {
+        report = await xInYPerRank({ ...req.query });
+        break;
+      }
+      case "xPerRank": {
+        report = await xPerRank({ ...req.query });
         break;
       }
     }
-    if (response && response != {}) {
-      return res.status(200).send(formatJson(response, req.query.indent));
+    if (report && report != {}) {
+      return res
+        .status(200)
+        .send(
+          formatJson({ status: { success: true }, report }, req.query.indent)
+        );
     }
     return res.status(404).send({ status: "error" });
   },
