@@ -5,6 +5,7 @@ import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
 import { getResultCount } from "./count";
 import { indexName } from "../functions/indexName";
+import qs from "qs";
 
 const setRanks = (rank) => {
   if (rank) {
@@ -29,6 +30,7 @@ const queryParams = ({ term, result, rank, includeEstimates = false }) => {
     query: term,
     includeEstimates,
   };
+  let fields = [];
   if (rank) {
     if (params.query) {
       params.query += ` AND tax_rank(${rank})`;
@@ -36,18 +38,22 @@ const queryParams = ({ term, result, rank, includeEstimates = false }) => {
       params.includeEstimates = true;
       params.excludeAncestral = [field];
       params.excludeMissing = [field];
+      fields.push(field);
     } else {
       params.includeEstimates = true;
       params.query = `tax_rank(${rank})`;
     }
   }
-  return params;
+  return { params, fields };
 };
 
-export const xInY = async ({ x, y, result, rank }) => {
-  let params = queryParams({ term: y, result, rank });
+export const xInY = async ({ x, y, result, rank, queryString }) => {
+  let { params, fields } = queryParams({ term: y, result, rank });
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
+  if (fields.length > 0) {
+    yQuery.fields = fields.join(",");
+  }
   params.query += ` AND ${x}`;
   if (rank) {
     let field = x.replace(/[^\w_].+$/, "");
@@ -60,8 +66,13 @@ export const xInY = async ({ x, y, result, rank }) => {
       ...(yQuery.excludeMissing ? yQuery.excludeMissing : []),
       field,
     ];
+    fields.push(field);
   }
   let xCount = await getResultCount({ ...params });
+  let xQuery = params;
+  if (fields.length > 0) {
+    xQuery.fields = fields.join(",");
+  }
   if (
     xCount.status &&
     xCount.status.success &&
@@ -77,14 +88,15 @@ export const xInY = async ({ x, y, result, rank }) => {
         xTerm: x,
         yTerm: y,
         ...(rank && { rank }),
-        xQuery: params,
+        xQuery,
         yQuery,
+        queryString,
       },
     };
   }
 };
 
-export const xInYPerRank = async ({ x, y, result, rank }) => {
+export const xInYPerRank = async ({ x, y, result, rank, queryString }) => {
   // Return xInY at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
@@ -95,24 +107,43 @@ export const xInYPerRank = async ({ x, y, result, rank }) => {
   let report = perRank.length == 1 ? perRank[0] : perRank;
   return {
     status: { success: true },
-    report,
+    report: {
+      xInY: report,
+      queryString,
+    },
   };
 };
 
-export const xPerRank = async ({ x, result, rank }) => {
+export const xPerRank = async ({ x, result = "taxon", rank, queryString }) => {
   // Return counts at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
   let includeEstimates = x ? false : true;
   for (rank of ranks) {
-    let params = queryParams({ term: x, result, rank, includeEstimates });
+    let { params, fields } = queryParams({
+      term: x,
+      result,
+      rank,
+      includeEstimates,
+    });
     let xCount = await getResultCount({ ...params });
-    perRank.push({ x: xCount.count, xTerm: x, rank, xQuery: params });
+    let xQuery = params;
+    if (fields.length > 0) {
+      xQuery.fields = fields.join(",");
+    }
+    perRank.push({
+      x: xCount.count,
+      xTerm: x,
+      rank,
+      xQuery,
+      ...(fields.length > 0 && { fields: fields.join(",") }),
+    });
   }
   return {
     status: { success: true },
     report: {
       xPerRank: perRank,
+      queryString,
     },
   };
 };
@@ -184,17 +215,18 @@ export const getSources = async (params) => {
 module.exports = {
   getReport: async (req, res) => {
     let report = {};
+    let queryString = qs.stringify(req.query);
     switch (req.query.report) {
       case "sources": {
-        report = await getSources({ ...req.query });
+        report = await getSources({ ...req.query, queryString });
         break;
       }
       case "xInY": {
-        report = await xInYPerRank({ ...req.query });
+        report = await xInYPerRank({ ...req.query, queryString });
         break;
       }
       case "xPerRank": {
-        report = await xPerRank({ ...req.query });
+        report = await xPerRank({ ...req.query, queryString });
         break;
       }
     }
