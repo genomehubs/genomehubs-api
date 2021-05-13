@@ -34,7 +34,10 @@ const queryParams = ({ term, result, rank, includeEstimates = false }) => {
   if (rank) {
     if (params.query) {
       params.query += ` AND tax_rank(${rank})`;
-      let field = term.replace(/[^\w_].+$/, "");
+      let field = term.replace(/[^\w_\(\)].+$/, "");
+      if (field.match(/\(/)) {
+        field = field.split(/[\(\)]/)[1];
+      }
       params.includeEstimates = true;
       params.excludeAncestral = [field];
       params.excludeMissing = [field];
@@ -56,7 +59,10 @@ export const xInY = async ({ x, y, result, rank, queryString }) => {
   }
   params.query += ` AND ${x}`;
   if (rank) {
-    let field = x.replace(/[^\w_].+$/, "");
+    let field = x.replace(/[^\w_\(\)].+$/, "");
+    if (field.match(/\(/)) {
+      field = field.split(/[\(\)]/)[1];
+    }
     params.includeEstimates = true;
     params.excludeAncestral = [
       ...(yQuery.excludeAncestral ? yQuery.excludeAncestral : []),

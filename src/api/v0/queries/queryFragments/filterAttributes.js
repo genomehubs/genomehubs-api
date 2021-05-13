@@ -15,9 +15,8 @@ export const filterAttributes = (
           path: "attributes.values",
           query: {
             range: {
-              [`attributes.values.${typesMap[field].type}_value`]: filters[
-                field
-              ],
+              [`attributes.values.${typesMap[field].type}_value`]:
+                filters[field],
             },
           },
         },
