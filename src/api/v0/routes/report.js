@@ -105,11 +105,19 @@ export const xInYPerRank = async ({ x, y, result, rank, queryString }) => {
     perRank.push(res.report);
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
+  let caption = `Taxa`;
+  if (x) {
+    caption += ` with ${x} out of all taxa`;
+  }
+  if (y) {
+    caption += ` with ${y}`;
+  }
   return {
     status: { success: true },
     report: {
       xInY: report,
       queryString,
+      caption,
     },
   };
 };
@@ -139,11 +147,17 @@ export const xPerRank = async ({ x, result = "taxon", rank, queryString }) => {
       ...(fields.length > 0 && { fields: fields.join(",") }),
     });
   }
+  let caption = `Count${ranks.length > 1 ? "s" : ""} of taxa`;
+  if (x) {
+    caption += ` with ${x}`;
+  }
+
   return {
     status: { success: true },
     report: {
       xPerRank: perRank,
       queryString,
+      caption,
     },
   };
 };
