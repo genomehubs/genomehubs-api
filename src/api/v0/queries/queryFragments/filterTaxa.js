@@ -23,8 +23,17 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                       nested: {
                         path: "taxon_names",
                         query: {
-                          wildcard: {
-                            "taxon_names.name": term,
+                          bool: {
+                            filter: {
+                              wildcard: {
+                                "taxon_names.name": term,
+                              },
+                            },
+                          },
+                          must_not: {
+                            exists: {
+                              field: "taxon_names.source",
+                            },
                           },
                         },
                       },
@@ -43,8 +52,17 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                     nested: {
                       path: "taxon_names",
                       query: {
-                        match: {
-                          "taxon_names.name": term,
+                        bool: {
+                          filter: {
+                            term: {
+                              "taxon_names.name": term,
+                            },
+                          },
+                          must_not: {
+                            exists: {
+                              field: "taxon_names.source",
+                            },
+                          },
                         },
                       },
                     },
@@ -69,8 +87,17 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
               nested: {
                 path: "taxon_names",
                 query: {
-                  match: {
-                    "taxon_names.name": searchTerm,
+                  bool: {
+                    filter: {
+                      term: {
+                        "taxon_names.name": searchTerm,
+                      },
+                    },
+                    must_not: {
+                      exists: {
+                        field: "taxon_names.source",
+                      },
+                    },
                   },
                 },
               },
