@@ -17,6 +17,7 @@ export const getRecordsByTaxon = async (props) => {
       return err.meta;
     });
   let results = [];
+  let aggs;
   let status = checkResponse({ body });
   status.size = props.size;
   status.offset = props.offset;
@@ -27,6 +28,9 @@ export const getRecordsByTaxon = async (props) => {
       names: props.names,
       ranks: props.ranks,
     });
+    if (body.aggregations) {
+      aggs = body.aggregations;
+    }
   }
-  return { status, results, query };
+  return { status, results, aggs, query };
 };

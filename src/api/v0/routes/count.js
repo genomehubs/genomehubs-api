@@ -1,7 +1,8 @@
+import { getResults, setExclusions } from "./search";
+
 import { checkDocResponse } from "../functions/checkDocResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
-import { getResults, setExclusions } from "./search";
 
 export const getResultCount = async (params) => {
   params.size = 0;

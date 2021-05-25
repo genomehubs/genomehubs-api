@@ -4,50 +4,36 @@ import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
 import { formatJson } from "../functions/formatJson";
 import { getResultCount } from "./count";
+import { histogram } from "../reports/histogram";
 import { indexName } from "../functions/indexName";
 import qs from "qs";
+import { queryParams } from "../reports/queryParams";
+import { setRanks } from "../functions/setRanks";
 
-const setRanks = (rank) => {
-  if (rank) {
-    return rank.split(/[,;\s]+/);
-  } else {
-    return [
-      "superkingdom",
-      "kingdom",
-      "phylum",
-      "class",
-      "order",
-      "family",
-      "genus",
-      "species",
-      "subspecies",
-    ];
+export const histPerRank = async ({ x, cat, result, rank, queryString }) => {
+  // Return histogram at a list of ranks
+  let ranks = setRanks(rank);
+  let perRank = [];
+  for (rank of ranks) {
+    let res = await histogram({ x, cat, result, rank });
+    perRank.push(res.report);
   }
-};
-const queryParams = ({ term, result, rank, includeEstimates = false }) => {
-  let params = {
-    result,
-    query: term,
-    includeEstimates,
+  let report = perRank.length == 1 ? perRank[0] : perRank;
+  let caption = `Frequency distribution of taxa`;
+  if (x) {
+    caption += ` with ${x}`;
+  }
+  if (cat) {
+    caption += ` by ${cat}`;
+  }
+  return {
+    status: { success: true },
+    report: {
+      histogram: report,
+      queryString,
+      caption,
+    },
   };
-  let fields = [];
-  if (rank) {
-    if (params.query) {
-      params.query += ` AND tax_rank(${rank})`;
-      let field = term.replace(/[^\w_\(\)].+$/, "");
-      if (field.match(/\(/)) {
-        field = field.split(/[\(\)]/)[1];
-      }
-      params.includeEstimates = true;
-      params.excludeAncestral = [field];
-      params.excludeMissing = [field];
-      fields.push(field);
-    } else {
-      params.includeEstimates = true;
-      params.query = `tax_rank(${rank})`;
-    }
-  }
-  return { params, fields };
 };
 
 export const xInY = async ({ x, y, result, rank, queryString }) => {
@@ -239,6 +225,10 @@ module.exports = {
     switch (req.query.report) {
       case "sources": {
         report = await getSources({ ...req.query, queryString });
+        break;
+      }
+      case "histogram": {
+        report = await histPerRank({ ...req.query, queryString });
         break;
       }
       case "xInY": {

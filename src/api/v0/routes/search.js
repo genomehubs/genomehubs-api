@@ -115,6 +115,7 @@ const generateQuery = async ({
   size = 10,
   offset = 0,
   sortBy,
+  aggs,
 }) => {
   let typesMap = await attrTypes({ ...query });
   fields = await parseFields({ result, fields });
@@ -180,6 +181,7 @@ const generateQuery = async ({
     size,
     offset,
     sortBy,
+    aggs,
   };
   if (taxTerm) {
     if (taxTerm[1] == "eq") {

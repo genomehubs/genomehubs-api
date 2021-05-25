@@ -30,6 +30,7 @@ export const searchByTaxon = async ({
   size,
   offset,
   sortBy,
+  aggs = {},
 }) => {
   let typesMap = await attrTypes({ result });
   let namesMap = await attrTypes({ result, indexType: "identifiers" });
@@ -87,5 +88,6 @@ export const searchByTaxon = async ({
       exclude,
     },
     sort,
+    aggs,
   };
 };
