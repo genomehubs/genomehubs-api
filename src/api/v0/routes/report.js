@@ -10,16 +10,32 @@ import qs from "qs";
 import { queryParams } from "../reports/queryParams";
 import { setRanks } from "../functions/setRanks";
 
-export const histPerRank = async ({ x, cat, result, rank, queryString }) => {
+export const histPerRank = async ({
+  x,
+  cat,
+  rank,
+  queryString,
+  ...apiParams
+}) => {
   // Return histogram at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
-  for (rank of ranks) {
-    let res = await histogram({ x, cat, result, rank });
+  let xQuery;
+  let xLabel;
+  for (rank of ranks.slice(0, 1)) {
+    let res = await histogram({
+      x,
+      cat,
+      rank,
+      result: apiParams.result,
+      apiParams,
+    });
     perRank.push(res.report);
+    xQuery = res.xQuery;
+    xLabel = res.xLabel;
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
-  let caption = `Frequency distribution of taxa`;
+  let caption = `Frequency distribution of ${ranks[0]}`;
   if (x) {
     caption += ` with ${x}`;
   }
@@ -30,6 +46,9 @@ export const histPerRank = async ({ x, cat, result, rank, queryString }) => {
     status: { success: true },
     report: {
       histogram: report,
+      xQuery,
+      xLabel,
+      yLabel: `Count of ${ranks[0]}`,
       queryString,
       caption,
     },

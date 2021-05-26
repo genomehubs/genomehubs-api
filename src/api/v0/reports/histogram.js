@@ -2,7 +2,11 @@ import { getResults, setExclusions } from "../routes/search";
 import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
 import { attrTypes } from "../functions/attrTypes";
+import { checkResponse } from "../functions/checkResponse";
+import { client } from "../functions/connection";
 import { format } from "d3-format";
+import { formatJson } from "../functions/formatJson";
+import { indexName } from "../functions/indexName";
 import { queryParams } from "./queryParams";
 import { setAggs } from "./setAggs";
 
@@ -15,6 +19,32 @@ const scales = {
 };
 const fmt = format(".8r");
 
+const getCatLabels = async ({ result, cat, cats, apiParams }) => {
+  let index = indexName(apiParams);
+  let qBody = [];
+  let labels = [];
+  cats.forEach((obj) => {
+    qBody.push({ index });
+    qBody.push({ id: "taxon_by_name", params: { taxon: obj.key, rank: cat } });
+  });
+  const { body } = await client
+    .msearchTemplate({
+      body: qBody,
+      rest_total_hits_as_int: true,
+    })
+    .catch((err) => {
+      return err.meta;
+    });
+  body.responses.forEach((doc, i) => {
+    if (doc.hits.total == 1) {
+      let label = cats[i];
+      label.label = doc.hits.hits[0]._source.scientific_name;
+      labels.push(label);
+    }
+  });
+  return labels;
+};
+
 const getBounds = async ({
   params,
   fields,
@@ -22,6 +52,7 @@ const getBounds = async ({
   result,
   exclusions,
   tickCount = 10,
+  apiParams,
 }) => {
   let typesMap = await attrTypes({ result });
 
@@ -57,6 +88,7 @@ const getBounds = async ({
   let cats;
   if (terms) {
     cats = terms.by_lineage.at_rank.taxa.buckets;
+    cats = await getCatLabels({ cat, result, cats, apiParams });
   }
   return { stats, domain, tickCount, cats };
 };
@@ -104,12 +136,23 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
         );
       }
     );
+    if (byCat.other.reduce((a, b) => a + b, 0) == 0) {
+      delete byCat.other;
+    }
   }
   return { buckets, allValues, byCat };
 };
 
-export const histogram = async ({ x, cat, result, rank, queryString }) => {
+export const histogram = async ({
+  x,
+  cat,
+  result,
+  rank,
+  queryString,
+  apiParams,
+}) => {
   let { params, fields } = queryParams({ term: x, result, rank });
+  let xQuery = { ...params };
   let exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
@@ -117,6 +160,7 @@ export const histogram = async ({ x, cat, result, rank, queryString }) => {
     cat,
     result,
     exclusions,
+    apiParams,
   });
   let histograms = await getHistogram({
     params,
@@ -126,18 +170,12 @@ export const histogram = async ({ x, cat, result, rank, queryString }) => {
     exclusions,
     bounds,
   });
-  if (histograms.byCat) {
-    bounds.cats = bounds.cats.map((obj) => {
-      obj.label = obj.key;
-      return obj;
+  if (histograms.byCat && histograms.byCat.other) {
+    bounds.cats.push({
+      key: "other",
+      label: "other",
+      doc_count: histograms.byCat.other.reduce((a, b) => a + b, 0),
     });
-    if (histograms.byCat.other) {
-      bounds.cats.push({
-        key: "other",
-        label: "other",
-        doc_count: histograms.byCat.other.reduce((a, b) => a + b, 0),
-      });
-    }
   }
   // "aggs": {
   //   "aggregations": {
@@ -155,5 +193,19 @@ export const histogram = async ({ x, cat, result, rank, queryString }) => {
   //   }
   // },
 
-  return { status: { success: true }, report: { histograms, ...bounds } };
+  return {
+    status: { success: true },
+    report: {
+      histograms,
+      ...bounds,
+      xQuery: {
+        ...xQuery,
+        fields: fields.join(","),
+        ranks: [rank, cat].join(","),
+      },
+      x: histograms.allValues.reduce((a, b) => a + b, 0),
+    },
+    xQuery,
+    xLabel: fields[0],
+  };
 };
