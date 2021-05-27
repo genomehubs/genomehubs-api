@@ -86,11 +86,21 @@ const getBounds = async ({
   let domain = [niceMin, niceMax];
   let terms = aggs.terms;
   let cats;
+  let by;
   if (terms) {
-    cats = terms.by_lineage.at_rank.taxa.buckets;
-    cats = await getCatLabels({ cat, result, cats, apiParams });
+    if (terms.by_lineage) {
+      cats = terms.by_lineage.at_rank.taxa.buckets;
+      cats = await getCatLabels({ cat, result, cats, apiParams });
+      by = "lineage";
+    } else {
+      cats = terms.by_attribute.by_cat.cats.buckets;
+      cats.forEach((obj) => {
+        obj.label = obj.key;
+      });
+      by = "attribute";
+    }
   }
-  return { stats, domain, tickCount, cats };
+  return { stats, domain, tickCount, cats, by };
 };
 
 const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
@@ -124,19 +134,24 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
   let catHists = res.aggs.aggregations[field].categoryHistograms;
   let byCat;
   if (catHists) {
-    byCat = { other };
-    Object.entries(catHists.by_lineage.at_rank.buckets).forEach(
-      ([key, obj]) => {
-        byCat[key] = [];
-        obj.histogram.by_attribute[field].histogram.buckets.forEach(
-          (bin, i) => {
-            byCat[key][i] = bin.doc_count;
-            byCat.other[i] -= bin.doc_count;
-          }
-        );
-      }
-    );
-    if (byCat.other.reduce((a, b) => a + b, 0) == 0) {
+    let catBuckets;
+    if (bounds.by == "attribute") {
+      byCat = {};
+      catBuckets = catHists.by_attribute.by_cat.buckets;
+    } else {
+      byCat = { other };
+      catBuckets = catHists.by_lineage.at_rank.buckets;
+    }
+    Object.entries(catBuckets).forEach(([key, obj]) => {
+      byCat[key] = [];
+      obj.histogram.by_attribute[field].histogram.buckets.forEach((bin, i) => {
+        byCat[key][i] = bin.doc_count;
+        if (byCat.other) {
+          byCat.other[i] -= bin.doc_count;
+        }
+      });
+    });
+    if (byCat.other && byCat.other.reduce((a, b) => a + b, 0) == 0) {
       delete byCat.other;
     }
   }
@@ -162,21 +177,25 @@ export const histogram = async ({
     exclusions,
     apiParams,
   });
-  let histograms = await getHistogram({
-    params,
-    fields,
-    cat,
-    result,
-    exclusions,
-    bounds,
-  });
-  if (histograms.byCat && histograms.byCat.other) {
-    bounds.cats.push({
-      key: "other",
-      label: "other",
-      doc_count: histograms.byCat.other.reduce((a, b) => a + b, 0),
+  let histograms;
+  if (!bounds.cats || bounds.cats.length > 0) {
+    histograms = await getHistogram({
+      params,
+      fields,
+      cat,
+      result,
+      exclusions,
+      bounds,
     });
+    if (histograms.byCat && histograms.byCat.other) {
+      bounds.cats.push({
+        key: "other",
+        label: "other",
+        doc_count: histograms.byCat.other.reduce((a, b) => a + b, 0),
+      });
+    }
   }
+
   // "aggs": {
   //   "aggregations": {
   //     "doc_count": 5708,
@@ -203,7 +222,7 @@ export const histogram = async ({
         fields: fields.join(","),
         ranks: [rank, cat].join(","),
       },
-      x: histograms.allValues.reduce((a, b) => a + b, 0),
+      x: histograms ? histograms.allValues.reduce((a, b) => a + b, 0) : 0,
     },
     xQuery,
     xLabel: fields[0],
