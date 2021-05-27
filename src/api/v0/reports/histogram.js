@@ -19,7 +19,13 @@ const scales = {
 };
 const fmt = format(".8r");
 
-const getCatLabels = async ({ result, cat, cats, apiParams }) => {
+const getCatLabels = async ({
+  result,
+  cat,
+  cats,
+  apiParams,
+  key = "scientific_name",
+}) => {
   let index = indexName(apiParams);
   let qBody = [];
   let labels = [];
@@ -38,11 +44,68 @@ const getCatLabels = async ({ result, cat, cats, apiParams }) => {
   body.responses.forEach((doc, i) => {
     if (doc.hits.total == 1) {
       let label = cats[i];
-      label.label = doc.hits.hits[0]._source.scientific_name;
+      label.label = doc.hits.hits[0]._source[key];
       labels.push(label);
     }
   });
   return labels;
+};
+
+const setTerms = async ({ cat, typesMap, apiParams }) => {
+  let size = 5;
+  let other;
+  if (cat.endsWith("+")) {
+    cat = cat.replace(/\+$/, "");
+    other = true;
+  }
+  let portions = cat.split(/\s*[\[\]]\s*/);
+  if (portions.length > 1) {
+    size = portions[1];
+    delete portions[1];
+    cat = portions.join("");
+    other = other || false;
+  }
+  if (!cat.match(/\s*[=,]\s*/)) {
+    if (other === false) {
+      other = undefined;
+    } else {
+      other = true;
+    }
+    return { cat, size, other };
+  }
+  let parts = cat.split(",");
+  let field;
+  let terms = [];
+  let by;
+  parts.forEach((part) => {
+    let bits = part.split("=");
+    let value;
+    if (bits.length == 2) {
+      field = bits[0];
+      value = bits[1];
+    } else {
+      value = bits[0];
+    }
+    terms.push({ key: value });
+  });
+  if (typesMap[field]) {
+    by = "attribute";
+  } else {
+    by = "lineage";
+    // lookup taxon_id if not attribute
+    let cats = await getCatLabels({
+      cat: field,
+      cats: terms,
+      apiParams,
+      key: "taxon_id",
+    });
+    // invert key and label
+    terms = [];
+    cats.forEach((obj) => {
+      terms.push({ key: obj.label, label: obj.key });
+    });
+  }
+  return { cat: field, terms, by, size, other };
 };
 
 const getBounds = async ({
@@ -59,11 +122,22 @@ const getBounds = async ({
   params.size = 0;
   // find max and min plus most frequent categories
   let field = fields[0];
+  let definedTerms = await setTerms({ cat, typesMap, apiParams });
+  cat = definedTerms.cat;
+  let extraTerms;
+  if (definedTerms.terms) {
+    if (definedTerms.terms.length < definedTerms.size) {
+      extraTerms = cat;
+    }
+  } else {
+    extraTerms = cat;
+  }
   params.aggs = await setAggs({
     field,
     result,
     stats: true,
-    terms: cat,
+    terms: extraTerms,
+    size: definedTerms.size,
   });
   let res = await getResults({ ...params, exclusions });
   let aggs = res.aggs.aggregations[field];
@@ -87,6 +161,7 @@ const getBounds = async ({
   let terms = aggs.terms;
   let cats;
   let by;
+  console.log(definedTerms);
   if (terms) {
     if (terms.by_lineage) {
       cats = terms.by_lineage.at_rank.taxa.buckets;
@@ -100,7 +175,30 @@ const getBounds = async ({
       by = "attribute";
     }
   }
-  return { stats, domain, tickCount, cats, by };
+  if (definedTerms && definedTerms.terms) {
+    let definedCats = [...definedTerms.terms];
+    let catKeys = {};
+    definedCats.forEach((obj) => {
+      catKeys[obj.key] = true;
+      if (!obj.label) {
+        obj.label = obj.key;
+      }
+    });
+    if (cats) {
+      for (let i = 0; i < cats.length; i++) {
+        let obj = cats[i];
+        if (!catKeys[obj.key]) {
+          definedCats.push(obj);
+        }
+        if (definedCats.length == definedTerms.size) {
+          break;
+        }
+      }
+    }
+    cats = definedCats;
+    by = definedTerms.by;
+  }
+  return { stats, domain, tickCount, cats, by, showOther: definedTerms.other };
 };
 
 const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
@@ -125,7 +223,9 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
   hist.buckets.forEach((obj) => {
     buckets.push(obj.key);
     allValues.push(obj.doc_count);
-    other.push(obj.doc_count);
+    if (bounds.showOther) {
+      other.push(obj.doc_count);
+    }
   });
   let scale = scales[typesMap[field].bins.scale || "linear"]()
     .domain(bounds.domain)
@@ -135,11 +235,13 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
   let byCat;
   if (catHists) {
     let catBuckets;
+    byCat = {};
     if (bounds.by == "attribute") {
-      byCat = {};
       catBuckets = catHists.by_attribute.by_cat.buckets;
     } else {
-      byCat = { other };
+      if (bounds.showOther) {
+        byCat.other = other;
+      }
       catBuckets = catHists.by_lineage.at_rank.buckets;
     }
     Object.entries(catBuckets).forEach(([key, obj]) => {
