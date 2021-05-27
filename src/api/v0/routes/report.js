@@ -42,7 +42,7 @@ export const histPerRank = async ({
   if (cat) {
     caption += ` by ${cat}`;
   }
-  if (includeEstimates) {
+  if (apiParams.includeEstimates) {
     caption += ` including ancestrally derived estimates`;
   }
   return {
