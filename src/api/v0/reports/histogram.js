@@ -161,7 +161,6 @@ const getBounds = async ({
   let terms = aggs.terms;
   let cats;
   let by;
-  console.log(definedTerms);
   if (terms) {
     if (terms.by_lineage) {
       cats = terms.by_lineage.at_rank.taxa.buckets;
@@ -265,12 +264,17 @@ export const histogram = async ({
   cat,
   result,
   rank,
+  includeEstimates,
   queryString,
   apiParams,
 }) => {
   let { params, fields } = queryParams({ term: x, result, rank });
   let xQuery = { ...params };
-  let exclusions = setExclusions(params);
+  let exclusions;
+  if (apiParams.includeEstimates) {
+    delete params.excludeAncestral;
+  }
+  exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
     fields,
