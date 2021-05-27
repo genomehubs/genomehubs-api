@@ -54,7 +54,10 @@ const getCatLabels = async ({
 const setTerms = async ({ cat, typesMap, apiParams }) => {
   let size = 5;
   let other;
-  if (cat.endsWith("+")) {
+  if (!cat) {
+    return { cat, size, other };
+  }
+  if (cat && cat.endsWith("+")) {
     cat = cat.replace(/\+$/, "");
     other = true;
   }

@@ -221,17 +221,19 @@ export const getSources = async (params) => {
       source_url_stub = [source_url_stub];
     }
     source.forEach((src, i) => {
-      if (!sources.hasOwnProperty(src)) {
-        sources[src] = {
-          url: source_url[i] || source_url_stub[i],
-          attributes: [],
-        };
-        let lcSrc = src.toLowerCase();
-        if (counts[lcSrc]) {
-          sources[src].count = counts[lcSrc];
+      if (src) {
+        if (!sources.hasOwnProperty(src)) {
+          sources[src] = {
+            url: source_url[i] || source_url_stub[i],
+            attributes: [],
+          };
+          let lcSrc = src.toLowerCase();
+          if (counts[lcSrc]) {
+            sources[src].count = counts[lcSrc];
+          }
         }
+        sources[src].attributes.push(value);
       }
-      sources[src].attributes.push(value);
     });
   });
   return sources;
