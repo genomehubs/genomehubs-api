@@ -42,6 +42,9 @@ export const histPerRank = async ({
   if (cat) {
     caption += ` by ${cat}`;
   }
+  if (includeEstimates) {
+    caption += ` including ancestrally derived estimates`;
+  }
   return {
     status: { success: true },
     report: {
