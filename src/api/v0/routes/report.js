@@ -221,7 +221,7 @@ export const getSources = async (params) => {
       source_url_stub = [source_url_stub];
     }
     source.forEach((src, i) => {
-      if (src) {
+      if (src && typeof src === "string") {
         if (!sources.hasOwnProperty(src)) {
           sources[src] = {
             url: source_url[i] || source_url_stub[i],
