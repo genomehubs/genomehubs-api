@@ -246,10 +246,16 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
       }
       catBuckets = catHists.by_lineage.at_rank.buckets;
     }
+    let catObjs = {};
+    bounds.cats.forEach((obj) => {
+      catObjs[obj.key] = obj;
+    });
     Object.entries(catBuckets).forEach(([key, obj]) => {
       byCat[key] = [];
+      catObjs[key].doc_count = 0;
       obj.histogram.by_attribute[field].histogram.buckets.forEach((bin, i) => {
         byCat[key][i] = bin.doc_count;
+        catObjs[key].doc_count += bin.doc_count;
         if (byCat.other) {
           byCat.other[i] -= bin.doc_count;
         }

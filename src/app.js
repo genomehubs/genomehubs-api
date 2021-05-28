@@ -47,7 +47,10 @@ app.use(
 
 new OpenApiValidator({
   apiSpec: swaggerDocument,
-  validateRequests: true,
+  // validateRequests: true,
+  validateRequests: {
+    allowUnknownQueryParameters: true,
+  },
   validateResponses: true,
   operationHandlers: path.join(__dirname),
 })
