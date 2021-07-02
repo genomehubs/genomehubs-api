@@ -1,7 +1,10 @@
 import { Parser } from "json2csv";
 
 export const formatCsv = async (response, opts) => {
-  const fields = ["taxon_id", "taxon_rank", "scientific_name"];
+  let fields = ["taxon_id", "taxon_rank", "scientific_name"];
+  if (opts.result == "assembly") {
+    fields.push("assembly_id");
+  }
   let names = [];
   if (opts.names) {
     opts.names.forEach((nameClass) => {

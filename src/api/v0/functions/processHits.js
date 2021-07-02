@@ -62,13 +62,21 @@ export const processHits = ({
             if (key == "key") {
               name = attribute[key];
             } else if (key.match(/_value$/)) {
-              field.value = attribute[key];
+              if (key == "is_primary_value") {
+                field.is_primary = true;
+              } else {
+                field.value = attribute[key];
+              }
             } else if (key == "values") {
               field.rawValues = attribute[key].map((value) => {
                 let retValue = {};
                 Object.keys(value).forEach((vkey) => {
                   if (vkey.match(/_value$/)) {
-                    retValue.value = value[vkey];
+                    if (vkey == "is_primary_value") {
+                      retValue.is_primary = true;
+                    } else {
+                      retValue.value = value[vkey];
+                    }
                   } else {
                     retValue[vkey] = value[vkey];
                   }

@@ -260,6 +260,7 @@ module.exports = {
           ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
+          result: req.query.result,
         };
         let csv = await formatCsv(response, opts);
         if (req.query.filename) {
@@ -277,6 +278,7 @@ module.exports = {
           ranks: req.query.ranks ? req.query.ranks.split(/\s*,\s*/) : [],
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
+          result: req.query.result,
         };
         let tsv = await formatCsv(response, opts);
         if (req.query.filename) {

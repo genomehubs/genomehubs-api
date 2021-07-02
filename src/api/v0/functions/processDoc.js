@@ -8,7 +8,11 @@ export const processDoc = ({ doc }) => {
         if (key == "key") {
           name = attr[key];
         } else if (key.match(/_value$/)) {
-          attribute.value = attr[key];
+          if (key == "is_primary_value") {
+            attribute.is_primary = true;
+          } else {
+            attribute.value = attr[key];
+          }
         } else if (key == "values") {
           attribute.values = [];
           attr[key].forEach((val) => {
