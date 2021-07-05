@@ -20,7 +20,7 @@ export const processDoc = ({ doc }) => {
             Object.keys(val).forEach((vkey) => {
               if (vkey.match(/_value$/)) {
                 if (vkey == "is_primary_value") {
-                  value.is_primary = true;
+                  value.is_primary = Boolean(val[vkey]);
                 } else {
                   value.value = val[vkey];
                 }
