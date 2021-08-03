@@ -14,7 +14,6 @@ const scales = {
   linear: scaleLinear,
   log: scaleLog,
   log10: scaleLog,
-  log2: () => scaleLog().base(2),
   sqrt: scaleSqrt,
 };
 const fmt = format(".8r");
@@ -203,11 +202,19 @@ const getBounds = async ({
   return { stats, domain, tickCount, cats, by, showOther: definedTerms.other };
 };
 
+const valueTypes = {
+  long: "integer",
+  integer: "integer",
+  short: "integer",
+  byte: "integer",
+};
+
 const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
   let typesMap = await attrTypes({ result });
   params.size = 0;
   // find max and min plus most frequent categories
   let field = fields[0];
+  let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
     field,
     result,
@@ -229,10 +236,18 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
       other.push(obj.doc_count);
     }
   });
-  let scale = scales[typesMap[field].bins.scale || "linear"]()
-    .domain(bounds.domain)
-    .range([buckets[0], buckets[buckets.length - 1]]);
-  buckets = buckets.map((value) => 1 * fmt(scale.invert(value)));
+  let scaleType = typesMap[field].bins.scale || "linear";
+  if (scaleType == "log2") {
+    let domain = 2 ** buckets[buckets.length - 1] - 2 ** buckets[0];
+    let factor = (bounds.domain[1] - bounds.domain[0]) / domain;
+    let scale = (v) => 2 ** v * factor;
+    buckets = buckets.map((value) => 1 * fmt(scale(value)));
+  } else {
+    let scale = scales[scaleType]()
+      .domain(bounds.domain)
+      .range([buckets[0], buckets[buckets.length - 1]]);
+    buckets = buckets.map((value) => 1 * fmt(scale.invert(value)));
+  }
   let catHists = res.aggs.aggregations[field].categoryHistograms;
   let byCat;
   if (catHists) {
@@ -265,7 +280,7 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
       delete byCat.other;
     }
   }
-  return { buckets, allValues, byCat };
+  return { buckets, allValues, byCat, valueType };
 };
 
 export const histogram = async ({

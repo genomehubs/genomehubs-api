@@ -2,13 +2,13 @@ import { attrTypes } from "../functions/attrTypes";
 
 export const histogramAgg = async ({ field, result, rawValues, bounds }) => {
   const scales = {
-    log2: "Math.log(_value)/Math.log(2)",
+    log2: "Math.max(Math.log(_value)/Math.log(2), 0)",
     log10: "Math.log10(_value)",
     sqrt: "Math.sqrt(_value)",
   };
   const funcs = {
-    log2: (value) => Math.log(value) / Math.log(2),
-    log10: (value) => Math.log10(value),
+    log2: (value) => Math.max(Math.log2(value), 0),
+    log10: (value) => Math.max(Math.log10(value), 0),
     sqrt: (value) => Math.sqrt(value),
     linear: (value) => value,
   };
@@ -20,8 +20,12 @@ export const histogramAgg = async ({ field, result, rawValues, bounds }) => {
   let { scale, min, max, count } = typesMap[field].bins;
   let interval;
   if (bounds) {
-    min = funcs[scale](bounds.domain[0]);
-    max = funcs[scale](bounds.domain[1]);
+    if (!isNaN(bounds.domain[0])) {
+      min = funcs[scale](bounds.domain[0]);
+    }
+    if (!isNaN(bounds.domain[1])) {
+      max = funcs[scale](bounds.domain[1]);
+    }
     count = bounds.tickCount - 1;
   }
   if (count) {

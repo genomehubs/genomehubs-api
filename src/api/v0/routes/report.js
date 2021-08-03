@@ -10,6 +10,56 @@ import qs from "qs";
 import { queryParams } from "../reports/queryParams";
 import { setRanks } from "../functions/setRanks";
 
+export const xYPerRank = async ({
+  x,
+  y,
+  cat,
+  rank,
+  queryString,
+  ...apiParams
+}) => {
+  // Return histogram at a list of ranks
+  let ranks = setRanks(rank);
+  let perRank = [];
+  let xQuery;
+  let xLabel;
+  for (rank of ranks.slice(0, 1)) {
+    let res = await xY({
+      x,
+      y,
+      cat,
+      rank,
+      result: apiParams.result,
+      apiParams,
+    });
+    perRank.push(res.report);
+    xQuery = res.xQuery;
+    xLabel = res.xLabel;
+  }
+  let report = perRank.length == 1 ? perRank[0] : perRank;
+  let caption = `Distribution of ${ranks[0]}`;
+  if (x) {
+    caption += ` with ${x}`;
+  }
+  if (cat) {
+    caption += ` by ${cat}`;
+  }
+  if (apiParams.includeEstimates) {
+    caption += ` including ancestrally derived estimates`;
+  }
+  return {
+    status: { success: true },
+    report: {
+      histogram: report,
+      xQuery,
+      xLabel,
+      yLabel: `Count of ${ranks[0]}`,
+      queryString,
+      caption,
+    },
+  };
+};
+
 export const histPerRank = async ({
   x,
   cat,
@@ -49,6 +99,7 @@ export const histPerRank = async ({
     status: { success: true },
     report: {
       histogram: report,
+      valueType: report.valueType,
       xQuery,
       xLabel,
       yLabel: `Count of ${ranks[0]}`,
@@ -261,6 +312,10 @@ module.exports = {
       }
       case "xPerRank": {
         report = await xPerRank({ ...req.query, queryString });
+        break;
+      }
+      case "xY": {
+        report = await xY({ ...req.query, queryString });
         break;
       }
     }
