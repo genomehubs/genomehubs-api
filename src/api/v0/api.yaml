@@ -226,7 +226,6 @@ components:
       schema:
         enum:
           - histogram
-          - xY
           - sources
           - xInY
           - xPerRank
@@ -357,13 +356,15 @@ components:
         type: array
       style: form
     taxonomyParam:
-      description: "The taxonomy to search against [default: ncbi]"
+      description: "The taxonomy to search against [default: otol]"
       in: query
       name: taxonomy
       required: false
       schema:
+        default: ott
         enum:
           - ncbi
+          - ott
         type: string
     tidyDataParam:
       description: "Format delimited text output as Tidy Data [default: false]"

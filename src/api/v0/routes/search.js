@@ -3,7 +3,6 @@ import { checkDocResponse } from "../functions/checkDocResponse";
 import { client } from "../functions/connection";
 import { formatCsv } from "../functions/formatCsv";
 import { formatJson } from "../functions/formatJson";
-import { getRecordsById } from "../functions/getRecordsById";
 import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
 import { indexName } from "../functions/indexName";
 

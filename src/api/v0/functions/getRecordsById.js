@@ -1,7 +1,9 @@
 import { checkDocResponse } from "./checkDocResponse";
+import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
 import { indexName } from "./indexName";
 import { processDoc } from "./processDoc";
+import { processHits } from "./processHits";
 
 const convertIdsToDocIds = (recordId, result) => {
   /**
@@ -22,12 +24,48 @@ const convertIdsToDocIds = (recordId, result) => {
   return ids;
 };
 
+const altRecordId = async ({ index, name, source }) => {
+  const { body } = await client
+    .searchTemplate({
+      index,
+      body: { id: "taxon_by_specific_name", params: { name, source } },
+      rest_total_hits_as_int: true,
+    })
+    .catch((err) => {
+      return err.meta;
+    });
+  let results = [];
+  let status = checkResponse({ body });
+  if (status.hits && status.hits > 0) {
+    results = processHits({ body, reason: true });
+  }
+  results = results.map((result) => result.id);
+  return results;
+};
+
+const lookupAlternateIds = async ({ recordId, index }) => {
+  let newIds = [];
+  for (const id of recordId) {
+    let match = String(id).match(/^(\D+):*(\d+)/);
+    let source = "ncbi";
+    let name = String(id);
+    if (match) {
+      source = match[1];
+      name = match[2];
+    }
+    let alternateIds = await altRecordId({ index, name, source });
+    newIds = newIds.concat(alternateIds);
+  }
+  return newIds;
+};
+
 export const getRecordsById = async ({
   recordId,
   result,
   taxonomy,
   hub,
   release,
+  iteration = 0,
 }) => {
   /**
    * Get specified records from an index by entry or document ID.
@@ -56,9 +94,25 @@ export const getRecordsById = async ({
       if (doc.found && doc._source) {
         obj.record = processDoc({ doc: doc._source });
         obj.record.record_id = obj.record[`${result}_id`];
+        records.push(obj);
       }
-      records.push(obj);
     });
+  }
+  iteration++;
+  if (records.length == 0 && iteration == 1) {
+    let newIds = await lookupAlternateIds({ recordId, index });
+    if (newIds.length > 0) {
+      let alt = await getRecordsById({
+        recordId: newIds,
+        result,
+        taxonomy,
+        hub,
+        release,
+        iteration: 2,
+      });
+      status = alt.status;
+      records = alt.records;
+    }
   }
   return { status, records };
 };
