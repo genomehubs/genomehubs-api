@@ -1,10 +1,9 @@
 import { attrTypes } from "../functions/attrTypes";
-import { checkDocResponse } from "../functions/checkDocResponse";
-import { client } from "../functions/connection";
 import { formatCsv } from "../functions/formatCsv";
 import { formatJson } from "../functions/formatJson";
 import { getRecordsByTaxon } from "../functions/getRecordsByTaxon";
 import { indexName } from "../functions/indexName";
+import { lookupAlternateIds } from "../functions/lookupAlternateIds";
 
 const operations = (str) => {
   const translate = {
@@ -237,12 +236,45 @@ export const getResults = async (params) => {
   return query.func({ index, ...query.params });
 };
 
+const replaceSearchIds = async (params) => {
+  let query = params.query;
+  let index = indexName({ ...params });
+  let match = query.match(/tax_\w+\(([^\)]+)/);
+  if (match) {
+    let ids = match.slice(1);
+    if (ids.length > 0) {
+      let altIds = await lookupAlternateIds({ recordId: ids, index });
+      if (altIds.length == ids.length) {
+        for (let i = 0; i < altIds.length; i++) {
+          let altId = altIds[i].replace("taxon_id-", "");
+          query = query.replace(`(${ids[i]})`, `(${altId})`);
+        }
+      }
+    }
+  }
+
+  return query;
+};
+
 module.exports = {
   getSearchResults: async (req, res) => {
     let response = {};
     let exclusions = setExclusions(req.query);
     let sortBy = setSortBy(req.query);
     response = await getResults({ ...req.query, exclusions, sortBy });
+    if (response.status.hits == 0) {
+      let query = await replaceSearchIds(req.query);
+      if (query != req.query.query) {
+        response = await getResults({
+          ...req.query,
+          query,
+          exclusions,
+          sortBy,
+        });
+        response.queryString = query;
+      }
+    }
+    console.log(response);
     return res.format({
       json: () => {
         if (req.query.filename) {
