@@ -356,15 +356,11 @@ components:
         type: array
       style: form
     taxonomyParam:
-      description: "The taxonomy to search against [default: otol]"
+      description: "The taxonomy to search against"
       in: query
       name: taxonomy
       required: false
       schema:
-        default: ott
-        enum:
-          - ncbi
-          - ott
         type: string
     tidyDataParam:
       description: "Format delimited text output as Tidy Data [default: false]"
@@ -475,6 +471,10 @@ components:
           summary:
             type: object
         type: object
+      type: array
+    Taxonomies:
+      items:
+        type: string
       type: array
 info:
   contact:
@@ -760,6 +760,26 @@ paths:
       tags:
         - GoaT API
       x-eov-operation-handler: api/v0/routes/summary
+  /taxonomies:
+    get:
+      description: Returns a list of available taxonomies
+      operationId: getTaxonomies
+      parameters:
+        - $ref: "#/components/parameters/releaseParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Taxonomies"
+          description: successful operation
+        "400":
+          description: Invalid query
+      summary: List of taxonomies
+      tags:
+        - GoaT API
+      x-eov-operation-handler: api/v0/routes/taxonomies
 servers:
   - url: http://localhost:3000/api/v0.0.1
 tags:

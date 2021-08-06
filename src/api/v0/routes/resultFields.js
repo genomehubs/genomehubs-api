@@ -7,10 +7,11 @@ module.exports = {
     let fields = {};
     let identifiers = {};
     let status = {};
-    let release = config.release;
+    let release = req.query.release || config.release;
     let hub = config.hub;
     let source = config.source;
     try {
+      console.log(req.query);
       fields = await attrTypes({ ...req.query });
       identifiers = await attrTypes({ ...req.query, indexType: "identifiers" });
       status = { success: true };

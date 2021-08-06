@@ -44,6 +44,7 @@ const getSummary = async (params) => {
         name: params.summary[0],
         field: fields[0],
         lineage: ids[0],
+        taxonomy: params.taxonomy,
         meta: typesMap[fields[0]],
         summary:
           body.aggregations.attributes[fields[0]].summary[params.summary[0]],

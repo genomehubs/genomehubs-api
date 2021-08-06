@@ -16,6 +16,9 @@ swaggerDocument.info.title = config.title;
 swaggerDocument.info.version = config.url.replace(/.+\//, "");
 swaggerDocument.info.contact.name = config.contactName;
 swaggerDocument.info.contact.email = config.contactEmail;
+swaggerDocument.components.parameters.taxonomyParam.schema.default =
+  config.taxonomy;
+swaggerDocument.components.parameters.taxonomyParam.description += ` [default: ${config.taxonomy}]`;
 swaggerDocument.servers[0].url = config.url;
 
 const swaggerOptions = {

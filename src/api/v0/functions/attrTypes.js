@@ -52,10 +52,11 @@ const fetchTypes = async ({ result, taxonomy, hub, release, indexType }) => {
 export const attrTypes = async ({
   result = "multi",
   indexType = "attributes",
+  taxonomy = config.taxonomy,
 }) =>
   await fetchTypes({
     result,
-    taxonomy: config.taxonomy,
+    taxonomy,
     hub: config.hub,
     release: config.release,
     indexType,
