@@ -46,7 +46,7 @@ const altRecordId = async ({ index, name, source }) => {
 const lookupAlternateIds = async ({ recordId, index }) => {
   let newIds = [];
   for (const id of recordId) {
-    let match = String(id).match(/^(\D+):*(\d+)/);
+    let match = String(id).match(/^(\D+)[_:]*(\d+)/);
     let source = "ncbi";
     let name = String(id);
     if (match) {
