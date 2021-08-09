@@ -15,6 +15,7 @@ export const xYPerRank = async ({
   y,
   cat,
   rank,
+  taxonomy,
   queryString,
   ...apiParams
 }) => {
@@ -30,6 +31,7 @@ export const xYPerRank = async ({
       cat,
       rank,
       result: apiParams.result,
+      taxonomy,
       apiParams,
     });
     perRank.push(res.report);
@@ -63,6 +65,7 @@ export const xYPerRank = async ({
 export const histPerRank = async ({
   x,
   cat,
+  taxonomy,
   rank,
   queryString,
   ...apiParams
@@ -78,6 +81,7 @@ export const histPerRank = async ({
       cat,
       rank,
       result: apiParams.result,
+      taxonomy,
       apiParams,
     });
     perRank.push(res.report);
@@ -109,8 +113,8 @@ export const histPerRank = async ({
   };
 };
 
-export const xInY = async ({ x, y, result, rank, queryString }) => {
-  let { params, fields } = queryParams({ term: y, result, rank });
+export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
+  let { params, fields } = queryParams({ term: y, result, taxonomy, rank });
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   if (fields.length > 0) {
@@ -161,12 +165,19 @@ export const xInY = async ({ x, y, result, rank, queryString }) => {
   }
 };
 
-export const xInYPerRank = async ({ x, y, result, rank, queryString }) => {
+export const xInYPerRank = async ({
+  x,
+  y,
+  result,
+  taxonomy,
+  rank,
+  queryString,
+}) => {
   // Return xInY at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
   for (rank of ranks) {
-    let res = await xInY({ x, y, result, rank });
+    let res = await xInY({ x, y, result, rank, taxonomy });
     perRank.push(res.report);
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
@@ -187,7 +198,13 @@ export const xInYPerRank = async ({ x, y, result, rank, queryString }) => {
   };
 };
 
-export const xPerRank = async ({ x, result = "taxon", rank, queryString }) => {
+export const xPerRank = async ({
+  x,
+  result = "taxon",
+  taxonomy,
+  rank,
+  queryString,
+}) => {
   // Return counts at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
@@ -197,6 +214,7 @@ export const xPerRank = async ({ x, result = "taxon", rank, queryString }) => {
       term: x,
       result,
       rank,
+      taxonomy,
       includeEstimates,
     });
     let xCount = await getResultCount({ ...params });

@@ -40,13 +40,16 @@ const getCatLabels = async ({
     .catch((err) => {
       return err.meta;
     });
-  body.responses.forEach((doc, i) => {
-    if (doc.hits.total == 1) {
-      let label = cats[i];
-      label.label = doc.hits.hits[0]._source[key];
-      labels.push(label);
-    }
-  });
+  if (body.responses) {
+    body.responses.forEach((doc, i) => {
+      if (doc.hits.total == 1) {
+        let label = cats[i];
+        label.label = doc.hits.hits[0]._source[key];
+        labels.push(label);
+      }
+    });
+  }
+
   return labels;
 };
 

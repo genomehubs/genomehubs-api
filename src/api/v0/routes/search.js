@@ -274,7 +274,6 @@ module.exports = {
         response.queryString = query;
       }
     }
-    console.log(response);
     return res.format({
       json: () => {
         if (req.query.filename) {

@@ -2,11 +2,13 @@ export const queryParams = ({
   term,
   result,
   rank,
+  taxonomy,
   includeEstimates = false,
 }) => {
   let params = {
     result,
     query: term,
+    taxonomy,
     includeEstimates,
   };
   let fields = [];
