@@ -17,12 +17,12 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
       {
         bool: {
           should: multiTerm.map((term) => {
-            let filter, must_not;
+            let should, must_not;
             let taxonId = [];
             if (term.match(":")) {
               let source;
               [source, term] = term.split(":");
-              filter = [
+              should = [
                 {
                   wildcard: {
                     "taxon_names.name": term,
@@ -30,23 +30,31 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                 },
               ];
               if (term && term > "*") {
-                filter.push({
-                  wildcard: {
-                    "taxon_names.source": source,
+                should.push(
+                  {
+                    wildcard: {
+                      "taxon_names.source": source,
+                    },
                   },
-                  wildcard: {
-                    "taxon_names.class": source,
-                  },
-                });
+                  {
+                    wildcard: {
+                      "taxon_names.class": source,
+                    },
+                  }
+                );
               } else {
-                filter = {
-                  wildcard: {
-                    "taxon_names.source": source,
+                should = [
+                  {
+                    wildcard: {
+                      "taxon_names.source": source,
+                    },
                   },
-                  wildcard: {
-                    "taxon_names.class": source,
+                  {
+                    wildcard: {
+                      "taxon_names.class": source,
+                    },
                   },
-                };
+                ];
               }
             } else {
               taxonId = [{ taxon_id: term }];
@@ -65,7 +73,7 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                         path: "taxon_names",
                         query: {
                           bool: {
-                            filter,
+                            should,
                             must_not,
                           },
                         },

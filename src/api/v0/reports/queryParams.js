@@ -15,14 +15,21 @@ export const queryParams = ({
   if (rank) {
     if (params.query) {
       params.query += ` AND tax_rank(${rank})`;
-      let field = term.replace(/[^\w_\(\)].+$/, "");
-      if (field.match(/\(/)) {
-        field = field.split(/[\(\)]/)[1];
-      }
       params.includeEstimates = true;
-      params.excludeAncestral = [field];
-      params.excludeMissing = [field];
-      fields.push(field);
+      params.excludeAncestral = [];
+      params.excludeMissing = [];
+
+      term.split(/\s*(?:and|AND)\s*/).forEach((subterm) => {
+        if (!subterm.match("tax_")) {
+          let field = subterm.replace(/[^\w_\(\)].+$/, "");
+          if (field.match(/\(/)) {
+            field = field.split(/[\(\)]/)[1];
+          }
+          params.excludeAncestral.push(field);
+          params.excludeMissing.push(field);
+          fields.push(field);
+        }
+      });
     } else {
       params.includeEstimates = true;
       params.query = `tax_rank(${rank})`;

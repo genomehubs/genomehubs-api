@@ -122,20 +122,27 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
   }
   params.query += ` AND ${x}`;
   if (rank) {
-    let field = x.replace(/[^\w_\(\)].+$/, "");
-    if (field.match(/\(/)) {
-      field = field.split(/[\(\)]/)[1];
-    }
     params.includeEstimates = true;
-    params.excludeAncestral = [
-      ...(yQuery.excludeAncestral ? yQuery.excludeAncestral : []),
-      field,
-    ];
-    params.excludeMissing = [
-      ...(yQuery.excludeMissing ? yQuery.excludeMissing : []),
-      field,
-    ];
-    fields.push(field);
+    params.excludeAncestral = yQuery.excludeAncestral
+      ? [...yQuery.excludeAncestral]
+      : [];
+    params.excludeMissing = yQuery.excludeMissing
+      ? [...yQuery.excludeMissing]
+      : [];
+    x.split(/\s*(?:and|AND)\s*/).forEach((term) => {
+      if (!term.match("tax_")) {
+        let field = term.replace(/[^\w_\(\)].+$/, "");
+        if (field.match(/\(/)) {
+          field = field.split(/[\(\)]/)[1];
+        }
+        params.excludeAncestral.push(field);
+        params.excludeMissing.push(field);
+        fields.push(field);
+      }
+    });
+    if (fields.length == 0) {
+      fields = ["all"];
+    }
   }
   let xCount = await getResultCount({ ...params });
   let xQuery = params;
