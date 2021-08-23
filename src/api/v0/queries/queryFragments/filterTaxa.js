@@ -17,45 +17,33 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
       {
         bool: {
           should: multiTerm.map((term) => {
-            let should, must_not;
+            let filter, should, must_not;
             let taxonId = [];
             if (term.match(":")) {
               let source;
               [source, term] = term.split(":");
-              should = [
-                {
-                  wildcard: {
-                    "taxon_names.name": term,
-                  },
-                },
-              ];
+
               if (term && term > "*") {
-                should.push(
+                filter = [
                   {
                     wildcard: {
-                      "taxon_names.source": source,
-                    },
-                  },
-                  {
-                    wildcard: {
-                      "taxon_names.class": source,
-                    },
-                  }
-                );
-              } else {
-                should = [
-                  {
-                    wildcard: {
-                      "taxon_names.source": source,
-                    },
-                  },
-                  {
-                    wildcard: {
-                      "taxon_names.class": source,
+                      "taxon_names.name": term,
                     },
                   },
                 ];
               }
+              should = [
+                {
+                  match: {
+                    "taxon_names.source": source,
+                  },
+                },
+                {
+                  match: {
+                    "taxon_names.class": source,
+                  },
+                },
+              ];
             } else {
               taxonId = [{ taxon_id: term }];
               must_not = {
@@ -73,6 +61,7 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                         path: "taxon_names",
                         query: {
                           bool: {
+                            filter,
                             should,
                             must_not,
                           },
