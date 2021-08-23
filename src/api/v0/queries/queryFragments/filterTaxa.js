@@ -34,11 +34,17 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
                   wildcard: {
                     "taxon_names.source": source,
                   },
+                  wildcard: {
+                    "taxon_names.class": source,
+                  },
                 });
               } else {
                 filter = {
                   wildcard: {
                     "taxon_names.source": source,
+                  },
+                  wildcard: {
+                    "taxon_names.class": source,
                   },
                 };
               }
