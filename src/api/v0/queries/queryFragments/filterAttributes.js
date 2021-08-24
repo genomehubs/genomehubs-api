@@ -24,11 +24,59 @@ export const filterAttributes = (
     };
   } else {
     rangeQuery = (field) => {
+      console.log(field);
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
       if (filter.stat) {
         stat = filter.stat;
         delete filter.stat;
+      }
+      let meta = typesMap[field];
+      console.log(meta);
+      if (meta.type == "keyword" && meta.summary.includes("enum")) {
+        let list = meta.constraint.enum;
+        const operator = Object.keys(filter)[0];
+        const value = Object.values(filter)[0];
+        if (Object.keys(filter).length == 1) {
+          let terms = [];
+          let found = false;
+          for (const term of list) {
+            if (operator.startsWith("gt") && !found) {
+              if (term == value) {
+                if (operator.endsWith("e")) {
+                  terms.push(term);
+                }
+                break;
+              }
+              terms.push(term);
+              continue;
+            }
+            if (term == value) {
+              found = true;
+              if (operator.endsWith("e")) {
+                terms.push(term);
+              }
+              continue;
+            }
+            if (found) {
+              terms.push(term);
+            }
+          }
+          console.log(terms);
+          return {
+            bool: {
+              should: terms.map((term) => {
+                return {
+                  match: { [`attributes.${stat}`]: term },
+                };
+              }),
+            },
+          };
+        } else {
+          return {
+            match: { [`attributes.${stat}`]: value },
+          };
+        }
       }
       return {
         range: {
