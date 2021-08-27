@@ -369,10 +369,24 @@ components:
       name: tidyData
       schema:
         type: boolean
+    xOptsParam:
+      description: X axis options (min,max,tickCount)
+      in: query
+      name: x
+      required: false
+      schema:
+        type: string
     xParam:
       description: X value source
       in: query
-      name: x
+      name: xOpts
+      required: false
+      schema:
+        type: string
+    yOptsParam:
+      description: Y axis options (min,max,tickCount)
+      in: query
+      name: yOpts
       required: false
       schema:
         type: string
@@ -635,6 +649,8 @@ paths:
         - $ref: "#/components/parameters/rankParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/taxonomyParam"
+        - $ref: "#/components/parameters/xOptsParam"
+        - $ref: "#/components/parameters/yOptsParam"
         - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:

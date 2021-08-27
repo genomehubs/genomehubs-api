@@ -14,6 +14,7 @@ const scales = {
   linear: scaleLinear,
   log: scaleLog,
   log10: scaleLog,
+  log2: () => scaleLog().base(2),
   sqrt: scaleSqrt,
 };
 const fmt = format(".8r");
@@ -121,6 +122,7 @@ const getBounds = async ({
   exclusions,
   tickCount = 10,
   apiParams,
+  opts,
 }) => {
   let typesMap = await attrTypes({ result });
 
@@ -151,20 +153,36 @@ const getBounds = async ({
     return;
   }
   // Set domain to nice numbers
-  let max = stats.max;
-  let min = stats.min;
-  let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
-  let scale = scales[scaleType]().domain([min, max]);
-  let ticks = scale.ticks(tickCount);
-  let gap = ticks[1] - ticks[0];
-  let niceMin, niceMax;
-  let lastTick = ticks[ticks.length - 1];
-  niceMin = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - min) / gap));
-  niceMax = 1 * fmt(lastTick + gap * Math.ceil((max - lastTick) / gap));
-  if (scaleType.startsWith("log") && niceMin == 0) {
-    niceMin = min;
+  let min, max;
+  if (opts) {
+    opts = opts.split(",");
+    if (opts[0] && opts[0] > "") {
+      min = opts[0];
+    }
+    if (opts[1] && opts[1] > "") {
+      max = opts[1];
+    }
+    if (opts[2] && opts[2] > "") {
+      tickCount = opts[2];
+    }
   }
-  let domain = [niceMin, niceMax];
+  if (!min || !max) {
+    let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
+    let tmpMin = typeof min == "undefined" ? stats.min : min;
+    let tmpMax = typeof max == "undefined" ? stats.max : max;
+    let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
+    let ticks = scale.ticks(tickCount);
+    let gap = ticks[1] - ticks[0];
+    let lastTick = ticks[ticks.length - 1];
+    if (typeof min == "undefined") {
+      min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
+      if (scaleType.startsWith("log") && min == 0) {
+        min = tmpMin;
+      }
+    }
+    max = 1 * fmt(lastTick + gap * Math.ceil((tmpMax - lastTick) / gap));
+  }
+  let domain = [min, max];
   let terms = aggs.terms;
   let cats;
   let by;
@@ -310,7 +328,7 @@ const getHistogram = async ({
       }
       allYValues.push(yValues);
       if (bounds.showOther) {
-        allOther.push(yValues);
+        allOther.push([...yValues]);
       }
     } else {
       if (obj.doc_count > 0) {
@@ -397,6 +415,8 @@ export const histogram = async ({
   rank,
   includeEstimates,
   queryString,
+  xOpts,
+  yOpts,
   apiParams,
 }) => {
   let { params, fields } = queryParams({ term: x, result, rank });
@@ -418,6 +438,7 @@ export const histogram = async ({
     result,
     exclusions,
     apiParams,
+    opts: xOpts,
   });
   let histograms, yBounds;
   if (yFields && yFields.length > 0) {
@@ -428,6 +449,7 @@ export const histogram = async ({
       result,
       exclusions,
       apiParams,
+      opts: yOpts,
     });
   }
   if (!bounds.cats || bounds.cats.length > 0) {

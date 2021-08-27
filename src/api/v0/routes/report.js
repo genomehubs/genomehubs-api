@@ -16,6 +16,8 @@ export const scatterPerRank = async ({
   cat,
   rank,
   taxonomy,
+  xOpts,
+  yOpts,
   queryString,
   ...apiParams
 }) => {
@@ -33,6 +35,8 @@ export const scatterPerRank = async ({
       rank,
       result: apiParams.result,
       taxonomy,
+      xOpts,
+      yOpts,
       apiParams,
     });
     perRank.push(res.report);
@@ -63,6 +67,7 @@ export const scatterPerRank = async ({
 
 export const histPerRank = async ({
   x,
+  xOpts,
   cat,
   taxonomy,
   rank,
@@ -77,6 +82,7 @@ export const histPerRank = async ({
   for (rank of ranks.slice(0, 1)) {
     let res = await histogram({
       x,
+      xOpts,
       cat,
       rank,
       result: apiParams.result,
