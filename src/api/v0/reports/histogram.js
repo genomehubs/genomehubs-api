@@ -153,15 +153,17 @@ const getBounds = async ({
   // Set domain to nice numbers
   let max = stats.max;
   let min = stats.min;
-  let scale = scales[typesMap[field].bins.scale || "linear"]().domain([
-    min,
-    max,
-  ]);
+  let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
+  let scale = scales[scaleType]().domain([min, max]);
   let ticks = scale.ticks(tickCount);
   let gap = ticks[1] - ticks[0];
-  let niceMin = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - min) / gap));
+  let niceMin, niceMax;
   let lastTick = ticks[ticks.length - 1];
-  let niceMax = 1 * fmt(lastTick + gap * Math.ceil((max - lastTick) / gap));
+  niceMin = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - min) / gap));
+  niceMax = 1 * fmt(lastTick + gap * Math.ceil((max - lastTick) / gap));
+  if (scaleType.startsWith("log") && niceMin == 0) {
+    niceMin = min;
+  }
   let domain = [niceMin, niceMax];
   let terms = aggs.terms;
   let cats;
@@ -205,41 +207,7 @@ const getBounds = async ({
   return { stats, domain, tickCount, cats, by, showOther: definedTerms.other };
 };
 
-const valueTypes = {
-  long: "integer",
-  integer: "integer",
-  short: "integer",
-  byte: "integer",
-};
-
-const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
-  let typesMap = await attrTypes({ result });
-  params.size = 0;
-  // find max and min plus most frequent categories
-  let field = fields[0];
-  let valueType = valueTypes[typesMap[field].type] || "float";
-  params.aggs = await setAggs({
-    field,
-    result,
-    histogram: true,
-    bounds,
-  });
-  let res = await getResults({ ...params, exclusions });
-  let hist = res.aggs.aggregations[field].histogram;
-  if (!hist) {
-    return;
-  }
-  let buckets = [];
-  let allValues = [];
-  let other = [];
-  hist.buckets.forEach((obj) => {
-    buckets.push(obj.key);
-    allValues.push(obj.doc_count);
-    if (bounds.showOther) {
-      other.push(obj.doc_count);
-    }
-  });
-  let scaleType = typesMap[field].bins.scale || "linear";
+const scaleBuckets = (buckets, scaleType = "Linear", bounds) => {
   if (scaleType == "log2") {
     let domain = 2 ** buckets[buckets.length - 1] - 2 ** buckets[0];
     let factor = (bounds.domain[1] - bounds.domain[0]) / domain;
@@ -251,6 +219,110 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
       .range([buckets[0], buckets[buckets.length - 1]]);
     buckets = buckets.map((value) => 1 * fmt(scale.invert(value)));
   }
+  return buckets;
+};
+
+const getYValues = ({ obj, yField, typesMap }) => {
+  let yBuckets, yValues, yValueType;
+  let yHist =
+    obj.yHistograms.by_attribute.histogram.by_attribute[yField].histogram;
+  yHist.buckets.forEach((yObj, j) => {
+    if (j == 0) {
+      yBuckets = [];
+      yValues = [];
+      yValueType = valueTypes[typesMap[yField].type] || "float";
+    }
+    yBuckets.push(yObj.key);
+    yValues.push(yObj.doc_count);
+  });
+  return { yValues, yBuckets, yValueType };
+};
+
+const valueTypes = {
+  long: "integer",
+  integer: "integer",
+  short: "integer",
+  byte: "integer",
+};
+
+const getHistogram = async ({
+  params,
+  fields,
+  result,
+  exclusions,
+  bounds,
+  yFields,
+  yBounds,
+}) => {
+  let typesMap = await attrTypes({ result });
+  params.size = 0;
+  // find max and min plus most frequent categories
+  let field = fields[0];
+  let yField;
+  if (yFields && yFields.length > 0) {
+    yField = yFields[0];
+  }
+  let valueType = valueTypes[typesMap[field].type] || "float";
+  params.aggs = await setAggs({
+    field,
+    result,
+    histogram: true,
+    bounds,
+    yField,
+    yBounds,
+  });
+  let res = await getResults({ ...params, exclusions });
+  let hist = res.aggs.aggregations[field].histogram;
+  if (!hist) {
+    return;
+  }
+  let buckets = [];
+  let allValues = [];
+  let yBuckets;
+  let allYValues;
+  let yValuesByCat;
+  let yValueType;
+  let zDomain = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
+  let other = [];
+  let allOther = [];
+  hist.buckets.forEach((obj, i) => {
+    buckets.push(obj.key);
+    allValues.push(obj.doc_count);
+
+    if (bounds.showOther) {
+      other.push(obj.doc_count);
+    }
+    if (obj.yHistograms) {
+      if (i == 0) {
+        allYValues = [];
+      }
+      let yValues;
+      ({ yValues, yBuckets, yValueType } = getYValues({
+        obj,
+        yField,
+        typesMap,
+      }));
+      if (obj.doc_count > 0) {
+        let min = Math.min(...yValues);
+        let max = Math.max(...yValues);
+        zDomain[0] = Math.min(zDomain[0], min);
+        zDomain[1] = Math.max(zDomain[1], max);
+      }
+      allYValues.push(yValues);
+      if (bounds.showOther) {
+        allOther.push(yValues);
+      }
+    } else {
+      if (obj.doc_count > 0) {
+        zDomain[0] = Math.min(zDomain[0], obj.doc_count);
+        zDomain[1] = Math.max(zDomain[1], obj.doc_count);
+      }
+    }
+  });
+  buckets = scaleBuckets(buckets, typesMap[field].bins.scale, bounds);
+  if (yBuckets) {
+    yBuckets = scaleBuckets(yBuckets, typesMap[yField].bins.scale, yBounds);
+  }
   let catHists = res.aggs.aggregations[field].categoryHistograms;
   let byCat;
   if (catHists) {
@@ -261,6 +333,7 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
     } else {
       if (bounds.showOther) {
         byCat.other = other;
+        yValuesByCat = { other: allOther };
       }
       catBuckets = catHists.by_lineage.at_rank.buckets;
     }
@@ -277,17 +350,48 @@ const getHistogram = async ({ params, fields, result, exclusions, bounds }) => {
         if (byCat.other) {
           byCat.other[i] -= bin.doc_count;
         }
+        if (bin.yHistograms) {
+          if (i == 0) {
+            if (!yValuesByCat) {
+              yValuesByCat = {};
+            }
+            yValuesByCat[key] = [];
+          }
+          let { yValues } = getYValues({
+            obj: bin,
+            yField,
+            typesMap,
+          });
+          if (yValuesByCat.other) {
+            yValues.forEach((count, j) => {
+              yValuesByCat.other[i][j] -= count;
+            });
+          }
+
+          yValuesByCat[key].push(yValues);
+        }
       });
     });
     if (byCat.other && byCat.other.reduce((a, b) => a + b, 0) == 0) {
       delete byCat.other;
+      delete yValuesByCat.other;
     }
   }
-  return { buckets, allValues, byCat, valueType };
+  return {
+    buckets,
+    allValues,
+    byCat,
+    valueType,
+    yBuckets,
+    allYValues,
+    yValuesByCat,
+    zDomain,
+  };
 };
 
 export const histogram = async ({
   x,
+  y,
   cat,
   result,
   rank,
@@ -296,6 +400,11 @@ export const histogram = async ({
   apiParams,
 }) => {
   let { params, fields } = queryParams({ term: x, result, rank });
+  let { params: yParams, fields: yFields } = queryParams({
+    term: y,
+    result,
+    rank,
+  });
   let xQuery = { ...params };
   let exclusions;
   if (apiParams.includeEstimates) {
@@ -310,7 +419,17 @@ export const histogram = async ({
     exclusions,
     apiParams,
   });
-  let histograms;
+  let histograms, yBounds;
+  if (yFields && yFields.length > 0) {
+    yBounds = await getBounds({
+      params: { ...yParams },
+      fields: yFields,
+      cat,
+      result,
+      exclusions,
+      apiParams,
+    });
+  }
   if (!bounds.cats || bounds.cats.length > 0) {
     histograms = await getHistogram({
       params,
@@ -319,6 +438,8 @@ export const histogram = async ({
       result,
       exclusions,
       bounds,
+      yFields,
+      yBounds,
     });
     if (histograms.byCat && histograms.byCat.other) {
       bounds.cats.push({
@@ -359,5 +480,6 @@ export const histogram = async ({
     },
     xQuery,
     xLabel: fields[0],
+    yLabel: yFields[0],
   };
 };

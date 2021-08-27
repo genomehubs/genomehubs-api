@@ -71,6 +71,48 @@ const attributeCategory = ({ cats, field, histogram }) => {
   };
 };
 
+const nestedHistograms = ({ field, histogram }) => {
+  return {
+    reverse_nested: {},
+    aggs: {
+      by_attribute: {
+        nested: {
+          path: "attributes",
+        },
+        // aggs: {
+        //   by_cat: {
+        //     filters: {
+        //       filters,
+        //     },
+        aggs: {
+          histogram: {
+            reverse_nested: {},
+            aggs: {
+              by_attribute: {
+                nested: {
+                  path: "attributes",
+                },
+                aggs: {
+                  [field]: {
+                    filter: {
+                      term: { "attributes.key": field },
+                    },
+                    aggs: {
+                      histogram,
+                    },
+                  },
+                },
+              },
+            },
+          },
+        },
+        //   },
+        // },
+      },
+    },
+  };
+};
+
 const lineageTerms = ({ terms, size }) => {
   let rank = terms;
   return {
@@ -149,13 +191,23 @@ export const setAggs = async ({
   terms,
   size = 5,
   bounds,
+  yField,
+  yBounds,
 }) => {
   let typesMap = await attrTypes({ result });
   if (!typesMap[field]) {
     return;
   }
+  let yHistogram, yHistograms;
+  if (histogram && yField) {
+    yHistogram = await histogramAgg({ field: yField, result, bounds: yBounds });
+    yHistograms = nestedHistograms({
+      field: yField,
+      histogram: yHistogram,
+    });
+  }
   if (histogram) {
-    histogram = await histogramAgg({ field, result, bounds });
+    histogram = await histogramAgg({ field, result, bounds, yHistograms });
   }
   let categoryHistograms;
   if (bounds && bounds.cats) {
@@ -205,6 +257,7 @@ export const setAggs = async ({
             stats,
             terms,
             categoryHistograms,
+            yHistograms,
           },
         },
       },

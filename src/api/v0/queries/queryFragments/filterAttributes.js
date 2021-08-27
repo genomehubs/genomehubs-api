@@ -10,6 +10,7 @@ export const filterAttributes = (
   let rangeQuery;
   if (searchRawValues) {
     rangeQuery = (field) => {
+      // TODO: support enum based query here
       return {
         nested: {
           path: "attributes.values",
@@ -24,7 +25,6 @@ export const filterAttributes = (
     };
   } else {
     rangeQuery = (field) => {
-      console.log(field);
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
       if (filter.stat) {
@@ -32,7 +32,6 @@ export const filterAttributes = (
         delete filter.stat;
       }
       let meta = typesMap[field];
-      console.log(meta);
       if (meta.type == "keyword" && meta.summary.includes("enum")) {
         let list = meta.constraint.enum;
         const operator = Object.keys(filter)[0];
@@ -62,7 +61,6 @@ export const filterAttributes = (
               terms.push(term);
             }
           }
-          console.log(terms);
           return {
             bool: {
               should: terms.map((term) => {

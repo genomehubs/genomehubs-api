@@ -226,6 +226,7 @@ components:
       schema:
         enum:
           - histogram
+          - scatter
           - sources
           - xInY
           - xPerRank

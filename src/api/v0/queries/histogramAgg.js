@@ -1,6 +1,12 @@
 import { attrTypes } from "../functions/attrTypes";
 
-export const histogramAgg = async ({ field, result, rawValues, bounds }) => {
+export const histogramAgg = async ({
+  field,
+  result,
+  rawValues,
+  bounds,
+  yHistograms,
+}) => {
   const scales = {
     log2: "Math.max(Math.log(_value)/Math.log(2), 0)",
     log10: "Math.log10(_value)",
@@ -17,6 +23,7 @@ export const histogramAgg = async ({ field, result, rawValues, bounds }) => {
   if (!typesMap[field]) {
     return;
   }
+
   let { scale, min, max, count } = typesMap[field].bins;
   let interval;
   if (bounds) {
@@ -43,6 +50,9 @@ export const histogramAgg = async ({ field, result, rawValues, bounds }) => {
         max,
       },
       offset: min,
+    },
+    aggs: {
+      yHistograms,
     },
   };
 };

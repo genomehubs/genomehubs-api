@@ -10,7 +10,7 @@ import qs from "qs";
 import { queryParams } from "../reports/queryParams";
 import { setRanks } from "../functions/setRanks";
 
-export const xYPerRank = async ({
+export const scatterPerRank = async ({
   x,
   y,
   cat,
@@ -19,13 +19,14 @@ export const xYPerRank = async ({
   queryString,
   ...apiParams
 }) => {
-  // Return histogram at a list of ranks
+  // Return 2D histogram at a list of ranks
   let ranks = setRanks(rank);
   let perRank = [];
   let xQuery;
   let xLabel;
+  let yLabel;
   for (rank of ranks.slice(0, 1)) {
-    let res = await xY({
+    let res = await histogram({
       x,
       y,
       cat,
@@ -37,12 +38,10 @@ export const xYPerRank = async ({
     perRank.push(res.report);
     xQuery = res.xQuery;
     xLabel = res.xLabel;
+    yLabel = res.yLabel;
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
-  let caption = `Distribution of ${ranks[0]}`;
-  if (x) {
-    caption += ` with ${x}`;
-  }
+  let caption = `Distribution of ${y} with ${x}`;
   if (cat) {
     caption += ` by ${cat}`;
   }
@@ -55,7 +54,7 @@ export const xYPerRank = async ({
       histogram: report,
       xQuery,
       xLabel,
-      yLabel: `Count of ${ranks[0]}`,
+      yLabel,
       queryString,
       caption,
     },
@@ -323,12 +322,16 @@ module.exports = {
     let report = {};
     let queryString = qs.stringify(req.query);
     switch (req.query.report) {
-      case "sources": {
-        report = await getSources({ ...req.query, queryString });
-        break;
-      }
       case "histogram": {
         report = await histPerRank({ ...req.query, queryString });
+        break;
+      }
+      case "scatter": {
+        report = await scatterPerRank({ ...req.query, queryString });
+        break;
+      }
+      case "sources": {
+        report = await getSources({ ...req.query, queryString });
         break;
       }
       case "xInY": {
@@ -337,10 +340,6 @@ module.exports = {
       }
       case "xPerRank": {
         report = await xPerRank({ ...req.query, queryString });
-        break;
-      }
-      case "xY": {
-        report = await xY({ ...req.query, queryString });
         break;
       }
     }
