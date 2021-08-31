@@ -180,7 +180,9 @@ const getBounds = async ({
         min = tmpMin;
       }
     }
-    max = 1 * fmt(lastTick + gap * Math.ceil((tmpMax - lastTick) / gap));
+    max =
+      1 *
+      fmt(lastTick + gap * Math.max(Math.ceil((tmpMax - lastTick) / gap), 1));
   }
   let domain = [min, max];
   let terms = aggs.terms;
@@ -242,8 +244,7 @@ const scaleBuckets = (buckets, scaleType = "Linear", bounds) => {
 
 const getYValues = ({ obj, yField, typesMap }) => {
   let yBuckets, yValues, yValueType;
-  let yHist =
-    obj.yHistograms.by_attribute.histogram.by_attribute[yField].histogram;
+  let yHist = obj.yHistograms.by_attribute[yField].histogram;
   yHist.buckets.forEach((yObj, j) => {
     if (j == 0) {
       yBuckets = [];
@@ -404,6 +405,7 @@ const getHistogram = async ({
     allYValues,
     yValuesByCat,
     zDomain,
+    params,
   };
 };
 
@@ -425,11 +427,15 @@ export const histogram = async ({
     result,
     rank,
   });
+  fields = fields.concat(yFields);
   let xQuery = { ...params };
   let exclusions;
   if (apiParams.includeEstimates) {
     delete params.excludeAncestral;
+  } else {
+    params.excludeAncestral.push(...yFields);
   }
+  params.excludeMissing.push(...yFields);
   exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },

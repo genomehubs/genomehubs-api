@@ -13,8 +13,8 @@ export const histogramAgg = async ({
     sqrt: "Math.sqrt(_value)",
   };
   const funcs = {
-    log2: (value) => Math.max(Math.log2(value), 0),
-    log10: (value) => Math.max(Math.log10(value), 0),
+    log2: (value) => Math.log2(value),
+    log10: (value) => Math.log10(value),
     sqrt: (value) => Math.sqrt(value),
     linear: (value) => value,
   };
@@ -31,7 +31,7 @@ export const histogramAgg = async ({
       min = funcs[scale](bounds.domain[0]);
     }
     if (!isNaN(bounds.domain[1])) {
-      max = funcs[scale](bounds.domain[1]);
+      max = funcs[scale](1 * bounds.domain[1]);
     }
     count = bounds.tickCount - 1;
   }

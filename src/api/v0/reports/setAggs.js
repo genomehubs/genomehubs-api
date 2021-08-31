@@ -79,35 +79,28 @@ const nestedHistograms = ({ field, histogram }) => {
         nested: {
           path: "attributes",
         },
-        // aggs: {
-        //   by_cat: {
-        //     filters: {
-        //       filters,
-        //     },
         aggs: {
-          histogram: {
-            reverse_nested: {},
-            aggs: {
-              by_attribute: {
-                nested: {
-                  path: "attributes",
-                },
-                aggs: {
-                  [field]: {
-                    filter: {
-                      term: { "attributes.key": field },
-                    },
-                    aggs: {
-                      histogram,
-                    },
-                  },
-                },
-              },
+          // histogram: {
+          //   reverse_nested: {},
+          //   aggs: {
+          //     by_attribute: {
+          //       nested: {
+          //         path: "attributes",
+          //       },
+          //       aggs: {
+          [field]: {
+            filter: {
+              term: { "attributes.key": field },
             },
+            aggs: {
+              histogram,
+            },
+            //       },
+            //     },
+            //   },
+            // },
           },
         },
-        //   },
-        // },
       },
     },
   };
@@ -257,7 +250,7 @@ export const setAggs = async ({
             stats,
             terms,
             categoryHistograms,
-            yHistograms,
+            // yHistograms,
           },
         },
       },
