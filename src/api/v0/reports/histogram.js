@@ -224,7 +224,15 @@ const getBounds = async ({
     cats = definedCats;
     by = definedTerms.by;
   }
-  return { stats, domain, tickCount, cats, by, showOther: definedTerms.other };
+  return {
+    stats,
+    domain,
+    tickCount,
+    cat,
+    cats,
+    by,
+    showOther: definedTerms.other,
+  };
 };
 
 const scaleBuckets = (buckets, scaleType = "Linear", bounds) => {
@@ -280,6 +288,7 @@ const getHistogram = async ({
   let yField;
   if (yFields && yFields.length > 0) {
     yField = yFields[0];
+    fields = fields.concat(yFields);
   }
   let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
@@ -298,6 +307,7 @@ const getHistogram = async ({
   let buckets = [];
   let allValues = [];
   let yBuckets;
+  let ranks;
   let allYValues;
   let yValuesByCat;
   let yValueType;
@@ -348,12 +358,14 @@ const getHistogram = async ({
     let catBuckets;
     byCat = {};
     if (bounds.by == "attribute") {
+      fields.push(bounds.cat);
       catBuckets = catHists.by_attribute.by_cat.buckets;
     } else {
       if (bounds.showOther) {
         byCat.other = other;
         yValuesByCat = { other: allOther };
       }
+      ranks = [bounds.cat];
       catBuckets = catHists.by_lineage.at_rank.buckets;
     }
     let catObjs = {};
@@ -406,6 +418,8 @@ const getHistogram = async ({
     yValuesByCat,
     zDomain,
     params,
+    fields,
+    ranks,
   };
 };
 
@@ -434,8 +448,10 @@ export const histogram = async ({
     delete params.excludeAncestral;
   } else {
     params.excludeAncestral.push(...yFields);
+    // params.excludeAncestral.push(cat);
   }
   params.excludeMissing.push(...yFields);
+  // params.excludeMissing.push(cat);
   exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
