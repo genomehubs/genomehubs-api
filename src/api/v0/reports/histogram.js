@@ -125,7 +125,6 @@ const getBounds = async ({
   opts,
 }) => {
   let typesMap = await attrTypes({ result });
-
   params.size = 0;
   // find max and min plus most frequent categories
   let field = fields[0];
@@ -443,15 +442,20 @@ export const histogram = async ({
   });
   fields = fields.concat(yFields);
   let xQuery = { ...params };
+  let typesMap = await attrTypes({ result });
   let exclusions;
   if (apiParams.includeEstimates) {
     delete params.excludeAncestral;
   } else {
     params.excludeAncestral.push(...yFields);
-    // params.excludeAncestral.push(cat);
+    if (typesMap[cat]) {
+      params.excludeAncestral.push(cat);
+    }
   }
   params.excludeMissing.push(...yFields);
-  // params.excludeMissing.push(cat);
+  if (typesMap[cat]) {
+    params.excludeMissing.push(cat);
+  }
   exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
