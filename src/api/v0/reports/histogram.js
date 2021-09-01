@@ -279,12 +279,15 @@ const getHistogram = async ({
   bounds,
   yFields,
   yBounds,
+  raw,
 }) => {
   let typesMap = await attrTypes({ result });
-  params.size = 0;
+  params.size = raw;
   // find max and min plus most frequent categories
   let field = fields[0];
   let yField;
+  let rawData;
+  let pointData;
   if (yFields && yFields.length > 0) {
     yField = yFields[0];
     fields = fields.concat(yFields);
@@ -299,9 +302,42 @@ const getHistogram = async ({
     yBounds,
   });
   let res = await getResults({ ...params, exclusions });
+  if (yFields && yFields.length > 0 && raw) {
+    pointData = {};
+    res.results.forEach((result) => {
+      let cat;
+      if (bounds.cat) {
+        if (bounds.by == "attribute") {
+          cat = result.result.fields[bounds.cat].value.toLowerCase();
+        } else {
+          cat = result.result.lineage.filter(
+            (obj) => obj.taxon_rank == bounds.cat
+          );
+          if (cat[0]) {
+            cat = cat[0].taxon_id;
+          } else {
+            cat = "other";
+          }
+        }
+      }
+      if (!pointData[cat]) {
+        pointData[cat] = [];
+      }
+      pointData[cat].push({
+        scientific_name: result.result.scientific_name,
+        taxonId: result.result.taxon_id,
+        x: result.result.fields[field].value,
+        y: result.result.fields[yField].value,
+        cat,
+      });
+    });
+  }
   let hist = res.aggs.aggregations[field].histogram;
   if (!hist) {
     return;
+  }
+  if (pointData) {
+    rawData = {};
   }
   let buckets = [];
   let allValues = [];
@@ -401,16 +437,25 @@ const getHistogram = async ({
           yValuesByCat[key].push(yValues);
         }
       });
+      if (pointData) {
+        rawData[key] = pointData[key];
+        delete pointData[key];
+      }
     });
     if (byCat.other && byCat.other.reduce((a, b) => a + b, 0) == 0) {
       delete byCat.other;
       delete yValuesByCat.other;
+    } else if (pointData) {
+      rawData.other = Object.values(pointData).flat();
     }
+  } else if (pointData) {
+    rawData = Object.values(pointData).flat();
   }
   return {
     buckets,
     allValues,
     byCat,
+    rawData,
     valueType,
     yBuckets,
     allYValues,
@@ -432,6 +477,7 @@ export const histogram = async ({
   queryString,
   xOpts,
   yOpts,
+  scatterThreshold,
   apiParams,
 }) => {
   let { params, fields } = queryParams({ term: x, result, rank });
@@ -440,12 +486,12 @@ export const histogram = async ({
     result,
     rank,
   });
-  fields = fields.concat(yFields);
   let xQuery = { ...params };
   let typesMap = await attrTypes({ result });
   let exclusions;
   if (apiParams.includeEstimates) {
     delete params.excludeAncestral;
+    delete xQuery.excludeAncestral;
   } else {
     params.excludeAncestral.push(...yFields);
     if (typesMap[cat]) {
@@ -456,6 +502,7 @@ export const histogram = async ({
   if (typesMap[cat]) {
     params.excludeMissing.push(cat);
   }
+  fields = fields.concat(yFields);
   exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
@@ -479,6 +526,7 @@ export const histogram = async ({
     });
   }
   if (!bounds.cats || bounds.cats.length > 0) {
+    let threshold = scatterThreshold >= 0 ? scatterThreshold : 10000;
     histograms = await getHistogram({
       params,
       fields,
@@ -488,6 +536,7 @@ export const histogram = async ({
       bounds,
       yFields,
       yBounds,
+      raw: bounds.stats.count < threshold ? threshold : 0,
     });
     if (histograms.byCat && histograms.byCat.other) {
       bounds.cats.push({

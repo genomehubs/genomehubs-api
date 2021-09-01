@@ -245,6 +245,16 @@ components:
           - taxon
           - multi
         type: string
+    scatterThresholdParam:
+      description: "Maximum number of results to plot as points [default: 100]"
+      in: query
+      name: scatterThreshold
+      required: false
+      schema:
+        maximum: 10000
+        minimum: -1
+        type: integer
+      style: form
     searchRawValuesParam:
       description: "Apply search filters to raw values [default: false]"
       in: query
@@ -651,6 +661,7 @@ paths:
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/xOptsParam"
         - $ref: "#/components/parameters/yOptsParam"
+        - $ref: "#/components/parameters/scatterThresholdParam"
         - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:

@@ -18,6 +18,7 @@ export const scatterPerRank = async ({
   taxonomy,
   xOpts,
   yOpts,
+  scatterThreshold = 100,
   queryString,
   ...apiParams
 }) => {
@@ -37,6 +38,7 @@ export const scatterPerRank = async ({
       taxonomy,
       xOpts,
       yOpts,
+      scatterThreshold,
       apiParams,
     });
     perRank.push(res.report);
