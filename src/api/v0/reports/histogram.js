@@ -146,7 +146,12 @@ const getBounds = async ({
     size: definedTerms.size,
   });
   let res = await getResults({ ...params, exclusions });
-  let aggs = res.aggs.aggregations[field];
+  let aggs;
+  try {
+    aggs = res.aggs.aggregations[field];
+  } catch {
+    return;
+  }
   let stats = aggs.stats;
   if (!stats) {
     return;
@@ -166,22 +171,27 @@ const getBounds = async ({
     }
   }
   if (!min || !max) {
-    let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
-    let tmpMin = typeof min == "undefined" ? stats.min : min;
-    let tmpMax = typeof max == "undefined" ? stats.max : max;
-    let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
-    let ticks = scale.ticks(tickCount);
-    let gap = ticks[1] - ticks[0];
-    let lastTick = ticks[ticks.length - 1];
-    if (typeof min == "undefined") {
-      min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
-      if (scaleType.startsWith("log") && min == 0) {
-        min = tmpMin;
+    if (typesMap[field].type == "date") {
+      min = stats.min;
+      max = stats.max;
+    } else {
+      let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
+      let tmpMin = typeof min == "undefined" ? stats.min : min;
+      let tmpMax = typeof max == "undefined" ? stats.max : max;
+      let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
+      let ticks = scale.ticks(tickCount);
+      let gap = ticks[1] - ticks[0];
+      let lastTick = ticks[ticks.length - 1];
+      if (typeof min == "undefined") {
+        min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
+        if (scaleType.startsWith("log") && min == 0) {
+          min = tmpMin;
+        }
       }
+      max =
+        1 *
+        fmt(lastTick + gap * Math.max(Math.ceil((tmpMax - lastTick) / gap), 1));
     }
-    max =
-      1 *
-      fmt(lastTick + gap * Math.max(Math.ceil((tmpMax - lastTick) / gap), 1));
   }
   let domain = [min, max];
   let terms = aggs.terms;
@@ -235,7 +245,10 @@ const getBounds = async ({
 };
 
 const scaleBuckets = (buckets, scaleType = "Linear", bounds) => {
-  if (scaleType == "log2") {
+  if (scaleType == "date") {
+    // let interval = buckets[1] - buckets[0];
+    buckets = buckets.map((value) => value);
+  } else if (scaleType == "log2") {
     let domain = 2 ** buckets[buckets.length - 1] - 2 ** buckets[0];
     let factor = (bounds.domain[1] - bounds.domain[0]) / domain;
     let scale = (v) => 2 ** v * factor;
@@ -269,6 +282,8 @@ const valueTypes = {
   integer: "integer",
   short: "integer",
   byte: "integer",
+  date: "date",
+  keyword: "keyword",
 };
 
 const getHistogram = async ({
@@ -308,7 +323,12 @@ const getHistogram = async ({
       let cat;
       if (bounds.cat) {
         if (bounds.by == "attribute") {
-          cat = result.result.fields[bounds.cat].value.toLowerCase();
+          cat = result.result.fields[bounds.cat].value;
+          if (Array.isArray(cat)) {
+            cat = cat[0].toLowerCase();
+          } else {
+            cat = result.result.fields[bounds.cat].value.toLowerCase();
+          }
         } else {
           cat = result.result.lineage.filter(
             (obj) => obj.taxon_rank == bounds.cat
@@ -323,11 +343,19 @@ const getHistogram = async ({
       if (!pointData[cat]) {
         pointData[cat] = [];
       }
+      let x = result.result.fields[field].value;
+      let y = result.result.fields[yField].value;
+      if (typesMap[field].type == "date") {
+        x = Date.parse(x);
+      }
+      if (typesMap[yField].type == "date") {
+        y = Date.parse(y);
+      }
       pointData[cat].push({
         scientific_name: result.result.scientific_name,
         taxonId: result.result.taxon_id,
-        x: result.result.fields[field].value,
-        y: result.result.fields[yField].value,
+        x,
+        y,
         cat,
       });
     });
@@ -383,9 +411,18 @@ const getHistogram = async ({
       }
     }
   });
-  buckets = scaleBuckets(buckets, typesMap[field].bins.scale, bounds);
+  if (typesMap[field].type == "date") {
+    buckets = scaleBuckets(buckets, "date", bounds);
+  } else {
+    buckets = scaleBuckets(buckets, typesMap[field].bins.scale, bounds);
+  }
+
   if (yBuckets) {
-    yBuckets = scaleBuckets(yBuckets, typesMap[yField].bins.scale, yBounds);
+    if (typesMap[yField].type == "date") {
+      yBuckets = scaleBuckets(yBuckets, "date", yBounds);
+    } else {
+      yBuckets = scaleBuckets(yBuckets, typesMap[yField].bins.scale, yBounds);
+    }
   }
   let catHists = res.aggs.aggregations[field].categoryHistograms;
   let byCat;
@@ -458,6 +495,7 @@ const getHistogram = async ({
     rawData,
     valueType,
     yBuckets,
+    yValueType,
     allYValues,
     yValuesByCat,
     zDomain,
@@ -525,7 +563,7 @@ export const histogram = async ({
       opts: yOpts,
     });
   }
-  if (!bounds.cats || bounds.cats.length > 0) {
+  if (bounds && (!bounds.cats || bounds.cats.length > 0)) {
     let threshold = scatterThreshold >= 0 ? scatterThreshold : 10000;
     histograms = await getHistogram({
       params,
