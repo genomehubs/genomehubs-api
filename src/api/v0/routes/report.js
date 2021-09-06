@@ -136,7 +136,7 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
     params.excludeMissing = yQuery.excludeMissing
       ? [...yQuery.excludeMissing]
       : [];
-    x.split(/\s*(?:and|AND)\s*/).forEach((term) => {
+    x.split(/\s+(?:and|AND)\s+/).forEach((term) => {
       if (!term.match("tax_")) {
         let field = term.replace(/[^\w_\(\)].+$/, "");
         if (field.match(/\(/)) {

@@ -19,7 +19,7 @@ export const queryParams = ({
       params.excludeAncestral = [];
       params.excludeMissing = [];
 
-      term.split(/\s*(?:and|AND)\s*/).forEach((subterm) => {
+      term.split(/\s+(?:and|AND)\s+/).forEach((subterm) => {
         if (!subterm.match("tax_")) {
           let field = subterm.replace(/[^\w_\(\)].+$/, "");
           if (field.match(/\(/)) {

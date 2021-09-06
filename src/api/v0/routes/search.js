@@ -137,7 +137,7 @@ const generateQuery = async ({
   if (query && query.match(/\n/)) {
     multiTerm = query.split(/\n/);
   } else if (query) {
-    query.split(/\s*(?:AND|and)\s*/).forEach((term) => {
+    query.split(/\s+(?:AND|and)\s+/).forEach((term) => {
       let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
       if (taxQuery) {
         if (taxQuery[1] == "rank") {
@@ -232,6 +232,7 @@ const generateQuery = async ({
 
 export const getResults = async (params) => {
   let query = await generateQuery({ ...params });
+  console.log(query);
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });
 };
