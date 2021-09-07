@@ -232,7 +232,6 @@ const generateQuery = async ({
 
 export const getResults = async (params) => {
   let query = await generateQuery({ ...params });
-  console.log(query);
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });
 };
