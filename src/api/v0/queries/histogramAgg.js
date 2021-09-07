@@ -3,6 +3,7 @@ import { scaleTime } from "d3-scale";
 
 export const histogramAgg = async ({
   field,
+  summary,
   result,
   rawValues,
   bounds,
@@ -34,6 +35,11 @@ export const histogramAgg = async ({
       return "1q";
     }
     return "1y";
+  };
+
+  const dateSummary = {
+    min: "from",
+    max: "to",
   };
 
   const timeLimits = (startTime, endTime) => {
@@ -72,11 +78,19 @@ export const histogramAgg = async ({
     }
     offset = min;
   }
+  let fieldKey = `attributes${rawValues ? ".values" : ""}.`;
+  if (!summary || summary == "value") {
+    fieldKey += `${typesMap[field].type}_value`;
+  } else {
+    if (typesMap[field].type == "date") {
+      fieldKey += dateSummary[summary] || `${typesMap[field].type}_value`;
+    } else {
+      fieldKey += summary;
+    }
+  }
   return {
     [histKey]: {
-      field: `attributes${rawValues ? ".values" : ""}.${
-        typesMap[field].type
-      }_value`,
+      field: fieldKey,
       ...(scales[scale] && { script: scales[scale] }),
       ...(interval && { interval }),
       ...(calendar_interval && { calendar_interval }),

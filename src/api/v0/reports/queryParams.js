@@ -12,6 +12,7 @@ export const queryParams = ({
     includeEstimates,
   };
   let fields = [];
+  let summaries = [];
   if (rank) {
     if (params.query) {
       params.query += ` AND tax_rank(${rank})`;
@@ -22,12 +23,14 @@ export const queryParams = ({
       term.split(/\s+(?:and|AND)\s+/).forEach((subterm) => {
         if (!subterm.match("tax_")) {
           let field = subterm.replace(/[^\w_\(\)].+$/, "");
+          let summary = "value";
           if (field.match(/\(/)) {
-            field = field.split(/[\(\)]/)[1];
+            [summary, field] = field.split(/[\(\)]/);
           }
           params.excludeAncestral.push(field);
           params.excludeMissing.push(field);
           fields.push(field);
+          summaries.push(summary);
         }
       });
     } else {
@@ -35,5 +38,5 @@ export const queryParams = ({
       params.query = `tax_rank(${rank})`;
     }
   }
-  return { params, fields };
+  return { params, fields, summaries };
 };

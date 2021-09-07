@@ -178,6 +178,7 @@ const lineageCategory = ({ cats, field, histogram }) => {
 
 export const setAggs = async ({
   field,
+  summary,
   result,
   histogram,
   stats,
@@ -185,6 +186,7 @@ export const setAggs = async ({
   size = 5,
   bounds,
   yField,
+  ySummary,
   yBounds,
 }) => {
   let typesMap = await attrTypes({ result });
@@ -193,14 +195,25 @@ export const setAggs = async ({
   }
   let yHistogram, yHistograms;
   if (histogram && yField) {
-    yHistogram = await histogramAgg({ field: yField, result, bounds: yBounds });
+    yHistogram = await histogramAgg({
+      field: yField,
+      summary: ySummary,
+      result,
+      bounds: yBounds,
+    });
     yHistograms = nestedHistograms({
       field: yField,
       histogram: yHistogram,
     });
   }
   if (histogram) {
-    histogram = await histogramAgg({ field, result, bounds, yHistograms });
+    histogram = await histogramAgg({
+      field,
+      summary,
+      result,
+      bounds,
+      yHistograms,
+    });
   }
   let categoryHistograms;
   if (bounds && bounds.cats) {
@@ -208,12 +221,14 @@ export const setAggs = async ({
       categoryHistograms = attributeCategory({
         cats: bounds.cats,
         field,
+        summary,
         histogram,
       });
     } else {
       categoryHistograms = lineageCategory({
         cats: bounds.cats,
         field,
+        summary,
         histogram,
       });
     }

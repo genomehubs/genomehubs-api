@@ -65,7 +65,7 @@ export const searchByTaxon = async ({
       searchTerm,
       multiTerm,
       ancestral,
-      result == "taxon" && idTerm
+      result == "taxon" && aggs == {} && idTerm
     );
   } else {
     taxonFilter = filterTaxId(searchTerm);

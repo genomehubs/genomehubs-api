@@ -117,6 +117,7 @@ const setTerms = async ({ cat, typesMap, apiParams }) => {
 const getBounds = async ({
   params,
   fields,
+  summaries,
   cat,
   result,
   exclusions,
@@ -128,6 +129,7 @@ const getBounds = async ({
   params.size = 0;
   // find max and min plus most frequent categories
   let field = fields[0];
+  let summary = summaries[0];
   let definedTerms = await setTerms({ cat, typesMap, apiParams });
   cat = definedTerms.cat;
   let extraTerms;
@@ -140,6 +142,7 @@ const getBounds = async ({
   }
   params.aggs = await setAggs({
     field,
+    summary,
     result,
     stats: true,
     terms: extraTerms,
@@ -289,35 +292,58 @@ const valueTypes = {
 const getHistogram = async ({
   params,
   fields,
+  summaries,
   result,
   exclusions,
   bounds,
   yFields,
   yBounds,
+  ySummaries,
   raw,
 }) => {
   let typesMap = await attrTypes({ result });
   params.size = raw;
   // find max and min plus most frequent categories
   let field = fields[0];
+  let summary = summaries[0];
   let yField;
+  let ySummary;
   let rawData;
   let pointData;
   if (yFields && yFields.length > 0) {
     yField = yFields[0];
+    ySummary = ySummaries[0];
     fields = fields.concat(yFields);
   }
   let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
     field,
+    summary,
     result,
     histogram: true,
     bounds,
     yField,
     yBounds,
+    ySummary,
   });
   let res = await getResults({ ...params, exclusions });
+  let xSumm, ySumm;
+  const dateSummary = {
+    min: "from",
+    max: "to",
+  };
+  if (valueType == "date") {
+    xSumm = dateSummary[summary] || "value";
+  } else {
+    xSumm = summary || "value";
+  }
   if (yFields && yFields.length > 0 && raw) {
+    let yValueType = valueTypes[typesMap[yField].type] || "float";
+    if (yValueType == "date") {
+      ySumm = dateSummary[ySummary] || "value";
+    } else {
+      ySumm = ySummary || "value";
+    }
     pointData = {};
     res.results.forEach((result) => {
       let cat;
@@ -343,12 +369,12 @@ const getHistogram = async ({
       if (!pointData[cat]) {
         pointData[cat] = [];
       }
-      let x = result.result.fields[field].value;
-      let y = result.result.fields[yField].value;
-      if (typesMap[field].type == "date") {
+      let x = result.result.fields[field][xSumm];
+      let y = result.result.fields[yField][ySumm];
+      if (valueType == "date") {
         x = Date.parse(x);
       }
-      if (typesMap[yField].type == "date") {
+      if (yValueType == "date") {
         y = Date.parse(y);
       }
       pointData[cat].push({
@@ -488,6 +514,20 @@ const getHistogram = async ({
   } else if (pointData) {
     rawData = Object.values(pointData).flat();
   }
+  let xLabel, yLabel;
+  if (xSumm != "value") {
+    xLabel = `${summaries[0]}(${field})`;
+  } else {
+    xLabel = field;
+  }
+  if (yField) {
+    if (ySumm != "value") {
+      yLabel = `${ySummaries[0]}(${yField})`;
+    } else {
+      yLabel = yField;
+    }
+  }
+
   return {
     buckets,
     allValues,
@@ -502,6 +542,8 @@ const getHistogram = async ({
     params,
     fields,
     ranks,
+    xLabel,
+    yLabel,
   };
 };
 
@@ -518,8 +560,12 @@ export const histogram = async ({
   scatterThreshold,
   apiParams,
 }) => {
-  let { params, fields } = queryParams({ term: x, result, rank });
-  let { params: yParams, fields: yFields } = queryParams({
+  let { params, fields, summaries } = queryParams({ term: x, result, rank });
+  let {
+    params: yParams,
+    fields: yFields,
+    summaries: ySummaries,
+  } = queryParams({
     term: y,
     result,
     rank,
@@ -545,6 +591,7 @@ export const histogram = async ({
   let bounds = await getBounds({
     params: { ...params },
     fields,
+    summaries,
     cat,
     result,
     exclusions,
@@ -556,6 +603,7 @@ export const histogram = async ({
     yBounds = await getBounds({
       params: { ...yParams },
       fields: yFields,
+      summaries: ySummaries,
       cat,
       result,
       exclusions,
@@ -568,12 +616,14 @@ export const histogram = async ({
     histograms = await getHistogram({
       params,
       fields,
+      summaries,
       cat,
       result,
       exclusions,
       bounds,
       yFields,
       yBounds,
+      ySummaries,
       raw: bounds.stats.count < threshold ? threshold : 0,
     });
     if (histograms.byCat && histograms.byCat.other) {
@@ -614,7 +664,7 @@ export const histogram = async ({
       x: histograms ? histograms.allValues.reduce((a, b) => a + b, 0) : 0,
     },
     xQuery,
-    xLabel: fields[0],
-    yLabel: yFields[0],
+    xLabel: histograms ? histograms.xLabel : fields[0],
+    yLabel: histograms ? histograms.yLabel : yFields[0],
   };
 };
