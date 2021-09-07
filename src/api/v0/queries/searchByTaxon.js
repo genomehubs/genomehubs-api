@@ -60,7 +60,13 @@ export const searchByTaxon = async ({
     if (result == "assembly") {
       assemblyFilter = filterAssemblies(searchTerm, multiTerm, idTerm);
     }
-    taxonFilter = filterTaxa(depth, searchTerm, multiTerm, ancestral);
+    taxonFilter = filterTaxa(
+      depth,
+      searchTerm,
+      multiTerm,
+      ancestral,
+      result == "taxon" && idTerm
+    );
   } else {
     taxonFilter = filterTaxId(searchTerm);
   }

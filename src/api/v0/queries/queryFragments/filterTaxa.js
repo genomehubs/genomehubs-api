@@ -1,7 +1,7 @@
 import { limitDepth } from "./limitDepth";
 import { searchInLineage } from "./searchInLineage";
 
-export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
+export const filterTaxa = (depth, searchTerm, multiTerm, ancestral, idTerm) => {
   let depths = limitDepth(depth);
   let lineage = searchInLineage(searchTerm, ancestral, depths);
   if (depths.length > 0) {
@@ -129,37 +129,37 @@ export const filterTaxa = (depth, searchTerm, multiTerm, ancestral) => {
       },
     ];
   }
-  // if (searchTerm && searchTerm > "") {
-  //   return [
-  //     {
-  //       bool: {
-  //         should: [
-  //           {
-  //             match: { taxon_id: searchTerm },
-  //           },
-  //           {
-  //             nested: {
-  //               path: "taxon_names",
-  //               query: {
-  //                 bool: {
-  //                   filter: {
-  //                     term: {
-  //                       "taxon_names.name": searchTerm,
-  //                     },
-  //                   },
-  //                   must_not: {
-  //                     exists: {
-  //                       field: "taxon_names.source",
-  //                     },
-  //                   },
-  //                 },
-  //               },
-  //             },
-  //           },
-  //         ].concat(lineage),
-  //       },
-  //     },
-  //   ];
-  // }
+  if (idTerm && idTerm > "") {
+    return [
+      {
+        bool: {
+          should: [
+            {
+              match: { taxon_id: idTerm },
+            },
+            {
+              nested: {
+                path: "taxon_names",
+                query: {
+                  bool: {
+                    filter: {
+                      term: {
+                        "taxon_names.name": idTerm,
+                      },
+                    },
+                    must_not: {
+                      exists: {
+                        field: "taxon_names.source",
+                      },
+                    },
+                  },
+                },
+              },
+            },
+          ].concat(lineage),
+        },
+      },
+    ];
+  }
   return [];
 };
