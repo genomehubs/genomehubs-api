@@ -325,6 +325,26 @@ export const getSources = async (params) => {
   return sources;
 };
 
+export const getTypes = async (params) => {
+  const types = await attrTypes({
+    result: params.result,
+    indexType: "attributes",
+  });
+  let byGroup = {};
+  Object.keys(types).forEach((key) => {
+    console.log(key);
+    let group = types[key].display_group;
+    if (!byGroup[group]) {
+      byGroup[group] = [];
+    }
+    byGroup[group].push(key);
+  });
+  Object.values(byGroup).forEach((values) => {
+    values = values.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+  });
+  return byGroup;
+};
+
 module.exports = {
   getReport: async (req, res) => {
     let report = {};
@@ -340,6 +360,10 @@ module.exports = {
       }
       case "sources": {
         report = await getSources({ ...req.query, queryString });
+        break;
+      }
+      case "types": {
+        report = await getTypes({ ...req.query, queryString });
         break;
       }
       case "xInY": {
