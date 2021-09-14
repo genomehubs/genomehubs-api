@@ -332,7 +332,6 @@ export const getTypes = async (params) => {
   });
   let byGroup = {};
   Object.keys(types).forEach((key) => {
-    console.log(key);
     let group = types[key].display_group;
     if (!byGroup[group]) {
       byGroup[group] = [];
@@ -340,7 +339,7 @@ export const getTypes = async (params) => {
     byGroup[group].push(key);
   });
   Object.values(byGroup).forEach((values) => {
-    values = values.sort((a, b) => (a < b ? -1 : a > b ? 1 : 0));
+    values = values.sort((a, b) => a.localeCompare(b));
   });
   return byGroup;
 };

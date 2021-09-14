@@ -1,5 +1,6 @@
 import { OpenApiValidator } from "express-openapi-validator";
 import YAML from "yamljs";
+import { cache } from "./api/v0/functions/cache";
 import compression from "compression";
 import { config } from "./api/v0/functions/config.js";
 import cookieParser from "cookie-parser";
@@ -47,6 +48,8 @@ app.use(
   swaggerUi.serve,
   swaggerUi.setup(swaggerDocument, swaggerOptions)
 );
+
+app.use(cache);
 
 new OpenApiValidator({
   apiSpec: swaggerDocument,
