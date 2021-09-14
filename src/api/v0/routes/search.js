@@ -135,7 +135,7 @@ const generateQuery = async ({
   let filters = {};
   let properties = {};
   if (query && query.match(/\n/)) {
-    multiTerm = query.split(/\n/);
+    multiTerm = query.split(/\n/).filter((v) => v > "");
   } else if (query) {
     query.split(/\s+(?:AND|and)\s+/).forEach((term) => {
       let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
