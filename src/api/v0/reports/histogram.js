@@ -337,55 +337,58 @@ const getHistogram = async ({
   } else {
     xSumm = summary || "value";
   }
-  if (yFields && yFields.length > 0 && raw) {
+  if (yFields) {
     let yValueType = valueTypes[typesMap[yField].type] || "float";
     if (yValueType == "date") {
       ySumm = dateSummary[ySummary] || "value";
     } else {
       ySumm = ySummary || "value";
     }
-    pointData = {};
-    res.results.forEach((result) => {
-      let cat;
-      if (bounds.cat) {
-        if (bounds.by == "attribute") {
-          cat = result.result.fields[bounds.cat].value;
-          if (Array.isArray(cat)) {
-            cat = cat[0].toLowerCase();
+    if (yFields.length > 0 && raw) {
+      pointData = {};
+      res.results.forEach((result) => {
+        let cat;
+        if (bounds.cat) {
+          if (bounds.by == "attribute") {
+            cat = result.result.fields[bounds.cat].value;
+            if (Array.isArray(cat)) {
+              cat = cat[0].toLowerCase();
+            } else {
+              cat = result.result.fields[bounds.cat].value.toLowerCase();
+            }
           } else {
-            cat = result.result.fields[bounds.cat].value.toLowerCase();
-          }
-        } else {
-          cat = result.result.lineage.filter(
-            (obj) => obj.taxon_rank == bounds.cat
-          );
-          if (cat[0]) {
-            cat = cat[0].taxon_id;
-          } else {
-            cat = "other";
+            cat = result.result.lineage.filter(
+              (obj) => obj.taxon_rank == bounds.cat
+            );
+            if (cat[0]) {
+              cat = cat[0].taxon_id;
+            } else {
+              cat = "other";
+            }
           }
         }
-      }
-      if (!pointData[cat]) {
-        pointData[cat] = [];
-      }
-      let x = result.result.fields[field][xSumm];
-      let y = result.result.fields[yField][ySumm];
-      if (valueType == "date") {
-        x = Date.parse(x);
-      }
-      if (yValueType == "date") {
-        y = Date.parse(y);
-      }
-      pointData[cat].push({
-        scientific_name: result.result.scientific_name,
-        taxonId: result.result.taxon_id,
-        x,
-        y,
-        cat,
+        if (!pointData[cat]) {
+          pointData[cat] = [];
+        }
+        let x = result.result.fields[field][xSumm];
+        let y = result.result.fields[yField][ySumm];
+        if (valueType == "date") {
+          x = Date.parse(x);
+        }
+        if (yValueType == "date") {
+          y = Date.parse(y);
+        }
+        pointData[cat].push({
+          scientific_name: result.result.scientific_name,
+          taxonId: result.result.taxon_id,
+          x,
+          y,
+          cat,
+        });
       });
-    });
+    }
   }
+
   let hist = res.aggs.aggregations[field].histogram;
   if (!hist) {
     return;
@@ -521,6 +524,7 @@ const getHistogram = async ({
     xLabel = field;
   }
   if (yField) {
+    console.log(ySumm);
     if (ySumm && ySumm != "value") {
       yLabel = `${ySummaries[0]}(${yField})`;
     } else {
