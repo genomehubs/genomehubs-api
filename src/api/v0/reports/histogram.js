@@ -515,13 +515,13 @@ const getHistogram = async ({
     rawData = Object.values(pointData).flat();
   }
   let xLabel, yLabel;
-  if (xSumm != "value") {
+  if (xSumm && xSumm != "value") {
     xLabel = `${summaries[0]}(${field})`;
   } else {
     xLabel = field;
   }
   if (yField) {
-    if (ySumm != "value") {
+    if (ySumm && ySumm != "value") {
       yLabel = `${ySummaries[0]}(${yField})`;
     } else {
       yLabel = yField;
