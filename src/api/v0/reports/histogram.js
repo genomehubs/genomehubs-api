@@ -337,7 +337,7 @@ const getHistogram = async ({
   } else {
     xSumm = summary || "value";
   }
-  if (yFields) {
+  if (yField && yFields) {
     let yValueType = valueTypes[typesMap[yField].type] || "float";
     if (yValueType == "date") {
       ySumm = dateSummary[ySummary] || "value";
