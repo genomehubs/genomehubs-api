@@ -32,7 +32,11 @@ export const filterAttributes = (
         delete filter.stat;
       }
       let meta = typesMap[field];
-      if (meta.type == "keyword" && meta.summary.includes("enum")) {
+      if (
+        meta.type == "keyword" &&
+        meta.summary &&
+        meta.summary.includes("enum")
+      ) {
         let list = meta.constraint.enum;
         const operator = Object.keys(filter)[0];
         const value = Object.values(filter)[0];
