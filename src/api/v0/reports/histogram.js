@@ -181,13 +181,16 @@ const getBounds = async ({
       let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
       let tmpMin = typeof min == "undefined" ? stats.min : min;
       let tmpMax = typeof max == "undefined" ? stats.max : max;
+      // if (scaleType.startsWith("log") && tmpMin == 0) {
+      //   tmpMin = 1;
+      // }
       let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
       let ticks = scale.ticks(tickCount);
       let gap = ticks[1] - ticks[0];
       let lastTick = ticks[ticks.length - 1];
       if (typeof min == "undefined") {
         min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
-        if (scaleType.startsWith("log") && min == 0) {
+        if ((scaleType.startsWith("log") && min == 0) || isNaN(min)) {
           min = tmpMin;
         }
       }
@@ -524,7 +527,6 @@ const getHistogram = async ({
     xLabel = field;
   }
   if (yField) {
-    console.log(ySumm);
     if (ySumm && ySumm != "value") {
       yLabel = `${ySummaries[0]}(${yField})`;
     } else {

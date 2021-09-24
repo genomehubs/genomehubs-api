@@ -15,7 +15,9 @@ export const queryParams = ({
   let summaries = [];
   if (rank) {
     if (params.query) {
-      params.query += ` AND tax_rank(${rank})`;
+      if (result == "taxon") {
+        params.query += ` AND tax_rank(${rank})`;
+      }
       params.includeEstimates = true;
       params.excludeAncestral = [];
       params.excludeMissing = [];

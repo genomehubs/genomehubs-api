@@ -147,15 +147,27 @@ const generateQuery = async ({
         } else {
           taxTerm = taxQuery;
         }
-      } else if (term.match(/[\>\<=]/)) {
-        let parts = term.split(/\s*([\>\<=]+)\s*/);
-        if (typesMap[result]) {
-          filters = addCondition(filters, parts);
-        } else {
-          properties = addCondition(properties, parts);
-        }
       } else {
-        idTerm = term;
+        if (typesMap[result][term]) {
+          let bins = typesMap[result][term].bins;
+          if (bins && bins.scale && bins.scale.startsWith("log")) {
+            term += " > 0";
+          }
+        }
+        if (term.match(/[\>\<=]/)) {
+          let parts = term.split(/\s*([\>\<=]+)\s*/);
+          if (typesMap[result]) {
+            filters = addCondition(filters, parts);
+          } else {
+            properties = addCondition(properties, parts);
+          }
+        } else {
+          if (typesMap[result][term]) {
+            fields.push(term);
+          } else {
+            idTerm = term;
+          }
+        }
       }
     });
   }
