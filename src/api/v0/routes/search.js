@@ -148,7 +148,7 @@ const generateQuery = async ({
           taxTerm = taxQuery;
         }
       } else {
-        if (typesMap[result][term]) {
+        if (typesMap[result] && typesMap[result][term]) {
           let bins = typesMap[result][term].bins;
           if (bins && bins.scale && bins.scale.startsWith("log")) {
             term += " > 0";
