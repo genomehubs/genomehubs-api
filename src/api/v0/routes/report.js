@@ -9,6 +9,44 @@ import { indexName } from "../functions/indexName";
 import qs from "qs";
 import { queryParams } from "../reports/queryParams";
 import { setRanks } from "../functions/setRanks";
+import { tree } from "../reports/tree";
+
+export const getTree = async ({
+  x,
+  y,
+  cat,
+  taxonomy,
+  queryString,
+  ...apiParams
+}) => {
+  // Return tree of results
+  let res = await tree({
+    x,
+    result: apiParams.result,
+    taxonomy,
+    apiParams,
+  });
+  let report = res.report;
+  let xQuery = res.xQuery;
+  let xLabel = res.xLabel;
+  let caption = `Distribution of ${y} with ${x}`;
+  if (cat) {
+    caption += ` by ${cat}`;
+  }
+  if (apiParams.includeEstimates) {
+    caption += ` including ancestrally derived estimates`;
+  }
+  return {
+    status: { success: true },
+    report: {
+      tree: report,
+      xQuery,
+      xLabel,
+      queryString,
+      caption,
+    },
+  };
+};
 
 export const scatterPerRank = async ({
   x,
@@ -359,6 +397,10 @@ module.exports = {
       }
       case "sources": {
         report = await getSources({ ...req.query, queryString });
+        break;
+      }
+      case "tree": {
+        report = await getTree({ ...req.query, queryString });
         break;
       }
       case "types": {

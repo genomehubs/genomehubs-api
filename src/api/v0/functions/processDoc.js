@@ -1,7 +1,8 @@
-export const processDoc = ({ doc }) => {
+export const processDoc = ({ doc, inner_hits = {} }) => {
   let attributes = {};
-  if (doc.attributes) {
-    doc.attributes.forEach((attr) => {
+  let rawAttrs = doc.attributes || inner_hits.attributes;
+  if (rawAttrs) {
+    rawAttrs.forEach((attr) => {
       let name;
       let attribute = {};
       Object.keys(attr).forEach((key) => {

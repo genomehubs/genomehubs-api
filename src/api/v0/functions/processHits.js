@@ -17,20 +17,46 @@ export const processHits = ({
       result: hit._source,
     };
     if (processAsDoc) {
-      result.result = processDoc({ doc: hit._source });
+      result.result = processDoc({
+        doc: hit._source,
+        inner_hits: hit.inner_hits,
+      });
     } else {
       result.result = hit._source;
-
-      if (result.result.taxon_names) {
+      // if (names) {
+      //   console.log(names);
+      //   console.log(hit);
+      // }
+      if (hit.inner_hits && hit.inner_hits.taxon_names) {
         if (names) {
-          let taxonNames = { ...names };
-          result.result.taxon_names.forEach((obj) => {
-            if (taxonNames[obj.class]) {
-              taxonNames[obj.class] = obj;
-            }
+          let taxonNames = {};
+          hit.inner_hits.taxon_names.hits.hits.forEach((obj) => {
+            let hitNames = {};
+            Object.keys(obj.fields).forEach((key) => {
+              hitNames[key.replace("taxon_names.", "").replace(".raw", "")] =
+                obj.fields[key];
+            });
+            taxonNames[obj.fields["taxon_names.class"]] = hitNames;
           });
           result.result.names = taxonNames;
-          delete result.result.taxon_names;
+          // delete result.result.taxon_names;
+        }
+      }
+      if (hit.inner_hits && hit.inner_hits.lineage) {
+        if (ranks) {
+          let taxonRanks = {};
+          hit.inner_hits.lineage.hits.hits.forEach((obj) => {
+            let hitRanks = {};
+            Object.keys(obj.fields).forEach((key) => {
+              let value = obj.fields[key];
+              if (Array.isArray(value) && value.length == 1) {
+                value = value[0];
+              }
+              hitRanks[key.replace("lineage.", "").replace(".raw", "")] = value;
+            });
+            taxonRanks[obj.fields["lineage.taxon_rank"]] = hitRanks;
+          });
+          result.result.ranks = taxonRanks;
         }
       }
       if (result.result.lineage) {
@@ -119,7 +145,7 @@ export const processHits = ({
             Object.keys(inner_hit.fields).forEach((ikey) => {
               if (ikey.match(/\.key$/)) {
                 name = inner_hit.fields[ikey][0];
-              } else if (ikey.match(/_value$/)) {
+              } else if (ikey.match(/_value$/) || ikey.match(/_value.raw$/)) {
                 if (inner_hit.fields[ikey].length == 1) {
                   field.value = inner_hit.fields[ikey][0];
                 } else {
@@ -137,12 +163,18 @@ export const processHits = ({
             });
           }
           if (name) {
+            // if (
+            //   name.endsWith("_date") &&
+            //   field.value.endsWith("T00:00:00.000Z")
+            // ) {
+            //   field.value = field.value.replace("T00:00:00.000Z", "");
+            // }
             fields[name] = field;
           }
         });
       });
       if (Object.keys(fields).length > 0) {
-        result.fields = fields;
+        result.result.fields = fields;
       }
     }
     results.push(result);

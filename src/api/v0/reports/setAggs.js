@@ -106,6 +106,42 @@ const nestedHistograms = ({ field, histogram }) => {
   };
 };
 
+const treeAgg = ({ field, types, summary }) => {
+  let key =
+    summary == "value"
+      ? `attributes.${types.type}_value`
+      : `attributes.${summary}`;
+  return {
+    reverse_nested: {},
+    aggs: {
+      taxa: {
+        terms: {
+          field: "parent",
+        },
+      },
+      // by_attribute: {
+      //   nested: {
+      //     path: "lineage",
+      //   },
+      //   aggs: {
+      //     layer: {
+      //       filter: {
+      //         range: { ["lineage.depth"]: { lte: 1 } },
+      //       },
+      //       aggs: {
+      //         taxa: {
+      //           terms: {
+      //             field: "lineage.taxon_id",
+      //           },
+      //         },
+      //       },
+      //     },
+      //   },
+      // },
+    },
+  };
+};
+
 const lineageTerms = ({ terms, size }) => {
   let rank = terms;
   return {
@@ -181,6 +217,7 @@ export const setAggs = async ({
   summary,
   result,
   histogram,
+  tree,
   stats,
   terms,
   size = 5,
@@ -249,6 +286,13 @@ export const setAggs = async ({
       terms = lineageTerms({ terms, size });
     }
   }
+  if (tree) {
+    tree = await treeAgg({
+      field,
+      types: typesMap[field],
+      summary,
+    });
+  }
 
   return {
     aggregations: {
@@ -265,6 +309,7 @@ export const setAggs = async ({
             stats,
             terms,
             categoryHistograms,
+            tree,
             // yHistograms,
           },
         },

@@ -18,9 +18,9 @@ const operations = (str) => {
 };
 
 const parseFields = async ({ result, fields }) => {
+  let typesMap = await attrTypes({ result });
   try {
     if (!fields) {
-      let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap).filter(
         (key) => typesMap[key].display_level == 1
       );
@@ -32,7 +32,10 @@ const parseFields = async ({ result, fields }) => {
     }
     return fields;
   } catch (error) {
-    return [];
+    if (Array.isArray(fields)) {
+      return fields;
+    }
+    return typesMap ? Object.keys(typesMap) : [];
   }
 };
 

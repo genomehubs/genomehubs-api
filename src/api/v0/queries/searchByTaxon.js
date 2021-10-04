@@ -6,6 +6,8 @@ import { filterProperties } from "./queryFragments/filterProperties";
 import { filterTaxId } from "./queryFragments/filterTaxId";
 import { filterTaxa } from "./queryFragments/filterTaxa";
 import { matchAttributes } from "./queryFragments/matchAttributes";
+import { matchNames } from "./queryFragments/matchNames";
+import { matchRanks } from "./queryFragments/matchRanks";
 import { restrictToRank } from "./queryFragments/restrictToRank";
 import { setAggregationSource } from "./queryFragments/setAggregationSource";
 import { setIncludes } from "./queryFragments/setIncludes";
@@ -18,6 +20,8 @@ export const searchByTaxon = async ({
   result,
   ancestral,
   fields,
+  names,
+  ranks,
   rank,
   depth,
   includeEstimates,
@@ -47,6 +51,8 @@ export const searchByTaxon = async ({
   let aggregation_source = setAggregationSource(result, includeEstimates);
   let excludedSources = excludeSources(exclusions, fields);
   let attributesExist = matchAttributes(fields, typesMap, aggregation_source);
+  let namesExist = matchNames(names, namesMap);
+  let lineageRanks = matchRanks(ranks);
   let attributeValues = filterAttributes(
     filters,
     typesMap,
@@ -71,7 +77,7 @@ export const searchByTaxon = async ({
     taxonFilter = filterTaxId(searchTerm);
   }
   let rankRestriction = restrictToRank(rank);
-  let include = setIncludes(result, summaryValues, non_attr_fields);
+  let include = setIncludes({ result, summaryValues, non_attr_fields });
   let exclude = includeRawValues ? [] : ["attributes.values*"];
   let sort = setSortOrder(sortBy, typesMap, namesMap);
 
@@ -82,10 +88,12 @@ export const searchByTaxon = async ({
       bool: {
         must_not: excludedSources,
         filter: attributesExist
+          .concat(namesExist)
           .concat(attributeValues)
           .concat(propertyValues)
           .concat(taxonFilter)
           .concat(rankRestriction)
+          .concat(lineageRanks)
           .concat(assemblyFilter),
       },
     },
