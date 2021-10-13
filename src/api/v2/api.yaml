@@ -216,7 +216,7 @@ components:
       schema:
         enum:
           - latest
-          - v0.1
+          - v2.1
         type: string
     reportParam:
       description: Method to summarise multiple values for sorting
@@ -511,7 +511,7 @@ info:
   license:
     name: MIT License
   title: GoaT
-  version: 0.0.1
+  version: 2.2.0
 openapi: 3.0.0
 paths:
   /count:
@@ -547,7 +547,7 @@ paths:
       summary: Count records
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/count
+      x-eov-operation-handler: api/v2/routes/count
   /download:
     get:
       description: Returns indexed files
@@ -580,7 +580,7 @@ paths:
       summary: Download file
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/download
+      x-eov-operation-handler: api/v2/routes/download
   /lookup:
     get:
       description: Returns suggestions/identifiers matching a searchTerm
@@ -618,7 +618,7 @@ paths:
       summary: Lookup
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/lookup
+      x-eov-operation-handler: api/v2/routes/lookup
   /record:
     get:
       description: Returns records matching a record identifier
@@ -646,7 +646,7 @@ paths:
       summary: Returns individual records
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/record
+      x-eov-operation-handler: api/v2/routes/record
   /report:
     get:
       description: Generates reports on records and sets of records
@@ -684,7 +684,7 @@ paths:
       summary: Generate a report
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/report
+      x-eov-operation-handler: api/v2/routes/report
   /resultFields:
     get:
       description: Returns available fields for a given result type
@@ -709,7 +709,7 @@ paths:
       summary: Returns available fields
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/resultFields
+      x-eov-operation-handler: api/v2/routes/resultFields
   /search:
     get:
       description: Returns records matching a query
@@ -760,7 +760,7 @@ paths:
       summary: Search for records
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/search
+      x-eov-operation-handler: api/v2/routes/search
   /summary:
     get:
       description: Returns a summary of raw field values
@@ -789,7 +789,7 @@ paths:
       summary: Field value summary
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/summary
+      x-eov-operation-handler: api/v2/routes/summary
   /taxonomies:
     get:
       description: Returns a list of available taxonomies
@@ -809,9 +809,9 @@ paths:
       summary: List of taxonomies
       tags:
         - GoaT API
-      x-eov-operation-handler: api/v0/routes/taxonomies
+      x-eov-operation-handler: api/v2/routes/taxonomies
 servers:
-  - url: http://localhost:3000/api/v0.0.1
+  - url: http://localhost:3000/api/v2
 tags:
   - description: Query Genomes on a Tree
     name: GoaT API

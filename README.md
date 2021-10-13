@@ -19,7 +19,7 @@ npm start
 ## Usage
 
 ```
-curl http://localhost:3000/api/v0.0.1/taxon/3702?indent=2
+curl http://localhost:3000/api/v2/taxon/3702?indent=2
 ```
 
 ## Docs

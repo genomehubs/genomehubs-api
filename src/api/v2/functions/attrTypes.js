@@ -1,6 +1,6 @@
 import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
-import { config } from "../functions/config.js";
+import { config } from "./config.js";
 import { indexName } from "./indexName";
 
 const fetchTypes = async ({ result, taxonomy, hub, release, indexType }) => {

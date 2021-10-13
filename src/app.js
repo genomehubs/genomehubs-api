@@ -1,15 +1,15 @@
 import { OpenApiValidator } from "express-openapi-validator";
 import YAML from "yamljs";
-import { cache } from "./api/v0/functions/cache";
+import { cache } from "./api/v2/functions/cache";
 import compression from "compression";
-import { config } from "./api/v0/functions/config.js";
+import { config } from "./api/v2/functions/config.js";
 import cookieParser from "cookie-parser";
 import express from "express";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
 
 const port = config.port;
-const apiSpec = path.join(__dirname, "api/v0/api.yaml");
+const apiSpec = path.join(__dirname, "api/v2/api.yaml");
 
 let swaggerDocument = YAML.load(apiSpec);
 swaggerDocument.info.description = config.description;
@@ -21,6 +21,9 @@ swaggerDocument.components.parameters.taxonomyParam.schema.default =
   config.taxonomy;
 swaggerDocument.components.parameters.taxonomyParam.description += ` [default: ${config.taxonomy}]`;
 swaggerDocument.servers[0].url = config.url;
+// Temporarily redirect old API requests to v2
+swaggerDocument.servers[1] = { ...swaggerDocument.servers[0] };
+swaggerDocument.servers[1].url = config.url.replace("v2", "v0.0.1");
 
 const swaggerOptions = {
   customCss: ".swagger-ui .topbar { display: none }",
