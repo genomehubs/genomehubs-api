@@ -335,6 +335,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
     ? apiParams.includeEstimates
     : true;
+  yParams.includeEstimates = params.includeEstimates;
   // delete params.excludeAncestral;
   // delete yParams.excludeAncestral;
   delete params.excludeDescendant;
