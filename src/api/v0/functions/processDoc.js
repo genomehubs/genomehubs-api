@@ -1,7 +1,8 @@
-export const processDoc = ({ doc }) => {
+export const processDoc = ({ doc, inner_hits = {} }) => {
   let attributes = {};
-  if (doc.attributes) {
-    doc.attributes.forEach((attr) => {
+  let rawAttrs = doc.attributes || inner_hits.attributes;
+  if (rawAttrs) {
+    rawAttrs.forEach((attr) => {
       let name;
       let attribute = {};
       Object.keys(attr).forEach((key) => {
@@ -38,5 +39,8 @@ export const processDoc = ({ doc }) => {
     });
   }
   doc.attributes = attributes;
+  if (doc.lineage && doc.lineage.length > 0 && doc.lineage[0].node_depth == 0) {
+    doc.lineage = doc.lineage.slice(1);
+  }
   return doc;
 };

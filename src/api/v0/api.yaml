@@ -228,6 +228,7 @@ components:
           - histogram
           - scatter
           - sources
+          - tree
           - types
           - xInY
           - xPerRank

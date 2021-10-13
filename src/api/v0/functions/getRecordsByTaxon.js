@@ -25,6 +25,7 @@ export const getRecordsByTaxon = async (props) => {
     results = processHits({
       body,
       inner_hits: true,
+      lca: props.lca,
       names: props.names,
       ranks: props.ranks,
     });

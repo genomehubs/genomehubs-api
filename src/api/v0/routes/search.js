@@ -18,9 +18,9 @@ const operations = (str) => {
 };
 
 const parseFields = async ({ result, fields }) => {
+  let typesMap = await attrTypes({ result });
   try {
     if (!fields) {
-      let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap).filter(
         (key) => typesMap[key].display_level == 1
       );
@@ -32,7 +32,10 @@ const parseFields = async ({ result, fields }) => {
     }
     return fields;
   } catch (error) {
-    return [];
+    if (Array.isArray(fields)) {
+      return fields;
+    }
+    return typesMap ? Object.keys(typesMap) : [];
   }
 };
 
@@ -41,6 +44,7 @@ export const setExclusions = ({
   excludeDescendant,
   excludeDirect,
   excludeMissing,
+  excludeUnclassified,
 }) => {
   let exclusions = {};
   if (excludeAncestral) {
@@ -54,6 +58,9 @@ export const setExclusions = ({
   }
   if (excludeMissing) {
     exclusions.missing = excludeMissing;
+  }
+  if (excludeUnclassified) {
+    exclusions.unclassified = excludeUnclassified;
   }
   return exclusions;
 };
@@ -105,6 +112,8 @@ const generateQuery = async ({
   fields,
   names,
   ranks,
+  maxDepth,
+  lca,
   includeEstimates,
   includeRawValues,
   searchRawValues,
@@ -179,6 +188,8 @@ const generateQuery = async ({
     names,
     ranks,
     depth,
+    maxDepth,
+    lca,
     ancestral: false,
     includeEstimates,
     includeRawValues,

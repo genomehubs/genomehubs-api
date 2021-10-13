@@ -13,32 +13,33 @@ export const queryParams = ({
   };
   let fields = [];
   let summaries = [];
-  if (rank) {
-    if (params.query) {
-      if (result == "taxon") {
-        params.query += ` AND tax_rank(${rank})`;
-      }
-      params.includeEstimates = true;
-      params.excludeAncestral = [];
-      params.excludeMissing = [];
+  if (params.query) {
+    if (result == "taxon" && rank) {
+      params.query += ` AND tax_rank(${rank})`;
+    }
+    params.includeEstimates = true;
+    params.excludeAncestral = [];
+    params.excludeMissing = [];
 
-      term.split(/\s+(?:and|AND)\s+/).forEach((subterm) => {
-        if (!subterm.match("tax_")) {
-          let field = subterm.replace(/[^\w_\(\)].+$/, "");
-          let summary = "value";
-          if (field.match(/\(/)) {
-            [summary, field] = field.split(/[\(\)]/);
-          }
-          params.excludeAncestral.push(field);
-          params.excludeMissing.push(field);
-          fields.push(field);
-          summaries.push(summary);
+    term.split(/\s+(?:and|AND)\s+/).forEach((subterm) => {
+      if (!subterm.match("tax_")) {
+        let field = subterm.replace(/[^\w_\(\)].+$/, "");
+        let summary = "value";
+        if (field.match(/\(/)) {
+          [summary, field] = field.split(/[\(\)]/);
         }
-      });
-    } else {
-      params.includeEstimates = true;
+        params.excludeAncestral.push(field);
+        params.excludeMissing.push(field);
+        fields.push(field);
+        summaries.push(summary);
+      }
+    });
+  } else {
+    params.includeEstimates = true;
+    if (rank) {
       params.query = `tax_rank(${rank})`;
     }
   }
+
   return { params, fields, summaries };
 };
