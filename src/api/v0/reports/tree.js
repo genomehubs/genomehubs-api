@@ -19,50 +19,341 @@ const valueTypes = {
   keyword: "keyword",
 };
 
-const getTree = async ({ params, fields, summaries, result, exclusions }) => {
-  let typesMap = await attrTypes({ result });
-  params.size = 10;
-  // find max and min plus most frequent categories
-  let field = fields[0];
-  let summary = summaries[0];
-  let valueType = valueTypes[typesMap[field].type] || "float";
-  params.aggs = await setAggs({
-    field,
-    summary,
-    result,
-    tree: true,
+const getLCA = async ({
+  params,
+  fields,
+  summaries,
+  result,
+  exclusions,
+  apiParams,
+}) => {
+  params.size = 1;
+  params.aggs = {
+    by_lineage: {
+      nested: {
+        path: "lineage",
+      },
+      aggs: {
+        ancestors: {
+          terms: { field: "lineage.taxon_id", size: 100 },
+          aggs: {
+            types_count: { value_count: { field: "lineage.taxon_id" } },
+            min_depth: {
+              min: { field: "lineage.node_depth" },
+            },
+            max_depth: {
+              max: { field: "lineage.node_depth" },
+            },
+            ancestor_bucket_sort: {
+              bucket_sort: {
+                sort: [
+                  { types_count: { order: "desc" } },
+                  { min_depth: { order: "asc" } },
+                ],
+                size: 2,
+              },
+            },
+          },
+        },
+
+        // max_ancestor_count: {
+        //   max_bucket: {
+        //     buckets_path: "ancestors>doc_count",
+        //   },
+        // },
+      },
+    },
+  };
+  let query = params.query;
+  let maxDepth;
+  let taxon;
+  let match = query.match(/tax_tree\((.+?)\)/);
+  if (match) {
+    maxDepth = 100;
+    taxon = match[1].toLowerCase();
+  }
+
+  let res = await getResults({
+    ...params,
+    query,
+    exclusions,
+    maxDepth: 100,
+    lca: { maxDepth: 100 },
   });
-  let res = await getResults({ ...params, fields, exclusions });
-  let hist = res.aggs.aggregations[field].histogram;
+
+  let buckets;
+  try {
+    buckets = res.aggs.by_lineage.ancestors.buckets;
+  } catch (err) {
+    {
+      let filtered = query.split(/\s+(?:AND|and)\s+/);
+      if (query.match("tax_depth")) {
+        filtered = filtered.filter((term) => !term.startsWith("tax_depth"));
+      }
+      res = await getResults({
+        ...params,
+        query: filtered.join(" AND "),
+        exclusions,
+        maxDepth: 100,
+        lca: { maxDepth: 100 },
+      });
+      if (!res.aggs) {
+        return {};
+      }
+      buckets = res.aggs.by_lineage.ancestors.buckets;
+    }
+  }
+  let bucket;
+  let lca;
+  if (buckets.length >= 1) {
+    bucket = buckets[0];
+    let maxDepth = bucket.max_depth.value;
+    let minDepth = bucket.min_depth.value;
+    let taxon_id = bucket.key;
+    let parent;
+
+    if (taxon) {
+      let child;
+      let depthChange = 0;
+      for (let ancestor of res.results[0].result.lineage) {
+        depthChange++;
+        if (ancestor.taxon_id == taxon_id) {
+          depthChange = 0;
+        }
+        if (
+          ancestor.taxon_id.toLowerCase() == taxon ||
+          ancestor.scientific_name.toLowerCase() == taxon
+        ) {
+          minDepth += depthChange;
+          maxDepth += depthChange;
+          taxon_id = ancestor.taxon_id;
+          child = taxon_id;
+        } else if (child) {
+          parent = ancestor.taxon_id;
+          break;
+        }
+      }
+    } else if (buckets.length == 2) {
+      parent = buckets[1].key;
+    }
+
+    lca = {
+      taxon_id,
+      count: bucket.doc_count,
+      maxDepth,
+      minDepth,
+      parent,
+    };
+  }
+  return lca;
+};
+
+const getTree = async ({
+  params,
+  y,
+  yParams,
+  fields,
+  yFields,
+  cat,
+  result,
+}) => {
+  let typesMap = await attrTypes({ result });
+  fields.push(...yFields);
+  let field = yFields[0] || fields[0];
+  let exclusions;
+  params.excludeUnclassified = true;
+  exclusions = setExclusions(params);
+  let lca = await getLCA({ params: { ...params }, exclusions });
+  let treeNodes = {};
+  let maxDepth = lca.maxDepth;
+  let mapped = params.query.split(/\s+(?:AND|and)\s+/);
+  let yMapped = yParams.query.split(/\s+(?:AND|and)\s+/);
+  if (params.query.match("tax_depth")) {
+    mapped = mapped.map((term) => {
+      if (term.startsWith("tax_depth")) {
+        let parts = term.split(/[\(\)]/);
+        return `tax_depth(${Math.min(parts[1], maxDepth)})`;
+      } else {
+        return term;
+      }
+    });
+    yMapped = yMapped.map((term) => {
+      if (term.startsWith("tax_depth")) {
+        let parts = term.split(/[\(\)]/);
+        return `tax_depth(${Math.min(parts[1], maxDepth)})`;
+      } else {
+        return term;
+      }
+    });
+  }
+  let xRes = await getResults({
+    ...params,
+    query: mapped.join(" AND "),
+    size: 10000, // lca.count,
+    maxDepth,
+    lca: lca,
+    fields,
+    exclusions,
+  });
+  // return xRes;
+
+  let isParentNode = {};
+  let lineages = {};
+  let yRes;
+  if (y) {
+    yParams.excludeMissing.push(...yFields);
+    if (cat && typesMap[cat]) {
+      yParams.excludeMissing.push(cat);
+    }
+    yParams.excludeUnclassified = true;
+    exclusions = setExclusions(yParams);
+    yRes = await getResults({
+      ...yParams,
+      query: yMapped.join(" AND "),
+      size: 10000, // lca.count,
+      maxDepth,
+      fields,
+      exclusions,
+    });
+  }
+
+  for (let result of xRes.results) {
+    let source, value;
+    let status = 0;
+    if (field && result.result.fields && result.result.fields[field]) {
+      source =
+        result.result.fields[field].aggregation_source != "ancestor"
+          ? "descendant"
+          : "ancestor";
+      value = result.result.fields[field].value;
+      status = y ? (source == "ancestor" ? 0 : 1) : 1;
+      source = y ? "ancestor" : source;
+    }
+    treeNodes[result.result.taxon_id] = {
+      count: 0,
+      children: {},
+      taxon_id: result.result.taxon_id,
+      scientific_name: result.result.scientific_name,
+      taxon_rank: result.result.taxon_rank,
+      source,
+      value,
+      status,
+      // fields: result.result.fields,
+    };
+    isParentNode[result.result.parent] = true;
+    lineages[result.result.taxon_id] = result.result.lineage;
+  }
+
+  for (let result of xRes.results) {
+    // for (let [taxon_id, obj] of Object.entries(treeNodes)){
+    let child = result.result.taxon_id;
+    if (!isParentNode[result.result.taxon_id]) {
+      treeNodes[child].count = 1;
+      if (lineages[result.result.taxon_id]) {
+        for (let ancestor of lineages[result.result.taxon_id]) {
+          if (ancestor.taxon_id == result.result.taxon_id) {
+            continue;
+          }
+          if (!treeNodes[ancestor.taxon_id]) {
+            treeNodes[ancestor.taxon_id] = {
+              count: 0,
+              children: {},
+              scientific_name: ancestor.scientific_name,
+              taxon_rank: ancestor.taxon_rank,
+              status: 0,
+              taxon_id: ancestor.taxon_id,
+              // source,
+              // value,
+              // status,
+              // fields: result.result.fields,
+            };
+          }
+          if (
+            treeNodes[ancestor.taxon_id].status == 0 &&
+            treeNodes[child].status == 1
+          ) {
+            treeNodes[ancestor.taxon_id].status = 1;
+          }
+
+          treeNodes[ancestor.taxon_id].count += 1;
+          treeNodes[ancestor.taxon_id].children[child] = true;
+          child = ancestor.taxon_id;
+        }
+      }
+    }
+  }
+  if (yRes) {
+    for (let result of yRes.results) {
+      // for (let [taxon_id, obj] of Object.entries(treeNodes)){
+      treeNodes[result.result.taxon_id].status = 1;
+      let source = result.result.fields[field].aggregation_source;
+      treeNodes[result.result.taxon_id].source = source;
+      let child = result.result.taxon_id;
+      if (lineages[result.result.taxon_id]) {
+        for (let ancestor of lineages[result.result.taxon_id]) {
+          if (
+            treeNodes[ancestor.taxon_id].status == 0 &&
+            treeNodes[child].status == 1
+          ) {
+            treeNodes[ancestor.taxon_id].status = 1;
+          }
+          if (
+            (!treeNodes[ancestor.taxon_id].source ||
+              treeNodes[ancestor.taxon_id].source == "ancestor") &&
+            treeNodes[child].source != "ancestor"
+          ) {
+            treeNodes[ancestor.taxon_id].source = "descendant";
+          }
+        }
+      }
+    }
+  }
+  // return xRes;
+
+  return { lca, treeNodes };
+
+  let hist = undefined; // res.aggs.aggregations[field].histogram;
   if (!hist) {
-    return res;
+    return xRes;
   }
   return hist;
 };
 
-export const tree = async ({ x, cat, result, apiParams }) => {
-  let { params, fields, summaries } = queryParams({ term: x, result });
+export const tree = async ({ x, y, cat, result, apiParams }) => {
+  let { params, fields, summaries } = queryParams({
+    term: x,
+    result,
+  });
+  let {
+    params: yParams,
+    fields: yFields,
+    summaries: ySummaries,
+  } = queryParams({
+    term: `${x} AND ${y}`,
+    result,
+  });
+  params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
+    ? apiParams.includeEstimates
+    : true;
+  // delete params.excludeAncestral;
+  // delete yParams.excludeAncestral;
+  delete params.excludeDescendant;
+  delete yParams.excludeDescendant;
+
   let xQuery = { ...params };
+  let yQuery = { ...yParams };
   let typesMap = await attrTypes({ result });
-  let exclusions;
-  if (apiParams.includeEstimates) {
-    delete params.excludeAncestral;
-    delete xQuery.excludeAncestral;
-  } else {
-    if (cat && typesMap[cat]) {
-      params.excludeAncestral.push(cat);
-    }
-  }
-  if (cat && typesMap[cat]) {
-    params.excludeMissing.push(cat);
-  }
-  exclusions = setExclusions(params);
+
   let tree = await getTree({
     params,
     fields,
     summaries,
+    cat,
+    y,
+    yParams,
+    yFields,
+    ySummaries,
     result,
-    exclusions,
   });
   // "aggs": {
   //   "aggregations": {
@@ -88,9 +379,15 @@ export const tree = async ({ x, cat, result, apiParams }) => {
         ...xQuery,
         fields: fields.join(","),
       },
+      yQuery: {
+        ...yQuery,
+        fields: yFields.join(","),
+      },
       x: 0,
     },
     xQuery,
+    yQuery,
     xLabel: fields[0],
+    yLabel: yFields[0],
   };
 };

@@ -22,12 +22,14 @@ export const getTree = async ({
   // Return tree of results
   let res = await tree({
     x,
+    y,
     result: apiParams.result,
     taxonomy,
     apiParams,
   });
   let report = res.report;
   let xQuery = res.xQuery;
+  let yQuery = res.yQuery;
   let xLabel = res.xLabel;
   let caption = `Distribution of ${y} with ${x}`;
   if (cat) {
@@ -41,6 +43,7 @@ export const getTree = async ({
     report: {
       tree: report,
       xQuery,
+      yQuery,
       xLabel,
       queryString,
       caption,

@@ -1,7 +1,12 @@
-export const matchRanks = (ranks = {}) => {
-  console.log(ranks);
+export const matchRanks = (ranks = {}, maxDepth) => {
   ranks = Object.keys(ranks);
-  if (ranks.length == 0) return [];
+  if (ranks.length == 0 && !maxDepth) return [];
+  let depthLimit;
+  if (maxDepth) {
+    depthLimit = {
+      filter: { range: { "lineage.node_depth": { lte: maxDepth } } },
+    };
+  }
   return [
     {
       bool: {
@@ -16,6 +21,7 @@ export const matchRanks = (ranks = {}) => {
                       filter: { match: { "lineage.taxon_rank": rank } },
                     },
                   })),
+                  ...(depthLimit && depthLimit),
                 },
               },
               inner_hits: {

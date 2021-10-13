@@ -1,9 +1,14 @@
-export const limitDepth = (depth) => {
+export const limitDepth = (depth, gte) => {
   if (depth) {
+    if (gte) {
+      gte = depth;
+    } else {
+      gte = 0;
+    }
     return [
       {
         range: {
-          "lineage.node_depth": { gte: depth, lte: depth },
+          "lineage.node_depth": { gte, lte: depth },
         },
       },
     ];

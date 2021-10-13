@@ -1,8 +1,15 @@
 import { limitDepth } from "./limitDepth";
 import { searchInLineage } from "./searchInLineage";
 
-export const filterTaxa = (depth, searchTerm, multiTerm, ancestral, idTerm) => {
-  let depths = limitDepth(depth);
+export const filterTaxa = ({
+  depth,
+  searchTerm,
+  multiTerm,
+  ancestral,
+  idTerm,
+  gte,
+}) => {
+  let depths = limitDepth(depth, gte);
   let lineage = searchInLineage(searchTerm, ancestral, depths);
   if (depths.length > 0) {
     return lineage;

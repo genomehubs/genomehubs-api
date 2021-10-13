@@ -1,4 +1,9 @@
-export const matchAttributes = (fields, typesMap, aggregation_source) => {
+export const matchAttributes = (
+  fields,
+  typesMap,
+  aggregation_source,
+  searchRawValues
+) => {
   if (fields.length == 0) return [];
   return [
     {
@@ -40,7 +45,7 @@ export const matchAttributes = (fields, typesMap, aggregation_source) => {
             "attributes.float_value",
             "attributes.half_float_value",
             "attributes.*dp_value",
-          ],
+          ].concat(searchRawValues ? ["attributes.values.*"] : []),
           size: 100,
         },
       },

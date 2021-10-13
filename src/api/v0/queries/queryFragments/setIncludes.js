@@ -1,4 +1,9 @@
-export const setIncludes = ({ result, summaryValues, non_attr_fields }) => {
+export const setIncludes = ({
+  result,
+  summaryValues,
+  non_attr_fields,
+  includeRawValues,
+}) => {
   let include = [];
   if (non_attr_fields && non_attr_fields.length > 0) {
     return non_attr_fields;
@@ -21,6 +26,9 @@ export const setIncludes = ({ result, summaryValues, non_attr_fields }) => {
     // .concat(
     //   summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
     // );
+  }
+  if (includeRawValues) {
+    include.push("attributes.*");
   }
   return include;
 };

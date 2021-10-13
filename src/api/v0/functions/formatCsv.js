@@ -28,12 +28,16 @@ export const formatCsv = async (response, opts) => {
     });
     if (opts.names) {
       opts.names.forEach((nameClass) => {
-        datum[nameClass] = fullResult.result.names[nameClass].name;
+        datum[nameClass] =
+          fullResult.result.names[nameClass] &&
+          fullResult.result.names[nameClass].name;
       });
     }
     if (opts.ranks) {
       opts.ranks.forEach((rank) => {
-        datum[rank] = fullResult.result.ranks[rank].scientific_name;
+        datum[rank] =
+          fullResult.result.ranks[rank] &&
+          fullResult.result.ranks[rank].scientific_name;
       });
     }
     if (opts.fields) {

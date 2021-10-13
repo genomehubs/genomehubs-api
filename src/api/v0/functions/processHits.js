@@ -5,6 +5,7 @@ export const processHits = ({
   names,
   ranks,
   reason,
+  lca,
   inner_hits,
   processAsDoc,
 }) => {
@@ -23,10 +24,6 @@ export const processHits = ({
       });
     } else {
       result.result = hit._source;
-      // if (names) {
-      //   console.log(names);
-      //   console.log(hit);
-      // }
       if (hit.inner_hits && hit.inner_hits.taxon_names) {
         if (names) {
           let taxonNames = {};
@@ -58,32 +55,60 @@ export const processHits = ({
           });
           result.result.ranks = taxonRanks;
         }
-      }
-      if (result.result.lineage) {
-        if (ranks) {
-          let taxonRanks = { ...ranks };
-          result.result.lineage.forEach((anc) => {
-            if (taxonRanks[anc.taxon_rank]) {
-              taxonRanks[anc.taxon_rank] = anc;
+        if (lca) {
+          let lineage = [];
+          for (let obj of hit.inner_hits.lineage.hits.hits) {
+            // lineage.push(obj.fields["lineage.taxon_id"][0]);
+            lineage.push({
+              taxon_rank:
+                obj.fields["lineage.taxon_rank"] &&
+                obj.fields["lineage.taxon_rank"][0],
+              taxon_id:
+                obj.fields["lineage.taxon_id"] &&
+                obj.fields["lineage.taxon_id"][0],
+              scientific_name:
+                obj.fields["lineage.scientific_name.raw"] &&
+                obj.fields["lineage.scientific_name.raw"][0],
+              node_depth:
+                obj.fields["lineage.node_depth"] &&
+                obj.fields["lineage.node_depth"][0],
+            });
+            if (
+              lca.taxon_id &&
+              obj.fields["lineage.taxon_id"] &&
+              obj.fields["lineage.taxon_id"][0] == lca.taxon_id
+            ) {
+              break;
             }
-          });
-          if (taxonRanks[result.result.taxon_rank]) {
-            taxonRanks[result.result.taxon_rank] = {
-              scientific_name: result.result.scientific_name,
-              taxon_id: result.result.taxon_id,
-              taxon_rank: result.result.taxon_rank,
-            };
           }
-          result.result.ranks = taxonRanks;
-          delete result.result.lineage;
+
+          result.result.lineage = lineage;
         }
       }
+      // if (result.result.lineage) {
+      //   if (ranks) {
+      //     let taxonRanks = { ...ranks };
+      //     result.result.lineage.forEach((anc) => {
+      //       if (taxonRanks[anc.taxon_rank]) {
+      //         taxonRanks[anc.taxon_rank] = anc;
+      //       }
+      //     });
+      //     if (taxonRanks[result.result.taxon_rank]) {
+      //       taxonRanks[result.result.taxon_rank] = {
+      //         scientific_name: result.result.scientific_name,
+      //         taxon_id: result.result.taxon_id,
+      //         taxon_rank: result.result.taxon_rank,
+      //       };
+      //     }
+      //     result.result.ranks = taxonRanks;
+      //     delete result.result.lineage;
+      //   }
+      // }
       if (result.result.attributes) {
         let fields = {};
         result.result.attributes.forEach((attribute) => {
           let name;
           let field = {};
-
           Object.keys(attribute).forEach((key) => {
             if (key == "key") {
               name = attribute[key];
@@ -137,6 +162,7 @@ export const processHits = ({
     }
     if (inner_hits && hit.inner_hits) {
       let fields = {};
+      let attrFields = result.result.fields || {};
       Object.keys(hit.inner_hits).forEach((key) => {
         hit.inner_hits[key].hits.hits.forEach((inner_hit) => {
           let name;
@@ -163,12 +189,15 @@ export const processHits = ({
             });
           }
           if (name) {
-            // if (
-            //   name.endsWith("_date") &&
-            //   field.value.endsWith("T00:00:00.000Z")
-            // ) {
-            //   field.value = field.value.replace("T00:00:00.000Z", "");
-            // }
+            if (
+              name.endsWith("_date") &&
+              field.value.endsWith("T00:00:00.000Z")
+            ) {
+              field.value = field.value.replace("T00:00:00.000Z", "");
+            }
+            if (attrFields[name]) {
+              field = { ...attrFields[name], ...field };
+            }
             fields[name] = field;
           }
         });

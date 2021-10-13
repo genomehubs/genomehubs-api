@@ -44,6 +44,7 @@ export const setExclusions = ({
   excludeDescendant,
   excludeDirect,
   excludeMissing,
+  excludeUnclassified,
 }) => {
   let exclusions = {};
   if (excludeAncestral) {
@@ -57,6 +58,9 @@ export const setExclusions = ({
   }
   if (excludeMissing) {
     exclusions.missing = excludeMissing;
+  }
+  if (excludeUnclassified) {
+    exclusions.unclassified = excludeUnclassified;
   }
   return exclusions;
 };
@@ -108,6 +112,8 @@ const generateQuery = async ({
   fields,
   names,
   ranks,
+  maxDepth,
+  lca,
   includeEstimates,
   includeRawValues,
   searchRawValues,
@@ -182,6 +188,8 @@ const generateQuery = async ({
     names,
     ranks,
     depth,
+    maxDepth,
+    lca,
     ancestral: false,
     includeEstimates,
     includeRawValues,

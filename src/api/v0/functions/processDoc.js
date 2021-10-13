@@ -39,5 +39,8 @@ export const processDoc = ({ doc, inner_hits = {} }) => {
     });
   }
   doc.attributes = attributes;
+  if (doc.lineage && doc.lineage.length > 0 && doc.lineage[0].node_depth == 0) {
+    doc.lineage = doc.lineage.slice(1);
+  }
   return doc;
 };
