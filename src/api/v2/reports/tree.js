@@ -285,6 +285,9 @@ const getTree = async ({
   if (yRes) {
     for (let result of yRes.results) {
       // for (let [taxon_id, obj] of Object.entries(treeNodes)){
+      if (!treeNodes[result.result.taxon_id]) {
+        continue;
+      }
       treeNodes[result.result.taxon_id].status = 1;
       let source = result.result.fields[field].aggregation_source;
       treeNodes[result.result.taxon_id].source = source;
