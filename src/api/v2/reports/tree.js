@@ -67,10 +67,12 @@ const getLCA = async ({
   let query = params.query;
   let maxDepth;
   let taxon;
-  let match = query.match(/tax_tree\((.+?)\)/);
-  if (match) {
-    maxDepth = 100;
-    taxon = match[1].toLowerCase();
+  if (query) {
+    let match = query.match(/tax_tree\((.+?)\)/);
+    if (match) {
+      maxDepth = 100;
+      taxon = match[1].toLowerCase();
+    }
   }
 
   let res = await getResults({
@@ -310,6 +312,7 @@ const getTree = async ({
         }
       }
     }
+    lca.yCount = yRes.results.length;
   }
   // return xRes;
 
@@ -387,7 +390,8 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
         ...yQuery,
         fields: yFields.join(","),
       },
-      x: 0,
+      x: tree.lca ? tree.lca.count : 0,
+      y: tree.lca && tree.lca.yCount ? tree.lca.yCount : 0,
     },
     xQuery,
     yQuery,

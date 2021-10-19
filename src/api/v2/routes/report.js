@@ -420,6 +420,7 @@ module.exports = {
       }
     }
     if (report && report != {}) {
+      report.name = req.query.report;
       return res
         .status(200)
         .send(
