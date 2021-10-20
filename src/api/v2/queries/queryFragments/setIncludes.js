@@ -26,7 +26,11 @@ export const setIncludes = ({
     // .concat(
     //   summaryValues ? summaryValues.map((key) => `attributes.${key}`) : []
     // );
+    if (result == "assembly") {
+      include.push("assembly_id");
+    }
   }
+
   if (includeRawValues) {
     include.push("attributes.*");
   }
