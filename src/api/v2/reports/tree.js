@@ -170,10 +170,16 @@ const getTree = async ({
   let maxDepth = lca.maxDepth;
   let mapped = params.query.split(/\s+(?:AND|and)\s+/);
   let yMapped = yParams.query.split(/\s+(?:AND|and)\s+/);
+  // TODO: include descendant values when include estimates is false and minDepth > tax_depth
   if (params.query.match("tax_depth")) {
     mapped = mapped.map((term) => {
       if (term.startsWith("tax_depth")) {
         let parts = term.split(/[\(\)]/);
+        if (!params.includeEstimates) {
+          if (lca.minDepth > parts[1]) {
+            params.includeEstimates = "descendant";
+          }
+        }
         return `tax_depth(${Math.min(parts[1], maxDepth)})`;
       } else {
         return term;
@@ -182,12 +188,18 @@ const getTree = async ({
     yMapped = yMapped.map((term) => {
       if (term.startsWith("tax_depth")) {
         let parts = term.split(/[\(\)]/);
+        if (!params.includeEstimates) {
+          if (lca.minDepth > parts[1]) {
+            params.includeEstimates = "descendant";
+          }
+        }
         return `tax_depth(${Math.min(parts[1], maxDepth)})`;
       } else {
         return term;
       }
     });
   }
+  fields = fields.filter((field) => field != "undefined");
   let xRes = await getResults({
     ...params,
     query: mapped.join(" AND "),
@@ -221,7 +233,7 @@ const getTree = async ({
 
   for (let result of xRes.results) {
     let source, value;
-    let status = 0;
+    let status = y ? 0 : 1;
     if (field && result.result.fields && result.result.fields[field]) {
       source =
         result.result.fields[field].aggregation_source != "ancestor"
@@ -230,6 +242,14 @@ const getTree = async ({
       value = result.result.fields[field].value;
       status = y ? (source == "ancestor" ? 0 : 1) : 1;
       source = y ? "ancestor" : source;
+    }
+    if (
+      field &&
+      field != "undefined" &&
+      params.includeEstimates == "descendant"
+    ) {
+      status = 1;
+      source = "descendant";
     }
     treeNodes[result.result.taxon_id] = {
       count: 0,
@@ -386,16 +406,18 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
         ...xQuery,
         fields: fields.join(","),
       },
-      yQuery: {
-        ...yQuery,
-        fields: yFields.join(","),
-      },
+      ...(y && {
+        yQuery: {
+          ...yQuery,
+          fields: yFields.join(","),
+        },
+      }),
       x: tree.lca ? tree.lca.count : 0,
-      y: tree.lca && tree.lca.yCount ? tree.lca.yCount : 0,
+      ...(y && { y: tree.lca && tree.lca.yCount ? tree.lca.yCount : 0 }),
     },
     xQuery,
-    yQuery,
+    ...(y && { yQuery }),
     xLabel: fields[0],
-    yLabel: yFields[0],
+    ...(y && { yLabel: yFields[0] }),
   };
 };
