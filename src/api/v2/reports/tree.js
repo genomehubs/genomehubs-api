@@ -178,6 +178,7 @@ const getTree = async ({
         if (!params.includeEstimates) {
           if (lca.minDepth > parts[1]) {
             params.includeEstimates = "descendant";
+            lca.taxDepth = parts[1] * 1;
           }
         }
         return `tax_depth(${Math.min(parts[1], maxDepth)})`;
