@@ -42,7 +42,10 @@ export const formatCsv = async (response, opts) => {
     }
     if (opts.fields) {
       opts.fields.forEach((key) => {
-        if (fullResult.result.fields.hasOwnProperty(key)) {
+        if (
+          fullResult.result.fields &&
+          fullResult.result.fields.hasOwnProperty(key)
+        ) {
           usedFields[key] = true;
           let value = fullResult.result.fields[key].value;
           if (opts.tidyData) {

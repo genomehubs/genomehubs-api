@@ -337,6 +337,7 @@ module.exports = {
           tidyData: req.query.tidyData,
           includeRawValues: req.query.includeRawValues,
           result: req.query.result,
+          quote: "",
         };
         let tsv = await formatCsv(response, opts);
         if (req.query.filename) {

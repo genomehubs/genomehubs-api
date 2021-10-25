@@ -408,7 +408,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
       tree,
       xQuery: {
         ...xQuery,
-        fields: fields.join(","),
+        fields: fields.concat(yFields).join(","),
       },
       ...(y && {
         yQuery: {
