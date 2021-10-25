@@ -200,7 +200,7 @@ const getTree = async ({
       }
     });
   }
-  fields = fields.filter((field) => field != "undefined");
+  // fields = fields.filter((field) => field != "undefined");
   let xRes = await getResults({
     ...params,
     query: mapped.join(" AND "),
@@ -246,7 +246,7 @@ const getTree = async ({
     }
     if (
       field &&
-      field != "undefined" &&
+      // field != "undefined" &&
       params.includeEstimates == "descendant"
     ) {
       status = 1;
@@ -356,7 +356,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
     fields: yFields,
     summaries: ySummaries,
   } = queryParams({
-    term: `${x} AND ${y}`,
+    term: y ? `${x} AND ${y}` : x,
     result,
   });
   params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")

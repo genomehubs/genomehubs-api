@@ -1,3 +1,5 @@
+import { cacheFetch, cacheStore } from "../functions/cache";
+
 import { aggregateRawValueSources } from "../queries/aggregateRawValueSources";
 import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
@@ -31,11 +33,11 @@ export const getTree = async ({
   let xQuery = res.xQuery;
   let yQuery = res.yQuery;
   let xLabel = res.xLabel;
-  let caption = `Distribution of ${y} with ${x}`;
+  let caption = `Tree of ${report.y ? `${y} with ` : ""}${x}`;
   if (cat) {
     caption += ` by ${cat}`;
   }
-  if (apiParams.includeEstimates) {
+  if (apiParams.includeEstimates && report.xQuery.fields > "") {
     caption += ` including ancestrally derived estimates`;
   }
   return {
@@ -387,38 +389,43 @@ export const getTypes = async (params) => {
 
 module.exports = {
   getReport: async (req, res) => {
-    let report = {};
-    let queryString = qs.stringify(req.query);
-    switch (req.query.report) {
-      case "histogram": {
-        report = await histPerRank({ ...req.query, queryString });
-        break;
+    let report = await cacheFetch(req);
+    if (!report) {
+      report = {};
+      let queryString = qs.stringify(req.query);
+      switch (req.query.report) {
+        case "histogram": {
+          report = await histPerRank({ ...req.query, queryString });
+          break;
+        }
+        case "scatter": {
+          report = await scatterPerRank({ ...req.query, queryString });
+          break;
+        }
+        case "sources": {
+          report = await getSources({ ...req.query, queryString });
+          break;
+        }
+        case "tree": {
+          report = await getTree({ ...req.query, queryString });
+          break;
+        }
+        case "types": {
+          report = await getTypes({ ...req.query, queryString });
+          break;
+        }
+        case "xInY": {
+          report = await xInYPerRank({ ...req.query, queryString });
+          break;
+        }
+        case "xPerRank": {
+          report = await xPerRank({ ...req.query, queryString });
+          break;
+        }
       }
-      case "scatter": {
-        report = await scatterPerRank({ ...req.query, queryString });
-        break;
-      }
-      case "sources": {
-        report = await getSources({ ...req.query, queryString });
-        break;
-      }
-      case "tree": {
-        report = await getTree({ ...req.query, queryString });
-        break;
-      }
-      case "types": {
-        report = await getTypes({ ...req.query, queryString });
-        break;
-      }
-      case "xInY": {
-        report = await xInYPerRank({ ...req.query, queryString });
-        break;
-      }
-      case "xPerRank": {
-        report = await xPerRank({ ...req.query, queryString });
-        break;
-      }
+      cacheStore(req, report);
     }
+
     if (report && report != {}) {
       report.name = req.query.report;
       return res

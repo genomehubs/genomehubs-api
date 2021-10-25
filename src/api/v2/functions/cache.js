@@ -1,26 +1,38 @@
 import { mc } from "./memcached";
+const { promisify } = require("util");
 
-export const cache = (req, res, next) => {
-  const pathname = req._parsedOriginalUrl.pathname;
-  if (mc && pathname && pathname.endsWith("/report")) {
+// const getData = async (key) => {
+//   try {
+//     const getDataPromise = promisify(mc.get);
+//     const data = await getDataPromise(key, (err, val) => {
+//       return val;
+//     });
+//     console.log("found");
+//     return data;
+//     return JSON.parse(data);
+//   } catch (err) {
+//     console.log(err);
+//     console.log("not found");
+//     return false;
+//   }
+// };
+export const cacheFetch = async (req) => {
+  if (mc) {
     const key = req.url;
-    mc.get(key, (err, val) => {
-      if (err == null && val != null) {
-        res.send(JSON.parse(val));
-      } else {
-        res.sendResponse = res.send;
-        res.send = (body) => {
-          res.sendResponse(body);
-          mc.set(key, JSON.stringify(body), { expires: 0 }, (err, reply) => {
-            if (reply == true) {
-              res.sendResponse(body);
-            }
-          });
-        };
-      }
-      next();
-    });
+    try {
+      let cachedData = await mc.get(key);
+      return JSON.parse(cachedData);
+    } catch {
+      return false;
+    }
   } else {
-    next();
+    return false;
+  }
+};
+
+export const cacheStore = async (req, obj) => {
+  if (mc) {
+    const key = req.url;
+    mc.set(key, JSON.stringify(obj));
   }
 };
