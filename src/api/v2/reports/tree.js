@@ -74,9 +74,9 @@ const getLCA = async ({
       taxon = match[1].toLowerCase();
     }
   }
-
   let res = await getResults({
     ...params,
+    fields: [],
     query,
     exclusions,
     maxDepth: 100,
@@ -94,6 +94,7 @@ const getLCA = async ({
       }
       res = await getResults({
         ...params,
+        fields: [],
         query: filtered.join(" AND "),
         exclusions,
         maxDepth: 100,
@@ -160,7 +161,7 @@ const getTree = async ({
   result,
 }) => {
   let typesMap = await attrTypes({ result });
-  fields.push(...yFields);
+  // fields.push(...yFields);
   let field = yFields[0] || fields[0];
   let exclusions;
   params.excludeUnclassified = true;
@@ -200,7 +201,6 @@ const getTree = async ({
       }
     });
   }
-  // fields = fields.filter((field) => field != "undefined");
   let xRes = await getResults({
     ...params,
     query: mapped.join(" AND "),
@@ -208,9 +208,9 @@ const getTree = async ({
     maxDepth,
     lca: lca,
     fields,
+    optionalFields: yFields,
     exclusions,
   });
-  // return xRes;
 
   let isParentNode = {};
   let lineages = {};
@@ -227,7 +227,7 @@ const getTree = async ({
       query: yMapped.join(" AND "),
       size: 10000, // lca.count,
       maxDepth,
-      fields,
+      fields: yFields,
       exclusions,
     });
   }
@@ -309,6 +309,9 @@ const getTree = async ({
     for (let result of yRes.results) {
       // for (let [taxon_id, obj] of Object.entries(treeNodes)){
       if (!treeNodes[result.result.taxon_id]) {
+        continue;
+      }
+      if (!result.result.fields) {
         continue;
       }
       treeNodes[result.result.taxon_id].status = 1;

@@ -20,6 +20,7 @@ export const searchByTaxon = async ({
   result,
   ancestral,
   fields,
+  optionalFields,
   names,
   ranks,
   rank,
@@ -57,6 +58,16 @@ export const searchByTaxon = async ({
     aggregation_source,
     searchRawValues
   );
+  let optionalAttributesExist;
+  if (optionalFields) {
+    optionalAttributesExist = matchAttributes(
+      optionalFields,
+      typesMap,
+      aggregation_source,
+      searchRawValues,
+      "optionalAttributes"
+    );
+  }
   let namesExist = matchNames(names, namesMap);
   let lineageRanks = matchRanks(ranks, maxDepth);
   let attributeValues = filterAttributes(
@@ -107,6 +118,7 @@ export const searchByTaxon = async ({
           .concat(rankRestriction)
           .concat(lineageRanks)
           .concat(assemblyFilter),
+        ...(optionalAttributesExist && { should: optionalAttributesExist }),
       },
     },
     _source: {

@@ -2,7 +2,8 @@ export const matchAttributes = (
   fields,
   typesMap,
   aggregation_source,
-  searchRawValues
+  searchRawValues,
+  name = "attributes"
 ) => {
   if (fields.length == 0) return [];
   return [
@@ -27,6 +28,7 @@ export const matchAttributes = (
         },
         inner_hits: {
           _source: false,
+          name,
           docvalue_fields: [
             "attributes.key",
             "attributes.is_primary_value",

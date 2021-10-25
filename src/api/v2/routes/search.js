@@ -110,6 +110,7 @@ const generateQuery = async ({
   query,
   result,
   fields,
+  optionalFields,
   names,
   ranks,
   maxDepth,
@@ -126,6 +127,9 @@ const generateQuery = async ({
 }) => {
   let typesMap = await attrTypes({ ...query });
   fields = await parseFields({ result, fields });
+  optionalFields = optionalFields
+    ? await parseFields({ result, fields: optionalFields })
+    : [];
   if (ranks) {
     let rankNames = ranks.split(/\s*,\s*/);
     ranks = {};
@@ -185,6 +189,7 @@ const generateQuery = async ({
     idTerm,
     result,
     fields,
+    optionalFields,
     names,
     ranks,
     depth,
