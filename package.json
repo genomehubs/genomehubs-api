@@ -17,27 +17,27 @@
   },
   "homepage": "https://github.com/tolkit/goat-api#readme",
   "dependencies": {
-    "@elastic/elasticsearch": "^7.9.0",
+    "@elastic/elasticsearch": "^7.9.1",
     "body-parser": "^1.19.0",
     "compression": "^1.7.4",
     "cookie-parser": "^1.4.5",
     "cors": "^2.8.5",
     "d3-format": "^2.0.0",
     "d3-scale": "^3.3.0",
-    "dotenv": "^8.2.0",
+    "dotenv": "^8.6.0",
     "esm": "^3.2.25",
     "express": "^4.17.1",
-    "express-openapi-validator": "^3.16.6",
+    "express-openapi-validator": "^4.13.2",
     "install": "^0.13.0",
-    "json2csv": "^5.0.3",
+    "json2csv": "^5.0.6",
     "memcached": "^2.2.2",
     "memcached-promise": "^1.0.1",
     "morgan": "^1.10.0",
     "s": "^1.0.0",
-    "swagger-ui-express": "^4.1.4",
+    "swagger-ui-express": "^4.1.6",
     "yamljs": "^0.3.0"
   },
   "devDependencies": {
-    "nodemon": "^2.0.4"
+    "nodemon": "^2.0.14"
   }
 }

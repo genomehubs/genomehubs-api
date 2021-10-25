@@ -692,6 +692,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/releaseParam"
+        - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
         "200":

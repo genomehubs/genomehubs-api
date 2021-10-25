@@ -1,4 +1,5 @@
-import { OpenApiValidator } from "express-openapi-validator";
+const OpenApiValidator = require("express-openapi-validator");
+
 import YAML from "yamljs";
 // import { cache } from "./api/v2/functions/cache";
 import compression from "compression";
@@ -54,42 +55,42 @@ app.use(
 
 // app.use(cache);
 
-new OpenApiValidator({
-  apiSpec: swaggerDocument,
-  // validateRequests: true,
-  validateRequests: {
-    allowUnknownQueryParameters: true,
-  },
-  validateResponses: true,
-  operationHandlers: path.join(__dirname),
-})
-  .install(app)
-  .then(() => {
-    app.use((err, req, res, next) => {
-      let error = {
-        message: err.message,
-        errors: err.errors,
-      };
-      res.status(err.status || 500).json(error);
-      console.log(error);
-    });
+app.use(
+  OpenApiValidator.middleware({
+    apiSpec: swaggerDocument,
+    validateRequests: {
+      allowUnknownQueryParameters: true,
+      removeAdditional: "all",
+    },
+    validateResponses: true,
+    operationHandlers: path.join(__dirname),
+  })
+);
 
-    if (config.https) {
-      const https = require("https");
-      const fs = require("fs");
-      const options = {
-        key: fs.readFileSync(config.keyFile),
-        cert: fs.readFileSync(config.certFile),
-      };
-      https.createServer(options, app).listen(port, () => {
-        console.log(`Listening on https port ${port}`);
-      });
-    } else {
-      const http = require("http");
-      http.createServer(app).listen(port, () => {
-        console.log(`Listening on http port ${port}`);
-      });
-    }
+app.use((err, req, res, next) => {
+  let error = {
+    message: err.message,
+    errors: err.errors,
+  };
+  res.status(err.status || 500).json(error);
+  console.log(error);
+});
+
+if (config.https) {
+  const https = require("https");
+  const fs = require("fs");
+  const options = {
+    key: fs.readFileSync(config.keyFile),
+    cert: fs.readFileSync(config.certFile),
+  };
+  https.createServer(options, app).listen(port, () => {
+    console.log(`Listening on https port ${port}`);
   });
+} else {
+  const http = require("http");
+  http.createServer(app).listen(port, () => {
+    console.log(`Listening on http port ${port}`);
+  });
+}
 
 module.exports = app;

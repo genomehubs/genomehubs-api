@@ -33,7 +33,7 @@ export const getTree = async ({
   let xQuery = res.xQuery;
   let yQuery = res.yQuery;
   let xLabel = res.xLabel;
-  let caption = `Tree of ${report.y ? `${y} with ` : ""}${x}`;
+  let caption = `Tree of ${x}${report.y ? ` with ${y}` : ""}`;
   if (cat) {
     caption += ` by ${cat}`;
   }
