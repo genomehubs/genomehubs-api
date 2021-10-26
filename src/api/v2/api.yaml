@@ -277,7 +277,7 @@ components:
       name: size
       required: false
       schema:
-        maximum: 10000
+        maximum: 1000000
         minimum: 0
         type: integer
       style: form
