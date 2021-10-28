@@ -1,9 +1,11 @@
 import { getResults, setExclusions } from "../routes/search";
 import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
+import { aInB } from "../functions/aInB";
 import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
+import { combineQueries } from "../functions/combineQueries";
 import { format } from "d3-format";
 import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
@@ -140,6 +142,11 @@ const getBounds = async ({
   } else {
     extraTerms = cat;
   }
+  if (fields) {
+    if (cat) {
+      fields.push(cat);
+    }
+  }
   params.aggs = await setAggs({
     field,
     summary,
@@ -148,7 +155,11 @@ const getBounds = async ({
     terms: extraTerms,
     size: definedTerms.size,
   });
-  let res = await getResults({ ...params, exclusions });
+  let res = await getResults({
+    ...params,
+    fields,
+    exclusions,
+  });
   let aggs;
   try {
     aggs = res.aggs.aggregations[field];
@@ -294,6 +305,7 @@ const valueTypes = {
 
 const getHistogram = async ({
   params,
+  cat,
   fields,
   summaries,
   result,
@@ -316,7 +328,10 @@ const getHistogram = async ({
   if (yFields && yFields.length > 0) {
     yField = yFields[0];
     ySummary = ySummaries[0];
-    fields = fields.concat(yFields);
+    fields = [...new Set(fields.concat(yFields))];
+  }
+  if (cat) {
+    fields.push(cat);
   }
   let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
@@ -329,7 +344,11 @@ const getHistogram = async ({
     yBounds,
     ySummary,
   });
-  let res = await getResults({ ...params, exclusions });
+  let res = await getResults({
+    ...params,
+    fields,
+    exclusions,
+  });
   let xSumm, ySumm;
   const dateSummary = {
     min: "from",
@@ -359,7 +378,7 @@ const getHistogram = async ({
             } else {
               cat = result.result.fields[bounds.cat].value.toLowerCase();
             }
-          } else {
+          } else if (result.result.lineage) {
             cat = result.result.lineage.filter(
               (obj) => obj.taxon_rank == bounds.cat
             );
@@ -564,20 +583,72 @@ export const histogram = async ({
   xOpts,
   yOpts,
   scatterThreshold,
+  report,
   apiParams,
 }) => {
+  if (!rank) {
+    return {
+      status: {
+        success: false,
+        error: `no rank specified`,
+      },
+    };
+  }
   let { params, fields, summaries } = queryParams({ term: x, result, rank });
+  let yTerm = combineQueries(x, y);
   let {
     params: yParams,
     fields: yFields,
     summaries: ySummaries,
   } = queryParams({
-    term: y,
+    term: yTerm,
     result,
     rank,
   });
   let xQuery = { ...params };
   let typesMap = await attrTypes({ result });
+
+  if (!aInB(fields, Object.keys(typesMap))) {
+    return {
+      status: {
+        success: false,
+        error: `unknown field in 'x = ${x}'`,
+      },
+    };
+  }
+  if (fields.length == 0 || typesMap[fields[0]].type == "keyword") {
+    return {
+      status: {
+        success: false,
+        error: `no numeric or date field in '${x ? `x = ${x}` : "x"}'\ntry ${
+          x ? "adding ' AND " : "'"
+        }assembly_span'`,
+      },
+    };
+  }
+  if (yFields && yFields.length > 0) {
+    if (!aInB(yFields, Object.keys(typesMap))) {
+      return {
+        status: {
+          success: false,
+          error: `unknown field in 'y = ${y}'`,
+        },
+      };
+    }
+  }
+  if (
+    (report == "scatter" && (!y || yFields.length == 0)) ||
+    typesMap[fields[0]].type == "keyword"
+  ) {
+    return {
+      status: {
+        success: false,
+        error: `no numeric or date field in '${y ? `y = ${y}` : "y"}'\ntry ${
+          y ? "adding ' AND " : "'"
+        }c_value'`,
+      },
+    };
+  }
   let exclusions;
   if (apiParams.includeEstimates) {
     delete params.excludeAncestral;
@@ -604,6 +675,24 @@ export const histogram = async ({
     apiParams,
     opts: xOpts,
   });
+  if (!bounds) {
+    return {
+      status: {
+        success: false,
+        error:
+          "unable to calculate bounds" +
+          (rank ? "\ntry a lower taxonomic rank" : ""),
+      },
+    };
+  }
+  if (cat && (!bounds.cats || bounds.cats.length == 0)) {
+    return {
+      status: {
+        success: false,
+        error: `unknown field in 'cat = ${cat}'`,
+      },
+    };
+  }
   let histograms, yBounds;
   if (yFields && yFields.length > 0) {
     yBounds = await getBounds({
@@ -656,6 +745,10 @@ export const histogram = async ({
   //     }
   //   }
   // },
+  let ranks = [rank].flat();
+  if (!typesMap[cat]) {
+    ranks.push(cat);
+  }
 
   return {
     status: { success: true },
@@ -665,7 +758,7 @@ export const histogram = async ({
       xQuery: {
         ...xQuery,
         fields: fields.join(","),
-        ranks: [rank, cat].join(","),
+        ranks,
       },
       x: histograms ? histograms.allValues.reduce((a, b) => a + b, 0) : 0,
     },

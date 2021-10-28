@@ -1,9 +1,11 @@
 import { getResults, setExclusions } from "../routes/search";
 import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
+import { aInB } from "../functions/aInB";
 import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
+import { combineQueries } from "../functions/combineQueries";
 import { format } from "d3-format";
 import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
@@ -160,6 +162,7 @@ const getTree = async ({
   cat,
   result,
 }) => {
+  cat = undefined;
   let typesMap = await attrTypes({ result });
   // fields.push(...yFields);
   let field = yFields[0] || fields[0];
@@ -167,6 +170,15 @@ const getTree = async ({
   params.excludeUnclassified = true;
   exclusions = setExclusions(params);
   let lca = await getLCA({ params: { ...params }, exclusions });
+  let treeMaxTaxa = 2000;
+  if (lca.count > treeMaxTaxa) {
+    return {
+      status: {
+        success: false,
+        error: `Trees currently limited to ${treeMaxTaxa} nodes (x query returns ${lca.count} taxa).\nPlease specify additional filters to continue.`,
+      },
+    };
+  }
   let treeNodes = {};
   let maxDepth = lca.maxDepth;
   let mapped = params.query.split(/\s+(?:AND|and)\s+/);
@@ -350,18 +362,33 @@ const getTree = async ({
 };
 
 export const tree = async ({ x, y, cat, result, apiParams }) => {
+  let typesMap = await attrTypes({ result });
   let { params, fields, summaries } = queryParams({
     term: x,
     result,
   });
+  let status;
+  if (!x || !aInB(fields, Object.keys(typesMap))) {
+    status = {
+      success: false,
+      error: `unknown field in 'x = ${x}'`,
+    };
+  }
+  let yTerm = combineQueries(x, y);
   let {
     params: yParams,
     fields: yFields,
     summaries: ySummaries,
   } = queryParams({
-    term: y ? `${x} AND ${y}` : x,
+    term: yTerm,
     result,
   });
+  if (y && !aInB(yFields, Object.keys(typesMap))) {
+    status = {
+      success: false,
+      error: `unknown field in 'x = ${y}'`,
+    };
+  }
   params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
     ? apiParams.includeEstimates
     : true;
@@ -373,38 +400,29 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
 
   let xQuery = { ...params };
   let yQuery = { ...yParams };
-  let typesMap = await attrTypes({ result });
 
-  let tree = await getTree({
-    params,
-    fields,
-    summaries,
-    cat,
-    y,
-    yParams,
-    yFields,
-    ySummaries,
-    result,
-  });
-  // "aggs": {
-  //   "aggregations": {
-  //     "doc_count": 5708,
-  //     "c_value": {
-  //       "doc_count": 697,
-  //       "stats": {
-  //         "count": 697,
-  //         "min": 1.009765625,
-  //         "max": 2.16015625,
-  //         "avg": 1.362065100430416,
-  //         "sum": 949.359375
-  //       }
-  //     }
-  //   }
-  // },
+  let tree = status
+    ? {}
+    : await getTree({
+        params,
+        fields,
+        summaries,
+        cat,
+        y,
+        yParams,
+        yFields,
+        ySummaries,
+        result,
+      });
+
+  if (tree && tree.status && tree.status.success == false) {
+    status = tree.status;
+  }
 
   return {
     status: { success: true },
     report: {
+      status,
       tree,
       xQuery: {
         ...xQuery,

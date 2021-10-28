@@ -106,6 +106,8 @@ const addCondition = (conditions, parts) => {
   return conditions;
 };
 
+const summaries = ["value", "max", "min"];
+
 const generateQuery = async ({
   query,
   result,
@@ -147,11 +149,12 @@ const generateQuery = async ({
   let taxTerm, rank, depth, multiTerm, idTerm;
   let filters = {};
   let properties = {};
+  let status;
   if (query && query.match(/\n/)) {
     multiTerm = query.split(/\n/).filter((v) => v > "");
   } else if (query) {
     query.split(/\s+(?:AND|and)\s+/).forEach((term) => {
-      let taxQuery = term.match(/tax_(\w+)\((.+?)\)/);
+      let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\((.+?)\)/);
       if (taxQuery) {
         if (taxQuery[1] == "rank") {
           rank = taxQuery[2];
@@ -165,6 +168,12 @@ const generateQuery = async ({
           let bins = typesMap[result][term].bins;
           if (bins && bins.scale && bins.scale.startsWith("log")) {
             term += " > 0";
+          }
+        }
+        if (term.match(/(\w+)\s*\(/)) {
+          let [summary, val] = term.split(/\s*[\(\)]\s*/);
+          if (!summaries.includes(summary)) {
+            status = { success: false, error: `Invalid option in '${term}'` };
           }
         }
         if (term.match(/[\>\<=]/)) {
@@ -183,6 +192,15 @@ const generateQuery = async ({
         }
       }
     });
+  }
+
+  if (status) {
+    return {
+      func: () => ({
+        status,
+      }),
+      params: {},
+    };
   }
 
   let params = {

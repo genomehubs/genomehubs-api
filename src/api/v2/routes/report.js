@@ -4,6 +4,7 @@ import { aggregateRawValueSources } from "../queries/aggregateRawValueSources";
 import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
+import { combineQueries } from "../functions/combineQueries";
 import { formatJson } from "../functions/formatJson";
 import { getResultCount } from "./count";
 import { histogram } from "../reports/histogram";
@@ -12,6 +13,19 @@ import qs from "qs";
 import { queryParams } from "../reports/queryParams";
 import { setRanks } from "../functions/setRanks";
 import { tree } from "../reports/tree";
+
+const plurals = (singular) => {
+  const ranks = {
+    genus: "genera",
+    family: "families",
+    order: "orders",
+    class: "classes",
+    phylum: "phyla",
+    kingdom: "kingdoms",
+    superkingdom: "superkingdoms",
+  };
+  return ranks[singular.toLowerCase()] || singular;
+};
 
 export const getTree = async ({
   x,
@@ -22,6 +36,7 @@ export const getTree = async ({
   ...apiParams
 }) => {
   // Return tree of results
+  let status;
   let res = await tree({
     x,
     y,
@@ -29,19 +44,29 @@ export const getTree = async ({
     taxonomy,
     apiParams,
   });
+  if (res.status.success == false) {
+    if (!status) {
+      status = res.status;
+    }
+  } else {
+    status = { success: true };
+  }
   let report = res.report;
   let xQuery = res.xQuery;
   let yQuery = res.yQuery;
   let xLabel = res.xLabel;
-  let caption = `Tree of ${x}${report.y ? ` with ${y}` : ""}`;
-  if (cat) {
-    caption += ` by ${cat}`;
-  }
-  if (apiParams.includeEstimates && report.xQuery.fields > "") {
-    caption += ` including ancestrally derived estimates`;
+  let caption;
+  if (report) {
+    caption = `Tree of ${x}${report.y ? ` with ${y}` : ""}`;
+    if (cat) {
+      caption += ` by ${cat}`;
+    }
+    if (apiParams.includeEstimates && report.xQuery.fields > "") {
+      caption += ` including ancestrally derived estimates`;
+    }
   }
   return {
-    status: { success: true },
+    status,
     report: {
       tree: report,
       xQuery,
@@ -66,11 +91,12 @@ export const scatterPerRank = async ({
   ...apiParams
 }) => {
   // Return 2D histogram at a list of ranks
-  let ranks = setRanks(rank);
+  let ranks = rank ? setRanks(rank) : [undefined];
   let perRank = [];
   let xQuery;
   let xLabel;
   let yLabel;
+  let status;
   for (rank of ranks.slice(0, 1)) {
     let res = await histogram({
       x,
@@ -82,12 +108,23 @@ export const scatterPerRank = async ({
       xOpts,
       yOpts,
       scatterThreshold,
+      report: "scatter",
       apiParams,
     });
-    perRank.push(res.report);
-    xQuery = res.xQuery;
-    xLabel = res.xLabel;
-    yLabel = res.yLabel;
+    if (res.status.success == false) {
+      if (!status) {
+        status = res.status;
+      }
+      perRank.push(res);
+    } else {
+      perRank.push(res.report);
+      xQuery = res.xQuery;
+      xLabel = res.xLabel;
+      yLabel = res.yLabel;
+    }
+  }
+  if (!status) {
+    status = { success: true };
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
   let caption = `Distribution of ${y} with ${x}`;
@@ -98,9 +135,9 @@ export const scatterPerRank = async ({
     caption += ` including ancestrally derived estimates`;
   }
   return {
-    status: { success: true },
+    status,
     report: {
-      histogram: report,
+      scatter: report,
       xQuery,
       xLabel,
       yLabel,
@@ -120,10 +157,11 @@ export const histPerRank = async ({
   ...apiParams
 }) => {
   // Return histogram at a list of ranks
-  let ranks = setRanks(rank);
+  let ranks = rank ? setRanks(rank) : [undefined];
   let perRank = [];
   let xQuery;
   let xLabel;
+  let status;
   for (rank of ranks.slice(0, 1)) {
     let res = await histogram({
       x,
@@ -134,9 +172,19 @@ export const histPerRank = async ({
       taxonomy,
       apiParams,
     });
-    perRank.push(res.report);
-    xQuery = res.xQuery;
-    xLabel = res.xLabel;
+    if (res.status.success == false) {
+      if (!status) {
+        status = res.status;
+      }
+      perRank.push(res);
+    } else {
+      perRank.push(res.report);
+      xQuery = res.xQuery;
+      xLabel = res.xLabel;
+    }
+  }
+  if (!status) {
+    status = { success: true };
   }
   let report = perRank.length == 1 ? perRank[0] : perRank;
   let caption = `Frequency distribution of ${ranks[0]}`;
@@ -150,7 +198,7 @@ export const histPerRank = async ({
     caption += ` including ancestrally derived estimates`;
   }
   return {
-    status: { success: true },
+    status,
     report: {
       histogram: report,
       valueType: report.valueType,
@@ -164,13 +212,29 @@ export const histPerRank = async ({
 };
 
 export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
+  if (!x) {
+    return {
+      status: {
+        success: false,
+        error: `no x query specified`,
+      },
+    };
+  }
+  if (!rank) {
+    return {
+      status: {
+        success: false,
+        error: `no rank specified`,
+      },
+    };
+  }
   let { params, fields } = queryParams({ term: y, result, taxonomy, rank });
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   if (fields.length > 0) {
     yQuery.fields = fields.join(",");
   }
-  params.query += ` AND ${x}`;
+  params.query = combineQueries(params.query, x);
   if (rank) {
     params.includeEstimates = true;
     params.excludeAncestral = yQuery.excludeAncestral
@@ -231,22 +295,41 @@ export const xInYPerRank = async ({
   queryString,
 }) => {
   // Return xInY at a list of ranks
-  let ranks = setRanks(rank);
+  let ranks = rank ? setRanks(rank) : [undefined];
   let perRank = [];
+  let status;
   for (rank of ranks) {
     let res = await xInY({ x, y, result, rank, taxonomy });
-    perRank.push(res.report);
+    if (res.status.success == false) {
+      if (!status) {
+        status = res.status;
+      }
+      perRank.push(res);
+    } else {
+      perRank.push(res.report);
+    }
   }
-  let report = perRank.length == 1 ? perRank[0] : perRank;
-  let caption = `Taxa`;
+  if (!status) {
+    status = { success: true };
+  }
+  let report;
+  let taxa;
+  if (perRank.length == 1) {
+    report = perRank[0];
+    taxa = plurals(ranks[0]);
+  } else {
+    report = perRank;
+    taxa = "taxa";
+  }
+  let caption = taxa;
   if (x) {
-    caption += ` with ${x} out of all taxa`;
+    caption += ` with ${x} out of all ${taxa}`;
   }
   if (y) {
     caption += ` with ${y}`;
   }
   return {
-    status: { success: true },
+    status,
     report: {
       xInY: report,
       queryString,
@@ -282,7 +365,7 @@ export const xPerRank = async ({
     perRank.push({
       x: xCount.count,
       xTerm: x,
-      rank,
+      rank: plurals(rank),
       xQuery,
       ...(fields.length > 0 && { fields: fields.join(",") }),
     });
@@ -425,7 +508,6 @@ module.exports = {
       }
       cacheStore(req, report);
     }
-
     if (report && report != {}) {
       report.name = req.query.report;
       return res

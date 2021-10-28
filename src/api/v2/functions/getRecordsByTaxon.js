@@ -33,5 +33,5 @@ export const getRecordsByTaxon = async (props) => {
       aggs = body.aggregations;
     }
   }
-  return { status, results, aggs, query };
+  return { status, results, aggs, query, fields: props.fields };
 };
