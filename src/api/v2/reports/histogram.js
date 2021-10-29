@@ -143,7 +143,7 @@ const getBounds = async ({
     extraTerms = cat;
   }
   if (fields) {
-    if (cat) {
+    if (cat && typesMap[cat]) {
       fields.push(cat);
     }
   }
@@ -307,6 +307,7 @@ const getHistogram = async ({
   params,
   cat,
   fields,
+  rank,
   summaries,
   result,
   exclusions,
@@ -330,7 +331,7 @@ const getHistogram = async ({
     ySummary = ySummaries[0];
     fields = [...new Set(fields.concat(yFields))];
   }
-  if (cat) {
+  if (cat && typesMap[cat]) {
     fields.push(cat);
   }
   let valueType = valueTypes[typesMap[field].type] || "float";
@@ -348,6 +349,7 @@ const getHistogram = async ({
     ...params,
     fields,
     exclusions,
+    ...(raw && cat && !typesMap[cat] && { ranks: cat }),
   });
   let xSumm, ySumm;
   const dateSummary = {
@@ -378,12 +380,10 @@ const getHistogram = async ({
             } else {
               cat = result.result.fields[bounds.cat].value.toLowerCase();
             }
-          } else if (result.result.lineage) {
-            cat = result.result.lineage.filter(
-              (obj) => obj.taxon_rank == bounds.cat
-            );
-            if (cat[0]) {
-              cat = cat[0].taxon_id;
+          } else if (result.result.ranks) {
+            cat = result.result.ranks[bounds.cat];
+            if (cat) {
+              cat = cat.taxon_id;
             } else {
               cat = "other";
             }
@@ -711,6 +711,7 @@ export const histogram = async ({
     histograms = await getHistogram({
       params,
       fields,
+      rank,
       summaries,
       cat,
       result,

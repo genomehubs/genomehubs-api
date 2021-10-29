@@ -5,8 +5,10 @@ export const setIncludes = ({
   includeRawValues,
 }) => {
   let include = [];
+  // console.log(non_attr_fields);
   if (non_attr_fields && non_attr_fields.length > 0) {
     return non_attr_fields;
+    // include = ["lineage"];
   }
   if (result == "assembly") {
     include.concat(["assembly_id"]);
