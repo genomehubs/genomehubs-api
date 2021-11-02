@@ -94,6 +94,7 @@ export const scatterPerRank = async ({
   let ranks = rank ? setRanks(rank) : [undefined];
   let perRank = [];
   let xQuery;
+  let yQuery;
   let xLabel;
   let yLabel;
   let status;
@@ -119,6 +120,7 @@ export const scatterPerRank = async ({
     } else {
       perRank.push(res.report);
       xQuery = res.xQuery;
+      yQuery = res.yQuery;
       xLabel = res.xLabel;
       yLabel = res.yLabel;
     }
@@ -139,6 +141,7 @@ export const scatterPerRank = async ({
     report: {
       scatter: report,
       xQuery,
+      yQuery,
       xLabel,
       yLabel,
       queryString,

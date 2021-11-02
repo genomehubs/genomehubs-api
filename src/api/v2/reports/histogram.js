@@ -21,6 +21,15 @@ const scales = {
 };
 const fmt = format(".8r");
 
+const valueTypes = {
+  long: "integer",
+  integer: "integer",
+  short: "integer",
+  byte: "integer",
+  date: "date",
+  keyword: "keyword",
+};
+
 const getCatLabels = async ({
   result,
   cat,
@@ -116,6 +125,30 @@ const setTerms = async ({ cat, typesMap, apiParams }) => {
   return { cat: field, terms, by, size, other };
 };
 
+const precision = (val) => {
+  if (!isFinite(val)) return 0;
+  let exp = 1,
+    prec = 0;
+  while (Math.round(val * exp) / exp !== val) {
+    exp *= 10;
+    prec++;
+  }
+  return prec;
+};
+
+const incrementFloat = (val) => {
+  let prec = precision(val);
+  val += 10 ** -prec;
+  return val;
+};
+
+const incrementDate = (val) => {
+  let date = new Date(val);
+  date.setHours(0, 0, 0, 0);
+  date.setDate(date.getDate() + 1);
+  return date.getTime();
+};
+
 const getBounds = async ({
   params,
   fields,
@@ -185,7 +218,46 @@ const getBounds = async ({
     }
   }
   if (!min || !max) {
-    if (typesMap[field].type == "date") {
+    let valueType = valueTypes[typesMap[field].type] || "float";
+    if (stats.min == stats.max) {
+      tickCount = 2;
+      if (valueType == "date") {
+        min = stats.min;
+        max = incrementDate(stats.max);
+      } else if (valueType == "float" || valueType == "integer") {
+        min = Number.parseFloat(stats.min).toPrecision(3);
+        if (min > stats.min) {
+          let [val, exp] = min.split("e");
+          min = val.split("");
+          for (let i = min.length - 1; i >= 0; i--) {
+            if (min[i] == 0) {
+              min[i] = 9;
+            } else if (min[i] != ".") {
+              min[i] = min[i] * 1 - 1;
+              break;
+            }
+          }
+          min = min.join("");
+          if (exp) {
+            min += `e${exp}`;
+          }
+        }
+        let [val, exp] = min.split("e");
+        max = val.split("");
+        for (let i = max.length - 1; i >= 0; i--) {
+          if (i > 0 && max[i] == 9) {
+            max[i] = 0;
+          } else if (max[i] != ".") {
+            max[i] = max[i] * 1 + 1;
+            break;
+          }
+        }
+        max = max.join("");
+        if (exp) {
+          max += `e${exp}`;
+        }
+      }
+    } else if (typesMap[field].type == "date") {
       min = stats.min;
       max = stats.max;
     } else {
@@ -292,15 +364,6 @@ const getYValues = ({ obj, yField, typesMap }) => {
     yValues.push(yObj.doc_count);
   });
   return { yValues, yBuckets, yValueType };
-};
-
-const valueTypes = {
-  long: "integer",
-  integer: "integer",
-  short: "integer",
-  byte: "integer",
-  date: "date",
-  keyword: "keyword",
 };
 
 const getHistogram = async ({
@@ -764,6 +827,7 @@ export const histogram = async ({
       x: histograms ? histograms.allValues.reduce((a, b) => a + b, 0) : 0,
     },
     xQuery,
+    ...(y && { yQuery: { query: y } }),
     xLabel: histograms ? histograms.xLabel : fields[0],
     yLabel: histograms ? histograms.yLabel : yFields[0],
   };

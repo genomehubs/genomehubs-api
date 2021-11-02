@@ -21,9 +21,9 @@ export const histogramAgg = async ({
     linear: (value) => value,
   };
 
+  const day = 86400000;
   const duration = (interval) => {
-    const day = 86400000;
-    if (interval < day) {
+    if (interval < day * 0.75) {
       return "1h";
     } else if (interval < 21 * day) {
       return "1d";
@@ -58,9 +58,10 @@ export const histogramAgg = async ({
   if (typesMap[field].type == "date") {
     histKey = "date_histogram";
     [min, max] = timeLimits(bounds.stats.min, bounds.stats.max);
-    min = Date.parse(bounds.domain[0]) || min;
-    max = Date.parse(bounds.domain[1]) || max;
-    calendar_interval = duration(Date.parse(max) - Date.parse(min));
+    min = bounds.domain[0] || min;
+    max = bounds.domain[1] || max;
+    max = Math.max(max, min + day);
+    calendar_interval = duration(max - min);
   } else {
     histKey = "histogram";
     ({ scale, min, max, count } = typesMap[field].bins);

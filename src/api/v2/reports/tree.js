@@ -393,8 +393,11 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
     ? apiParams.includeEstimates
     : true;
   yParams.includeEstimates = params.includeEstimates;
-  // delete params.excludeAncestral;
-  // delete yParams.excludeAncestral;
+  if (params.includeEstimates) {
+    delete params.excludeAncestral;
+    delete yParams.excludeAncestral;
+  }
+
   delete params.excludeDescendant;
   delete yParams.excludeDescendant;
 
