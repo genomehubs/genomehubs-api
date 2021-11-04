@@ -232,6 +232,7 @@ const getTree = async ({
     if (cat && typesMap[cat]) {
       yParams.excludeMissing.push(cat);
     }
+    yParams.excludeMissing = [...new Set(yParams.excludeMissing)];
     yParams.excludeUnclassified = true;
     exclusions = setExclusions(yParams);
     yRes = await getResults({
@@ -429,12 +430,12 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
       tree,
       xQuery: {
         ...xQuery,
-        fields: fields.concat(yFields).join(","),
+        fields: [...new Set(fields.concat(yFields))].join(","),
       },
       ...(y && {
         yQuery: {
           ...yQuery,
-          fields: yFields.join(","),
+          fields: [...new Set(yFields)].join(","),
         },
       }),
       x: tree.lca ? tree.lca.count : 0,

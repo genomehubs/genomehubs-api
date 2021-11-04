@@ -40,6 +40,10 @@ export const queryParams = ({
       params.query = `tax_rank(${rank})`;
     }
   }
+  params.excludeMissing = [...new Set(params.excludeMissing)];
+  params.excludeAncestral = [...new Set(params.excludeAncestral)];
+  params.excludeDirect = [...new Set(params.excludeDirect)];
+  params.excludeDescendant = [...new Set(params.excludeDescendant)];
 
   return { params, fields, summaries };
 };

@@ -261,6 +261,8 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
       fields = ["all"];
     }
   }
+  params.excludeMissing = [...new Set(params.excludeMissing)];
+  params.excludeAncestral = [...new Set(params.excludeAncestral)];
   let xCount = await getResultCount({ ...params });
   let xQuery = params;
   if (fields.length > 0) {

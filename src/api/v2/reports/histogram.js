@@ -396,6 +396,7 @@ const getHistogram = async ({
   }
   if (cat && typesMap[cat]) {
     fields.push(cat);
+    fields = [...new Set(fields)];
   }
   let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
@@ -545,6 +546,7 @@ const getHistogram = async ({
     byCat = {};
     if (bounds.by == "attribute") {
       fields.push(bounds.cat);
+      fields = [...new Set(fields)];
       catBuckets = catHists.by_attribute.by_cat.buckets;
     } else {
       if (bounds.showOther) {
@@ -722,11 +724,14 @@ export const histogram = async ({
       params.excludeAncestral.push(cat);
     }
   }
+  params.excludeAncestral = [...new Set(params.excludeAncestral)];
   params.excludeMissing.push(...yFields);
   if (typesMap[cat]) {
     params.excludeMissing.push(cat);
   }
+  params.excludeMissing = [...new Set(params.excludeMissing)];
   fields = fields.concat(yFields);
+  fields = [...new Set(fields)];
   exclusions = setExclusions(params);
   let bounds = await getBounds({
     params: { ...params },
@@ -810,7 +815,7 @@ export const histogram = async ({
   //   }
   // },
   let ranks = [rank].flat();
-  if (!typesMap[cat]) {
+  if (cat && !typesMap[cat]) {
     ranks.push(cat);
   }
 
