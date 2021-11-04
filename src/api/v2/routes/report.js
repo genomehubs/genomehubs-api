@@ -57,7 +57,7 @@ export const getTree = async ({
   let xLabel = res.xLabel;
   let caption;
   if (report) {
-    caption = `Tree of ${x}${report.y ? ` with ${y}` : ""}`;
+    caption = `Tree of ${x}${report.y ? ` highlighting ${y}` : ""}`;
     if (cat) {
       caption += ` by ${cat}`;
     }
