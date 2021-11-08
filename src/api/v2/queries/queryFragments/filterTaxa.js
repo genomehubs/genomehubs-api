@@ -102,35 +102,6 @@ export const filterTaxa = ({
                   .concat(lineage),
               },
             };
-            // }
-            return {
-              bool: {
-                should: [
-                  {
-                    match: { taxon_id: term },
-                  },
-                  {
-                    nested: {
-                      path: "taxon_names",
-                      query: {
-                        bool: {
-                          filter: {
-                            term: {
-                              "taxon_names.name": term,
-                            },
-                          },
-                          must_not: {
-                            exists: {
-                              field: "taxon_names.source",
-                            },
-                          },
-                        },
-                      },
-                    },
-                  },
-                ].concat(lineage),
-              },
-            };
           }),
         },
       },

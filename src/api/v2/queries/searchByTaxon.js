@@ -83,12 +83,23 @@ export const searchByTaxon = async ({
     if (result == "assembly") {
       assemblyFilter = filterAssemblies(searchTerm, multiTerm, idTerm);
     }
+    if (result == "taxon" && Object.keys(aggs).length == 0) {
+      console.log({ rank, depth, maxDepth });
+      if (!searchTerm && (rank || depth || maxDepth)) {
+        searchTerm = idTerm;
+        ancestral = true;
+        idTerm = undefined;
+      }
+    } else {
+      idTerm = undefined;
+    }
+    console.log({ searchTerm, idTerm, aggs, result, ancestral });
     taxonFilter = filterTaxa({
       depth,
       searchTerm,
       multiTerm,
       ancestral,
-      idTerm: result == "taxon" && aggs == {} ? idTerm : undefined,
+      idTerm,
       gte: maxDepth ? undefined : true,
     });
   } else {
