@@ -11,24 +11,28 @@ export const filterAttributes = (
   if (searchRawValues) {
     rangeQuery = (field) => {
       // TODO: support enum based query here
-      return {
-        nested: {
-          path: "attributes.values",
-          query: {
-            range: {
-              [`attributes.values.${typesMap[field].type}_value`]:
-                filters[field],
+      return [
+        {
+          nested: {
+            path: "attributes.values",
+            query: {
+              range: {
+                [`attributes.values.${typesMap[field].type}_value`]:
+                  filters[field],
+              },
             },
           },
         },
-      };
+      ];
     };
   } else {
     rangeQuery = (field) => {
       if (!typesMap[field]) {
-        return {
-          match: { "attributes.key": field },
-        };
+        return [
+          {
+            match: { "attributes.key": field },
+          },
+        ];
       }
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
@@ -70,29 +74,40 @@ export const filterAttributes = (
               terms.push(term);
             }
           }
-          return {
-            bool: {
-              should: terms.map((term) => {
-                return {
-                  match: { [`attributes.${stat}`]: term },
-                };
-              }),
+          return [
+            {
+              bool: {
+                should: terms.map((term) => {
+                  return {
+                    match: { [`attributes.${stat}`]: term },
+                  };
+                }),
+              },
             },
-          };
+          ];
         } else {
-          return {
-            match: { [`attributes.${stat}`]: value },
-          };
+          return [
+            {
+              match: { [`attributes.${stat}`]: value },
+            },
+          ];
         }
       }
-      return {
-        range: {
-          [`attributes.${stat}`]: filter,
-        },
-      };
+      if (!Array.isArray(filters[field])) {
+        filters[field] = [filters[field]];
+      }
+      return filters[field].map((flt) => {
+        if (typeof flt !== "object") {
+          return { match: { [`attributes.${stat}`]: flt } };
+        }
+        return {
+          range: {
+            [`attributes.${stat}`]: flt,
+          },
+        };
+      });
     };
   }
-
   return Object.keys(filters).length == 0
     ? []
     : Object.keys(filters).map((field) => ({
@@ -100,10 +115,9 @@ export const filterAttributes = (
           path: "attributes",
           query: {
             bool: {
-              filter: [
-                { match: { "attributes.key": field } },
-                rangeQuery(field),
-              ].concat(aggregation_source),
+              filter: [{ match: { "attributes.key": field } }]
+                .concat(aggregation_source)
+                .concat(rangeQuery(field)),
             },
           },
         },

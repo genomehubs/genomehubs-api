@@ -321,7 +321,7 @@ export const xInYPerRank = async ({
   let taxa;
   if (perRank.length == 1) {
     report = perRank[0];
-    taxa = plurals(ranks[0]);
+    taxa = ranks[0] ? plurals(ranks[0]) : "taxa";
   } else {
     report = perRank;
     taxa = "taxa";
@@ -370,7 +370,7 @@ export const xPerRank = async ({
     perRank.push({
       x: xCount.count,
       xTerm: x,
-      rank: plurals(rank),
+      rank: rank && plurals(rank),
       xQuery,
       ...(fields.length > 0 && { fields: fields.join(",") }),
     });

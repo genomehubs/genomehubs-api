@@ -80,7 +80,7 @@ const setSortBy = ({ sortBy, sortOrder, sortMode }) => {
   return sortBy;
 };
 
-const addCondition = (conditions, parts) => {
+const addCondition = (conditions, parts, type) => {
   if (!conditions) {
     conditions = {};
   }
@@ -91,18 +91,35 @@ const addCondition = (conditions, parts) => {
     parts[0] = segments[1];
   }
   if (!conditions[parts[0]]) {
-    conditions[parts[0]] = {};
+    if (type == "keyword") {
+      conditions[parts[0]] = [];
+    } else {
+      conditions[parts[0]] = {};
+    }
   }
   if (stat) {
     conditions[parts[0]]["stat"] = stat;
   }
-  if (parts[1] == "==") {
-    conditions[parts[0]] = parts[2];
+  if (type == "keyword" && conditions[parts[0]]) {
+    if (parts[1] == "==") {
+      conditions[parts[0]].push(parts[2]);
+    } else {
+      let values = {};
+      operations(parts[1]).forEach((operator) => {
+        values[operator] = parts[2];
+      });
+      conditions[parts[0]].push(values);
+    }
   } else {
-    operations(parts[1]).forEach((operator) => {
-      conditions[parts[0]][operator] = parts[2];
-    });
+    if (parts[1] == "==") {
+      conditions[parts[0]] = parts[2];
+    } else {
+      operations(parts[1]).forEach((operator) => {
+        conditions[parts[0]][operator] = parts[2];
+      });
+    }
   }
+
   return conditions;
 };
 
@@ -179,7 +196,11 @@ const generateQuery = async ({
         if (term.match(/[\>\<=]/)) {
           let parts = term.split(/\s*([\>\<=]+)\s*/);
           if (typesMap[result]) {
-            filters = addCondition(filters, parts);
+            filters = addCondition(
+              filters,
+              parts,
+              typesMap[result][parts[0]].type
+            );
           } else {
             properties = addCondition(properties, parts);
           }
