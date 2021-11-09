@@ -456,6 +456,100 @@ export const getSources = async (params) => {
   return sources;
 };
 
+export const getNewickString = ({ treeNodes, rootNode }) => {
+  if (!treeNodes || !rootNode) return ";";
+  const writeNewickString = ({ node }) => {
+    if (
+      node.hasOwnProperty("children") &&
+      Object.keys(node.children).length > 0
+    ) {
+      let children = Object.keys(node.children).map((key) =>
+        writeNewickString({ node: treeNodes[key] })
+      );
+      return children.length > 1
+        ? `(${children.join(",")})${node.scientific_name}`
+        : children[0];
+    }
+    return node.scientific_name;
+  };
+  let newick = writeNewickString({ node: treeNodes[rootNode] });
+  return `${newick};`;
+};
+
+export const getPhyloXml = ({
+  treeNodes,
+  rootNode,
+  taxonomy = "ncbi",
+  compact = true,
+  field,
+  meta,
+}) => {
+  if (!treeNodes || !rootNode) return undefined;
+
+  const writeTaxonomy = ({
+    taxon_id,
+    scientific_name,
+    taxon_rank,
+    taxonomy,
+  }) => {
+    return `<taxonomy><id provider="${taxonomy}">${taxon_id}</id><scientific_name>${scientific_name}</scientific_name><rank>${taxon_rank}</rank></taxonomy>`;
+  };
+
+  const writeName = ({ scientific_name }) => {
+    return `<name>${scientific_name}</name>`;
+  };
+
+  const writeAnnotation = ({ value, source, field, meta }) => {
+    if (!source) {
+      return "";
+    }
+    let unit = meta.unit ? `unit="${meta.unit}"` : "";
+    let datatype = `datatype="xsd:integer"`;
+    let property = `<property ${datatype} ref="GoaT:${field}" applies_to="clade" ${unit}>${value}</property>`;
+    return `<annotation evidence="${source}">${property}</annotation>`;
+  };
+
+  const writeClade = ({ node }) => {
+    let children = [];
+    if (
+      node.hasOwnProperty("children") &&
+      Object.keys(node.children).length > 0
+    ) {
+      children = Object.keys(node.children).map((key) =>
+        writeClade({ node: treeNodes[key] })
+      );
+    }
+    if (compact && children.length == 1) {
+      return children[0];
+    }
+    return `<clade><id>${node.taxon_id}</id>${writeName({
+      ...node,
+    })}${writeTaxonomy({
+      ...node,
+      taxonomy,
+    })}${
+      meta
+        ? writeAnnotation({
+            ...node,
+            field,
+            meta,
+          })
+        : ""
+    }${children.join("\n")}</clade>`;
+  };
+  let tree = writeClade({ node: treeNodes[rootNode] });
+  let xml = `<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd" 
+  xmlns="http://www.phyloxml.org">
+  <phylogeny rooted="true">
+    <name>test</name>
+    <description>example tree</description>
+    ${tree}
+  </phylogeny>
+</phyloxml>`;
+  return xml;
+};
+
 export const getTypes = async (params) => {
   const types = await attrTypes({
     result: params.result,
@@ -515,11 +609,49 @@ module.exports = {
     }
     if (report && report != {}) {
       report.name = req.query.report;
-      return res
-        .status(200)
-        .send(
-          formatJson({ status: { success: true }, report }, req.query.indent)
-        );
+      let typesMap;
+      if (report.name == "tree") {
+        typesMap = await attrTypes({ ...req.query });
+      }
+
+      return res.format({
+        json: () => {
+          res
+            .status(200)
+            .send(
+              formatJson(
+                { status: { success: true }, report },
+                req.query.indent
+              )
+            );
+        },
+        "text/x-nh": () => {
+          let { lca, treeNodes } = report.report.tree.tree;
+          res
+            .status(200)
+            .send(getNewickString({ treeNodes, rootNode: lca.taxon_id }));
+        },
+        "application/xml": () => {
+          let { lca, treeNodes } = report.report.tree.tree;
+          let fields = report.report.tree.xQuery.fields;
+          let meta;
+          let field;
+          if (fields) {
+            if (Array.isArray(fields)) {
+              field = fields[0];
+              meta = typesMap[fields[0]];
+            } else {
+              field = fields.replace(/,.+/, "");
+              meta = typesMap[field];
+            }
+          }
+          res
+            .status(200)
+            .send(
+              getPhyloXml({ treeNodes, rootNode: lca.taxon_id, field, meta })
+            );
+        },
+      });
     }
     return res.status(404).send({ status: "error" });
   },

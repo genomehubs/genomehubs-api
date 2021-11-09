@@ -384,14 +384,14 @@ components:
     xOptsParam:
       description: X axis options (min,max,tickCount)
       in: query
-      name: x
+      name: xOpts
       required: false
       schema:
         type: string
     xParam:
       description: X value source
       in: query
-      name: xOpts
+      name: x
       required: false
       schema:
         type: string
@@ -676,6 +676,12 @@ paths:
                     status: null
                   - $ref: "#/components/schemas/Summaries"
                     results: null
+            application/xml:
+              schema:
+                type: string
+            text/x-nh:
+              schema:
+                type: string
           description: successful operation
         "400":
           description: Invalid query

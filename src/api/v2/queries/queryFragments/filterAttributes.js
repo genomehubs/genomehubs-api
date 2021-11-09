@@ -25,6 +25,11 @@ export const filterAttributes = (
     };
   } else {
     rangeQuery = (field) => {
+      if (!typesMap[field]) {
+        return {
+          match: { "attributes.key": field },
+        };
+      }
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
       if (filter.stat) {
