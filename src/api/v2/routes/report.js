@@ -453,7 +453,7 @@ export const getSources = async (params) => {
       }
     });
   });
-  return sources;
+  return { report: { sources: sources } };
 };
 
 export const getNewickString = ({ treeNodes, rootNode }) => {
@@ -625,32 +625,36 @@ module.exports = {
               )
             );
         },
-        "text/x-nh": () => {
-          let { lca, treeNodes } = report.report.tree.tree;
-          res
-            .status(200)
-            .send(getNewickString({ treeNodes, rootNode: lca.taxon_id }));
-        },
-        "application/xml": () => {
-          let { lca, treeNodes } = report.report.tree.tree;
-          let fields = report.report.tree.xQuery.fields;
-          let meta;
-          let field;
-          if (fields) {
-            if (Array.isArray(fields)) {
-              field = fields[0];
-              meta = typesMap[fields[0]];
-            } else {
-              field = fields.replace(/,.+/, "");
-              meta = typesMap[field];
+        ...(report.name == tree && {
+          "text/x-nh": () => {
+            let { lca, treeNodes } = report.report.tree.tree;
+            res
+              .status(200)
+              .send(getNewickString({ treeNodes, rootNode: lca.taxon_id }));
+          },
+        }),
+        ...(report.name == tree && {
+          "application/xml": () => {
+            let { lca, treeNodes } = report.report.tree.tree;
+            let fields = report.report.tree.xQuery.fields;
+            let meta;
+            let field;
+            if (fields) {
+              if (Array.isArray(fields)) {
+                field = fields[0];
+                meta = typesMap[fields[0]];
+              } else {
+                field = fields.replace(/,.+/, "");
+                meta = typesMap[field];
+              }
             }
-          }
-          res
-            .status(200)
-            .send(
-              getPhyloXml({ treeNodes, rootNode: lca.taxon_id, field, meta })
-            );
-        },
+            res
+              .status(200)
+              .send(
+                getPhyloXml({ treeNodes, rootNode: lca.taxon_id, field, meta })
+              );
+          },
+        }),
       });
     }
     return res.status(404).send({ status: "error" });
