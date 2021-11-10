@@ -41,14 +41,18 @@ export const filterAttributes = (
         delete filter.stat;
       }
       let meta = typesMap[field];
+      console.log(Object.values(filter));
       if (
         meta.type == "keyword" &&
         meta.summary &&
-        meta.summary.includes("enum")
+        meta.summary.includes("enum") &&
+        typeof Object.values(filter)[0] === "object"
       ) {
         let list = meta.constraint.enum;
+        filter = filter[0];
         const operator = Object.keys(filter)[0];
         const value = Object.values(filter)[0];
+        console.log(value);
         if (Object.keys(filter).length == 1) {
           let terms = [];
           let found = false;
@@ -98,7 +102,26 @@ export const filterAttributes = (
       }
       return filters[field].map((flt) => {
         if (typeof flt !== "object") {
-          return { match: { [`attributes.${stat}`]: flt } };
+          let values = flt.split(",");
+          return {
+            bool: {
+              should: values.map((value) => ({
+                match: { [`attributes.${stat}`]: value },
+              })),
+            },
+          };
+          // return {
+          //   bool: {
+          //     should: values.map((value) => ({
+          //       bool: {
+          //         filter: [{ match: { [`attributes.${stat}`]: value } }].concat(
+          //           aggregation_source
+          //         ),
+          //       },
+          //     })),
+          //   },
+          // };
+          // return { match: { [`attributes.${stat}`]: flt } };
         }
         return {
           range: {

@@ -100,8 +100,8 @@ const addCondition = (conditions, parts, type) => {
   if (stat) {
     conditions[parts[0]]["stat"] = stat;
   }
-  if (type == "keyword" && conditions[parts[0]]) {
-    if (parts[1] == "==") {
+  if (type == "keyword") {
+    if (!parts[1].match(/[><]/)) {
       conditions[parts[0]].push(parts[2]);
     } else {
       let values = {};
