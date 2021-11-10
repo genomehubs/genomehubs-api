@@ -625,7 +625,7 @@ module.exports = {
               )
             );
         },
-        ...(report.name == tree && {
+        ...(report.name == "tree" && {
           "text/x-nh": () => {
             let { lca, treeNodes } = report.report.tree.tree;
             res
@@ -633,7 +633,7 @@ module.exports = {
               .send(getNewickString({ treeNodes, rootNode: lca.taxon_id }));
           },
         }),
-        ...(report.name == tree && {
+        ...(report.name == "tree" && {
           "application/xml": () => {
             let { lca, treeNodes } = report.report.tree.tree;
             let fields = report.report.tree.xQuery.fields;
