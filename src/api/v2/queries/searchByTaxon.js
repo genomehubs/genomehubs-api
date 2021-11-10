@@ -50,7 +50,6 @@ export const searchByTaxon = async ({
     non_attr_fields = fields;
     fields = [];
   }
-  console.log(includeEstimates);
   let aggregation_source = setAggregationSource(result, includeEstimates);
   let excludedSources = excludeSources(exclusions, fields);
   let attributesExist = matchAttributes(
@@ -93,7 +92,7 @@ export const searchByTaxon = async ({
     } else {
       idTerm = undefined;
     }
-    taxonFilter = filterTaxa({
+    console.log({
       depth,
       searchTerm,
       multiTerm,
@@ -101,7 +100,33 @@ export const searchByTaxon = async ({
       idTerm,
       gte: maxDepth ? undefined : true,
     });
+    if (searchTerm && searchTerm.match(",")) {
+      let taxFilter = [];
+      searchTerm.split(",").forEach((taxon) => {
+        taxFilter = taxFilter.concat(
+          filterTaxa({
+            depth,
+            searchTerm: taxon,
+            multiTerm,
+            ancestral,
+            idTerm,
+            gte: maxDepth ? undefined : true,
+          })
+        );
+      });
+      taxonFilter = [{ bool: { should: taxFilter } }];
+    } else {
+      taxonFilter = filterTaxa({
+        depth,
+        searchTerm,
+        multiTerm,
+        ancestral,
+        idTerm,
+        gte: maxDepth ? undefined : true,
+      });
+    }
   } else {
+    // TODO: allow comma separated taxa here
     taxonFilter = filterTaxId(searchTerm);
   }
   let rankRestriction = restrictToRank(rank);

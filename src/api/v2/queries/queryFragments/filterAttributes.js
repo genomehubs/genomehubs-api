@@ -41,7 +41,6 @@ export const filterAttributes = (
         delete filter.stat;
       }
       let meta = typesMap[field];
-      console.log(Object.values(filter));
       if (
         meta.type == "keyword" &&
         meta.summary &&
@@ -52,7 +51,6 @@ export const filterAttributes = (
         filter = filter[0];
         const operator = Object.keys(filter)[0];
         const value = Object.values(filter)[0];
-        console.log(value);
         if (Object.keys(filter).length == 1) {
           let terms = [];
           let found = false;
