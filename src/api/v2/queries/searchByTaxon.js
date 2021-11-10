@@ -92,14 +92,6 @@ export const searchByTaxon = async ({
     } else {
       idTerm = undefined;
     }
-    console.log({
-      depth,
-      searchTerm,
-      multiTerm,
-      ancestral,
-      idTerm,
-      gte: maxDepth ? undefined : true,
-    });
     if (searchTerm && searchTerm.match(",")) {
       let taxFilter = [];
       searchTerm.split(",").forEach((taxon) => {
