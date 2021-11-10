@@ -121,7 +121,16 @@ export const searchByTaxon = async ({
     // TODO: allow comma separated taxa here
     taxonFilter = filterTaxId(searchTerm);
   }
-  let rankRestriction = restrictToRank(rank);
+  let rankRestriction;
+  if (rank && rank.match(",")) {
+    let rankFilter = [];
+    rank.split(",").forEach((r) => {
+      rankFilter = rankFilter.concat(restrictToRank(r));
+    });
+    rankRestriction = [{ bool: { should: rankFilter } }];
+  } else {
+    rankRestriction = restrictToRank(rank);
+  }
   let include = setIncludes({
     result,
     summaryValues,
