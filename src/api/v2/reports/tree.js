@@ -6,6 +6,7 @@ import { attrTypes } from "../functions/attrTypes";
 import { checkResponse } from "../functions/checkResponse";
 import { client } from "../functions/connection";
 import { combineQueries } from "../functions/combineQueries";
+import { config } from "../functions/config";
 import { format } from "d3-format";
 import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
@@ -138,8 +139,6 @@ const getLCA = async ({
           break;
         }
       }
-    } else if (buckets.length == 2) {
-      parent = buckets[1].key;
     }
 
     lca = {
@@ -161,6 +160,7 @@ const getTree = async ({
   yFields,
   cat,
   result,
+  treeThreshold = config.treeThreshold,
 }) => {
   cat = undefined;
   let typesMap = await attrTypes({ result });
@@ -170,12 +170,11 @@ const getTree = async ({
   params.excludeUnclassified = true;
   exclusions = setExclusions(params);
   let lca = await getLCA({ params: { ...params }, exclusions });
-  let treeMaxTaxa = 2000;
-  if (lca.count > treeMaxTaxa) {
+  if (treeThreshold > -1 && lca.count > treeThreshold) {
     return {
       status: {
         success: false,
-        error: `Trees currently limited to ${treeMaxTaxa} nodes (x query returns ${lca.count} taxa).\nPlease specify additional filters to continue.`,
+        error: `Trees currently limited to ${treeThreshold} nodes (x query returns ${lca.count} taxa).\nPlease specify additional filters to continue.`,
       },
     };
   }
@@ -216,7 +215,7 @@ const getTree = async ({
   let xRes = await getResults({
     ...params,
     query: mapped.join(" AND "),
-    size: 10000, // lca.count,
+    size: treeThreshold, // lca.count,
     maxDepth,
     lca: lca,
     fields,
@@ -238,7 +237,7 @@ const getTree = async ({
     yRes = await getResults({
       ...yParams,
       query: yMapped.join(" AND "),
-      size: 10000, // lca.count,
+      size: treeThreshold, // lca.count,
       maxDepth,
       fields: yFields,
       exclusions,
@@ -405,6 +404,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   let xQuery = { ...params };
   let yQuery = { ...yParams };
 
+  const treeThreshold = apiParams.treeThreshold || config.treeThreshold;
   let tree = status
     ? {}
     : await getTree({
@@ -417,6 +417,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
         yFields,
         ySummaries,
         result,
+        treeThreshold,
       });
 
   if (tree && tree.status && tree.status.success == false) {

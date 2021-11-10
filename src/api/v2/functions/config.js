@@ -19,4 +19,5 @@ export const config = {
   contactEmail: process.env.GH_CONTACTEMAIL || "goat@genomehubs.org",
   url: process.env.GH_URL || "http://localhost:3000/api/v2",
   memcached: process.env.GH_MEMCACHED || undefined,
+  treeThreshold: process.env.GH_TREE_THRESHOLD || 10000,
 };

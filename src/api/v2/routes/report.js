@@ -458,14 +458,19 @@ export const getSources = async (params) => {
 
 export const getNewickString = ({ treeNodes, rootNode }) => {
   if (!treeNodes || !rootNode) return ";";
+  let visited = {};
   const writeNewickString = ({ node }) => {
+    visited[node.taxon_id] = true;
     if (
       node.hasOwnProperty("children") &&
       Object.keys(node.children).length > 0
     ) {
-      let children = Object.keys(node.children).map((key) =>
-        writeNewickString({ node: treeNodes[key] })
-      );
+      let children = [];
+      for (let key of Object.keys(node.children)) {
+        if (!visited[treeNodes[key].taxon_id]) {
+          children.push(writeNewickString({ node: treeNodes[key] }));
+        }
+      }
       return children.length > 1
         ? `(${children.join(",")})${node.scientific_name}`
         : children[0];
@@ -473,7 +478,7 @@ export const getNewickString = ({ treeNodes, rootNode }) => {
     return node.scientific_name;
   };
   let newick = writeNewickString({ node: treeNodes[rootNode] });
-  return `${newick};`;
+  return `${newick};\n`;
 };
 
 export const getPhyloXml = ({
@@ -485,6 +490,7 @@ export const getPhyloXml = ({
   meta,
 }) => {
   if (!treeNodes || !rootNode) return undefined;
+  let visited = {};
 
   const writeTaxonomy = ({
     taxon_id,
@@ -510,14 +516,17 @@ export const getPhyloXml = ({
   };
 
   const writeClade = ({ node }) => {
+    visited[node.taxon_id] = true;
     let children = [];
     if (
       node.hasOwnProperty("children") &&
       Object.keys(node.children).length > 0
     ) {
-      children = Object.keys(node.children).map((key) =>
-        writeClade({ node: treeNodes[key] })
-      );
+      for (let key of Object.keys(node.children)) {
+        if (!visited[treeNodes[key].taxon_id]) {
+          children.push(writeClade({ node: treeNodes[key] }));
+        }
+      }
     }
     if (compact && children.length == 1) {
       return children[0];
@@ -546,7 +555,7 @@ export const getPhyloXml = ({
     <description>example tree</description>
     ${tree}
   </phylogeny>
-</phyloxml>`;
+</phyloxml>\n`;
   return xml;
 };
 
@@ -628,9 +637,11 @@ module.exports = {
         ...(report.name == "tree" && {
           "text/x-nh": () => {
             let { lca, treeNodes } = report.report.tree.tree;
-            res
-              .status(200)
-              .send(getNewickString({ treeNodes, rootNode: lca.taxon_id }));
+            let rootNode;
+            if (lca) {
+              rootNode = lca.taxon_id;
+            }
+            res.status(200).send(getNewickString({ treeNodes, rootNode }));
           },
         }),
         ...(report.name == "tree" && {
