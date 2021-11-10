@@ -20,6 +20,7 @@ export const formatCsv = async (response, opts) => {
   let meta = ["aggregation_source", "aggregation_method"];
   let raw = ["source"];
   let usedFields = {};
+  let allFields = {};
   let data = [];
   response.results.forEach((fullResult) => {
     let datum = {};
@@ -42,10 +43,12 @@ export const formatCsv = async (response, opts) => {
     }
     if (opts.fields) {
       opts.fields.forEach((key) => {
+        allFields[key] = true;
         if (
           fullResult.result.fields &&
           fullResult.result.fields.hasOwnProperty(key)
         ) {
+          // TODO: add option for sparse table
           usedFields[key] = true;
           let value = fullResult.result.fields[key].value;
           if (opts.tidyData) {
@@ -114,7 +117,7 @@ export const formatCsv = async (response, opts) => {
     opts.fields = fields
       .concat(names)
       .concat(ranks)
-      .concat(Object.keys(usedFields));
+      .concat(Object.keys(allFields));
   }
 
   try {
