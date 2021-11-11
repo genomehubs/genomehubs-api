@@ -8,6 +8,7 @@ import cookieParser from "cookie-parser";
 import express from "express";
 import path from "path";
 import swaggerUi from "swagger-ui-express";
+import zip from "express-easy-zip";
 
 const port = config.port;
 const apiSpec = path.join(__dirname, "api/v2/api.yaml");
@@ -32,6 +33,7 @@ const swaggerOptions = {
 };
 
 const app = express();
+app.use(zip());
 app.use(compression());
 if (config.cors) {
   const cors = require("cors");

@@ -547,14 +547,12 @@ export const getPhyloXml = ({
     }${children.join("\n")}</clade>`;
   };
   let tree = writeClade({ node: treeNodes[rootNode] });
-  let xml = `<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd" 
-  xmlns="http://www.phyloxml.org">
-  <phylogeny rooted="true">
-    <name>test</name>
-    <description>example tree</description>
-    ${tree}
-  </phylogeny>
+  let xml = `<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd" xmlns="http://www.phyloxml.org">
+<phylogeny rooted="true">
+<name>test</name>
+<description>example tree</description>
+${tree}
+</phylogeny>
 </phyloxml>\n`;
   return xml;
 };
@@ -643,27 +641,69 @@ module.exports = {
             }
             res.status(200).send(getNewickString({ treeNodes, rootNode }));
           },
-        }),
-        ...(report.name == "tree" && {
           "application/xml": () => {
             let { lca, treeNodes } = report.report.tree.tree;
-            let fields = report.report.tree.xQuery.fields;
-            let meta;
-            let field;
-            if (fields) {
-              if (Array.isArray(fields)) {
-                field = fields[0];
-                meta = typesMap[fields[0]];
-              } else {
-                field = fields.replace(/,.+/, "");
-                meta = typesMap[field];
-              }
+            let rootNode;
+            if (lca) {
+              rootNode = lca.taxon_id;
             }
-            res
-              .status(200)
-              .send(
-                getPhyloXml({ treeNodes, rootNode: lca.taxon_id, field, meta })
-              );
+
+            // let fields = report.report.tree.xQuery.fields;
+            // let meta;
+            // let field;
+            // if (fields) {
+            //   if (Array.isArray(fields)) {
+            //     field = fields[0];
+            //     meta = typesMap[fields[0]];
+            //   } else {
+            //     field = fields.replace(/,.+/, "");
+            //     meta = typesMap[field];
+            //   }
+            // }
+            res.status(200).send(getPhyloXml({ treeNodes, rootNode }));
+          },
+          "application/zip": () => {
+            let { lca, treeNodes } = report.report.tree.tree;
+            let rootNode;
+            if (lca) {
+              rootNode = lca.taxon_id;
+            }
+
+            // let fields = report.report.tree.xQuery.fields;
+            // let meta;
+            // let field;
+            // if (fields) {
+            //   if (Array.isArray(fields)) {
+            //     field = fields[0];
+            //     meta = typesMap[fields[0]];
+            //   } else {
+            //     field = fields.replace(/,.+/, "");
+            //     meta = typesMap[field];
+            //   }
+            // }
+            let newick = getNewickString({ treeNodes, rootNode });
+            let phyloxml = getPhyloXml({ treeNodes, rootNode });
+            res.status(200).zip({
+              files: [
+                {
+                  content: newick,
+                  name: "tree.nwk",
+                  mode: "0644",
+                  comment: "Newick format tree file",
+                  date: new Date(),
+                  type: "file",
+                },
+                {
+                  content: phyloxml,
+                  name: "tree.xml",
+                  mode: "0644",
+                  comment: "PhyloXML format tree file",
+                  date: new Date(),
+                  type: "file",
+                },
+              ],
+              filename: "tree.zip",
+            });
           },
         }),
       });

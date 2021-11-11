@@ -687,12 +687,16 @@ paths:
                     status: null
                   - $ref: "#/components/schemas/Summaries"
                     results: null
-            application/xml:
-              schema:
-                type: string
             text/x-nh:
               schema:
                 type: string
+            application/xml:
+              schema:
+                type: string
+            application/zip:
+              schema:
+                type: string
+                format: octal
           description: successful operation
         "400":
           description: Invalid query
