@@ -1,17 +1,17 @@
-# Goat API
+# GeonomeHubs API
 
-A draft OpenAPI implementation for Genomes on a Tree
+An OpenAPI implementation for GenomeHubs
 
 ## Install
 
 ```
-conda create -n goat_api_env -c conda-forge -y nodejs=14
-conda activate goat_api_env
+conda create -n ghubs_web_env -c conda-forge -y nodejs=14
+conda activate ghubs_web_env
 ```
 
 ```
-git clone https://github.com/tolkit/goat-api
-cd goat-api
+git clone https://github.com/genomehubs/genomehubs-api
+cd genomehubs-api
 npm install
 npm start
 ```
@@ -24,5 +24,5 @@ curl http://localhost:3000/api/v2/taxon/3702?indent=2
 
 ## Docs
 
-- [GoaT API docs](http://localhost:3000/api-docs)
-- [GoaT API spec](http://localhost:3000/spec)
+- [GenomeHubs API docs](http://localhost:3000/api-docs)
+- [GenomeHubs API spec](http://localhost:3000/spec)

@@ -3,6 +3,7 @@
   "version": "2.2.0",
   "description": "Genomes on a Tree Open API Test",
   "scripts": {
+    "api": "node src/app.js",
     "start": "nodemon -r esm src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
