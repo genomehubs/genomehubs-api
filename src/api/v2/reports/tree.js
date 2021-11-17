@@ -412,9 +412,11 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   let xQuery = { ...params };
   let yQuery = { ...yParams };
 
-  let optionalFields = [
-    ...new Set([...fields, ...yFields, ...(apiParams.fields || "").split(",")]),
-  ];
+  let optionalFields = [...fields, ...yFields];
+  if (apiParams.fields) {
+    optionalFields = optionalFields.concat(apiParams.fields.split(","));
+  }
+  let optionalFields = [...new Set([...optionalFields])];
 
   const treeThreshold = apiParams.treeThreshold || config.treeThreshold;
   let tree = status
