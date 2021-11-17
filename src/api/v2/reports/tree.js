@@ -158,6 +158,7 @@ const getTree = async ({
   yParams,
   fields,
   yFields,
+  optionalFields,
   cat,
   result,
   treeThreshold = config.treeThreshold,
@@ -219,7 +220,7 @@ const getTree = async ({
     maxDepth,
     lca: lca,
     fields,
-    optionalFields: yFields,
+    optionalFields,
     exclusions,
   });
 
@@ -247,6 +248,13 @@ const getTree = async ({
   for (let result of xRes.results) {
     let source, value;
     let status = y ? 0 : 1;
+    // for (let f of optionalFields) {
+    //   console.log(f);
+    //   if (result.result.fields && result.result.fields[f]) {
+    //     console.log(result.result.fields[f]);
+    //   }
+    // }
+    // break;
     if (field && result.result.fields && result.result.fields[field]) {
       source =
         result.result.fields[field].aggregation_source != "ancestor"
@@ -404,12 +412,17 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   let xQuery = { ...params };
   let yQuery = { ...yParams };
 
+  let optionalFields = [
+    ...new Set([...fields, ...yFields, ...apiParams.fields.split(",")]),
+  ];
+
   const treeThreshold = apiParams.treeThreshold || config.treeThreshold;
   let tree = status
     ? {}
     : await getTree({
         params,
         fields,
+        optionalFields,
         summaries,
         cat,
         y,

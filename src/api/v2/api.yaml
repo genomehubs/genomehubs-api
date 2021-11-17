@@ -664,6 +664,7 @@ paths:
       parameters:
         - $ref: "#/components/parameters/resultParam"
         - $ref: "#/components/parameters/reportParam"
+        - $ref: "#/components/parameters/fieldsParam"
         - $ref: "#/components/parameters/xParam"
         - $ref: "#/components/parameters/yParam"
         - $ref: "#/components/parameters/zParam"

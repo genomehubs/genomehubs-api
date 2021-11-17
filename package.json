@@ -1,22 +1,22 @@
 {
-  "name": "goat-api",
+  "name": "genomehubs-api",
   "version": "2.2.0",
-  "description": "Genomes on a Tree Open API Test",
+  "description": "GenomeHubs API",
   "scripts": {
-    "api": "node src/app.js",
+    "api": "node --max-old-space-size=8192 -r esm src/app.js",
     "start": "nodemon -r esm src/app.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/tolkit/goat-api.git"
+    "url": "git+https://github.com/genomehubs/genomehubs-api.git"
   },
   "author": "Tolkit",
   "license": "MIT",
   "bugs": {
-    "url": "https://github.com/tolkit/goat-api/issues"
+    "url": "https://github.com/genomehubs/genomehubs-api/issues"
   },
-  "homepage": "https://github.com/tolkit/goat-api#readme",
+  "homepage": "https://github.com/genomehubs/genomehubs-api#readme",
   "dependencies": {
     "@elastic/elasticsearch": "^7.9.1",
     "body-parser": "^1.19.0",
