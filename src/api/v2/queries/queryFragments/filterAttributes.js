@@ -36,13 +36,10 @@ export const filterAttributes = (
       }
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
-      console.log("filter");
-      console.log(filter);
       if (filter.stat) {
         stat = filter.stat;
         delete filter.stat;
       }
-      console.log(filter);
       let meta = typesMap[field];
       if (
         meta.type == "keyword" &&
