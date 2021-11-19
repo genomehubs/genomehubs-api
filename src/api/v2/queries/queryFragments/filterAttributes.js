@@ -36,10 +36,13 @@ export const filterAttributes = (
       }
       let stat = `${typesMap[field].type}_value`;
       let filter = { ...filters[field] };
+      console.log("filter");
+      console.log(filter);
       if (filter.stat) {
         stat = filter.stat;
         delete filter.stat;
       }
+      console.log(filter);
       let meta = typesMap[field];
       if (
         meta.type == "keyword" &&
@@ -95,10 +98,10 @@ export const filterAttributes = (
           ];
         }
       }
-      if (!Array.isArray(filters[field])) {
-        filters[field] = [filters[field]];
+      if (!Array.isArray(filter)) {
+        filter = [filter];
       }
-      return filters[field].map((flt) => {
+      return filter.map((flt) => {
         if (typeof flt !== "object") {
           let values = flt.split(",");
           return {

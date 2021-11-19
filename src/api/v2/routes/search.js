@@ -84,6 +84,7 @@ const addCondition = (conditions, parts, type) => {
   if (!conditions) {
     conditions = {};
   }
+  console.log({ conditions, parts, type });
   let segments = parts[0].split(/[\(\)]/);
   let stat;
   if (segments.length > 1) {
@@ -123,7 +124,7 @@ const addCondition = (conditions, parts, type) => {
   return conditions;
 };
 
-const summaries = ["value", "max", "min"];
+const summaries = ["value", "max", "min", "range"];
 
 const generateQuery = async ({
   query,
@@ -187,19 +188,25 @@ const generateQuery = async ({
             term += " > 0";
           }
         }
+        let summary, field;
         if (term.match(/(\w+)\s*\(/)) {
-          let [summary, val] = term.split(/\s*[\(\)]\s*/);
+          [summary, field] = term.split(/\s*[\(\)]\s*/);
+          console.log({ summary, field });
           if (!summaries.includes(summary)) {
             status = { success: false, error: `Invalid option in '${term}'` };
+            console.log(status);
           }
         }
         if (term.match(/[\>\<=]/)) {
+          console.log(term);
           let parts = term.split(/\s*([\>\<=]+)\s*/);
+          console.log(parts);
+          if (!field) field = parts[0];
           if (typesMap[result]) {
             filters = addCondition(
               filters,
               parts,
-              typesMap[result][parts[0]].type
+              typesMap[result][field].type // TODO: catch missing type
             );
           } else {
             properties = addCondition(properties, parts);
