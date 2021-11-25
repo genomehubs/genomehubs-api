@@ -530,6 +530,9 @@ paths:
       operationId: getSearchResultCount
       parameters:
         - $ref: "#/components/parameters/queryParam"
+        - $ref: "#/components/parameters/fieldsParam"
+        - $ref: "#/components/parameters/ranksParam"
+        - $ref: "#/components/parameters/namesParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
         - $ref: "#/components/parameters/searchRawValuesParam"
         - $ref: "#/components/parameters/summaryValuesParam"
