@@ -35,6 +35,33 @@ export const filterAttributes = (
         ];
       }
       let stat = `${typesMap[field].type}_value`;
+      if (
+        Array.isArray(filters[field]) &&
+        typeof filters[field][0] === "string"
+      ) {
+        return [
+          {
+            bool: {
+              filter: filters[field].map((term) => {
+                if (term.match(",")) {
+                  return {
+                    bool: {
+                      should: term.split(",").map((option) => {
+                        return {
+                          match: { [`attributes.${stat}`]: option },
+                        };
+                      }),
+                    },
+                  };
+                }
+                return {
+                  match: { [`attributes.${stat}`]: term },
+                };
+              }),
+            },
+          },
+        ];
+      }
       let filter = { ...filters[field] };
       if (filter.stat) {
         stat = filter.stat;
@@ -108,18 +135,6 @@ export const filterAttributes = (
               })),
             },
           };
-          // return {
-          //   bool: {
-          //     should: values.map((value) => ({
-          //       bool: {
-          //         filter: [{ match: { [`attributes.${stat}`]: value } }].concat(
-          //           aggregation_source
-          //         ),
-          //       },
-          //     })),
-          //   },
-          // };
-          // return { match: { [`attributes.${stat}`]: flt } };
         }
         return {
           range: {

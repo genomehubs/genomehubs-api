@@ -17,7 +17,7 @@ const operations = (str) => {
   return operator || [];
 };
 
-const parseFields = async ({ result, fields }) => {
+export const parseFields = async ({ result, fields }) => {
   let typesMap = await attrTypes({ result });
   try {
     if (!fields) {
@@ -84,7 +84,6 @@ const addCondition = (conditions, parts, type) => {
   if (!conditions) {
     conditions = {};
   }
-  console.log({ conditions, parts, type });
   let segments = parts[0].split(/[\(\)]/);
   let stat;
   if (segments.length > 1) {
@@ -112,7 +111,7 @@ const addCondition = (conditions, parts, type) => {
       conditions[parts[0]].push(values);
     }
   } else {
-    if (parts[1] == "==") {
+    if (parts[1] == "==" || parts[1] == "=") {
       conditions[parts[0]] = parts[2];
     } else {
       operations(parts[1]).forEach((operator) => {
@@ -191,23 +190,23 @@ const generateQuery = async ({
         let summary, field;
         if (term.match(/(\w+)\s*\(/)) {
           [summary, field] = term.split(/\s*[\(\)]\s*/);
-          console.log({ summary, field });
           if (!summaries.includes(summary)) {
             status = { success: false, error: `Invalid option in '${term}'` };
-            console.log(status);
           }
         }
         if (term.match(/[\>\<=]/)) {
-          console.log(term);
           let parts = term.split(/\s*([\>\<=]+)\s*/);
-          console.log(parts);
           if (!field) field = parts[0];
           if (typesMap[result]) {
-            filters = addCondition(
-              filters,
-              parts,
-              typesMap[result][field].type // TODO: catch missing type
-            );
+            if (!typesMap[result][field]) {
+              status = { success: false, error: `Invalid field in '${term}'` };
+            } else {
+              filters = addCondition(
+                filters,
+                parts,
+                typesMap[result][field].type // TODO: catch missing type
+              );
+            }
           } else {
             properties = addCondition(properties, parts);
           }

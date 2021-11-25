@@ -214,7 +214,15 @@ export const histPerRank = async ({
   };
 };
 
-export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
+export const xInY = async ({
+  x,
+  y,
+  result,
+  taxonomy,
+  rank,
+  queryString,
+  apiParams,
+}) => {
   if (!x) {
     return {
       status: {
@@ -231,7 +239,9 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
       },
     };
   }
+  let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields } = queryParams({ term: y, result, taxonomy, rank });
+  fields = [...new Set(fields.concat(searchFields))];
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   if (fields.length > 0) {
@@ -298,6 +308,7 @@ export const xInYPerRank = async ({
   taxonomy,
   rank,
   queryString,
+  ...apiParams,
 }) => {
   // Return xInY at a list of ranks
   let ranks = rank ? setRanks(rank) : [undefined];
@@ -486,11 +497,29 @@ export const getPhyloXml = ({
   rootNode,
   taxonomy = "ncbi",
   compact = true,
-  field,
   meta,
+  fields,
 }) => {
   if (!treeNodes || !rootNode) return undefined;
   let visited = {};
+  let data;
+  if (fields) {
+    data = {
+      tidy: [
+        [
+          "taxon_id",
+          "scientific_name",
+          "taxon_rank",
+          "field",
+          "value",
+          "min",
+          "max",
+          "source",
+        ],
+      ],
+      flat: [["taxon_id", "scientific_name", "taxon_rank", ...fields]],
+    };
+  }
 
   const writeTaxonomy = ({
     taxon_id,
@@ -515,6 +544,31 @@ export const getPhyloXml = ({
     return `<annotation evidence="${source}">${property}</annotation>`;
   };
 
+  const addData = ({ node, data }) => {
+    if (node.fields && Object.keys(node.fields).length > 0) {
+      let flat = [node.taxon_id, node.scientific_name, node.taxon_rank];
+      for (let field of fields) {
+        let obj = node.fields[field];
+        if (obj) {
+          data.tidy.push([
+            node.taxon_id,
+            node.scientific_name,
+            node.taxon_rank,
+            field,
+            obj.value,
+            obj.min,
+            obj.max,
+            obj.source,
+          ]);
+          flat.push(obj.value);
+        } else {
+          flat.push(undefined);
+        }
+      }
+      data.flat.push(flat);
+    }
+  };
+
   const writeClade = ({ node }) => {
     visited[node.taxon_id] = true;
     let children = [];
@@ -531,30 +585,33 @@ export const getPhyloXml = ({
     if (compact && children.length == 1) {
       return children[0];
     }
+    if (fields) {
+      addData({ node, data });
+    }
     return `<clade><id>${node.taxon_id}</id>${writeName({
       ...node,
     })}${writeTaxonomy({
       ...node,
       taxonomy,
     })}${
-      meta
+      meta && fields
         ? writeAnnotation({
             ...node,
-            field,
+            field: fields[0],
             meta,
           })
         : ""
     }${children.join("\n")}</clade>`;
   };
   let tree = writeClade({ node: treeNodes[rootNode] });
-  let xml = `<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd" xmlns="http://www.phyloxml.org">
+  let phyloXml = `<phyloxml xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://www.phyloxml.org http://www.phyloxml.org/1.10/phyloxml.xsd" xmlns="http://www.phyloxml.org">
 <phylogeny rooted="true">
 <name>test</name>
 <description>example tree</description>
 ${tree}
 </phylogeny>
 </phyloxml>\n`;
-  return xml;
+  return { phyloXml, data };
 };
 
 export const getTypes = async (params) => {
@@ -632,6 +689,16 @@ module.exports = {
               )
             );
         },
+        "text/html": () => {
+          res
+            .status(200)
+            .send(
+              formatJson(
+                { status: { success: true }, report },
+                req.query.indent
+              )
+            );
+        },
         ...(report.name == "tree" && {
           "text/x-nh": () => {
             let { lca, treeNodes } = report.report.tree.tree;
@@ -660,7 +727,8 @@ module.exports = {
             //     meta = typesMap[field];
             //   }
             // }
-            res.status(200).send(getPhyloXml({ treeNodes, rootNode }));
+            let { phyloXml } = getPhyloXml({ treeNodes, rootNode });
+            res.status(200).send(phyloXml);
           },
           "application/zip": () => {
             let { lca, treeNodes } = report.report.tree.tree;
@@ -669,7 +737,7 @@ module.exports = {
               rootNode = lca.taxon_id;
             }
 
-            // let fields = report.report.tree.xQuery.fields;
+            let fields = report.report.tree.xQuery.fields.split(",");
             // let meta;
             // let field;
             // if (fields) {
@@ -682,7 +750,40 @@ module.exports = {
             //   }
             // }
             let newick = getNewickString({ treeNodes, rootNode });
-            let phyloxml = getPhyloXml({ treeNodes, rootNode });
+            let { phyloXml, data } = getPhyloXml({
+              treeNodes,
+              rootNode,
+              fields,
+            });
+            let dataFiles = [];
+            if (data) {
+              let flat = "";
+              for (let arr of data.flat) {
+                flat += arr.join("\t") + "\n";
+              }
+              let tidy = "";
+              for (let arr of data.tidy) {
+                tidy += arr.join("\t") + "\n";
+              }
+              dataFiles = [
+                {
+                  content: flat,
+                  name: "tree.data.tsv",
+                  mode: "0644",
+                  comment: "TSV format data associated with tree nodes",
+                  date: new Date(),
+                  type: "file",
+                },
+                {
+                  content: tidy,
+                  name: "tree.tidyData.tsv",
+                  mode: "0644",
+                  comment: "TidyData format data associated with tree nodes",
+                  date: new Date(),
+                  type: "file",
+                },
+              ];
+            }
             res.status(200).zip({
               files: [
                 {
@@ -694,14 +795,14 @@ module.exports = {
                   type: "file",
                 },
                 {
-                  content: phyloxml,
+                  content: phyloXml,
                   name: "tree.xml",
                   mode: "0644",
                   comment: "PhyloXML format tree file",
                   date: new Date(),
                   type: "file",
                 },
-              ],
+              ].concat(dataFiles),
               filename: "tree.zip",
             });
           },

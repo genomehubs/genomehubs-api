@@ -1,4 +1,4 @@
-import { getResults, setExclusions } from "../routes/search";
+import { getResults, parseFields, setExclusions } from "../routes/search";
 import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
 import { aInB } from "../functions/aInB";
@@ -659,7 +659,9 @@ export const histogram = async ({
       },
     };
   }
+  let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields, summaries } = queryParams({ term: x, result, rank });
+  fields = [...new Set(fields.concat(searchFields))];
   let yTerm = combineQueries(x, y);
   let {
     params: yParams,
@@ -715,21 +717,29 @@ export const histogram = async ({
     };
   }
   let exclusions;
-  if (apiParams.includeEstimates) {
-    delete params.excludeAncestral;
-    delete xQuery.excludeAncestral;
-  } else {
-    params.excludeAncestral.push(...yFields);
-    if (typesMap[cat]) {
-      params.excludeAncestral.push(cat);
-    }
-  }
-  params.excludeAncestral = [...new Set(params.excludeAncestral)];
-  params.excludeMissing.push(...yFields);
-  if (typesMap[cat]) {
-    params.excludeMissing.push(cat);
-  }
-  params.excludeMissing = [...new Set(params.excludeMissing)];
+  // if (apiParams.includeEstimates) {
+  //   delete params.excludeAncestral;
+  //   delete xQuery.excludeAncestral;
+  // } else {
+  //   params.excludeAncestral.push(...yFields);
+  //   if (typesMap[cat]) {
+  //     params.excludeAncestral.push(cat);
+  //   }
+  // }
+  // params.excludeAncestral = [...new Set(params.excludeAncestral)];
+  // params.excludeMissing.push(...yFields);
+  // if (typesMap[cat]) {
+  //   params.excludeMissing.push(cat);
+  // }
+  // params.excludeMissing = [...new Set(params.excludeMissing)];
+  params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
+    ? apiParams.includeEstimates
+    : false;
+  params.excludeDirect = apiParams.excludeDirect || [];
+  params.excludeDescendant = apiParams.excludeDescendant || [];
+  params.excludeAncestral = apiParams.excludeAncestral || [];
+  params.excludeMissing = apiParams.excludeMissing || [];
+
   fields = fields.concat(yFields);
   fields = [...new Set(fields)];
   exclusions = setExclusions(params);

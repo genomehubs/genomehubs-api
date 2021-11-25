@@ -1,4 +1,4 @@
-import { getResults, setExclusions } from "../routes/search";
+import { getResults, parseFields, setExclusions } from "../routes/search";
 import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
 import { aInB } from "../functions/aInB";
@@ -58,12 +58,6 @@ const getLCA = async ({
             },
           },
         },
-
-        // max_ancestor_count: {
-        //   max_bucket: {
-        //     buckets_path: "ancestors>doc_count",
-        //   },
-        // },
       },
     },
   };
@@ -118,28 +112,31 @@ const getLCA = async ({
     let taxon_id = bucket.key;
     let parent;
 
-    if (taxon) {
-      let child;
-      let depthChange = 0;
-      for (let ancestor of res.results[0].result.lineage) {
-        depthChange++;
-        if (ancestor.taxon_id == taxon_id) {
-          depthChange = 0;
-        }
-        if (
-          ancestor.taxon_id.toLowerCase() == taxon ||
-          ancestor.scientific_name.toLowerCase() == taxon
-        ) {
-          minDepth += depthChange;
-          maxDepth += depthChange;
-          taxon_id = ancestor.taxon_id;
-          child = taxon_id;
-        } else if (child) {
-          parent = ancestor.taxon_id;
-          break;
-        }
+    // if (taxon) {
+    let child;
+    let depthChange = 0;
+    for (let ancestor of res.results[0].result.lineage) {
+      depthChange++;
+      if (ancestor.taxon_id == taxon_id) {
+        depthChange = 0;
+      }
+      if (
+        taxon &&
+        (ancestor.taxon_id.toLowerCase() == taxon ||
+          ancestor.scientific_name.toLowerCase() == taxon)
+      ) {
+        minDepth += depthChange;
+        maxDepth += depthChange;
+        taxon_id = ancestor.taxon_id;
+        child = taxon_id;
+      } else if (child) {
+        parent = ancestor.taxon_id;
+        break;
+      } else if (taxon_id == ancestor.taxon_id) {
+        child = taxon_id;
       }
     }
+    // }
 
     lca = {
       taxon_id,
@@ -152,8 +149,159 @@ const getLCA = async ({
   return lca;
 };
 
+const chunkArray = (arr, chunkSize) => {
+  if (chunkSize <= 0) throw "Invalid chunk size";
+  let chunks = [];
+  for (let i = 0, len = arr.length; i < len; i += chunkSize) {
+    chunks.push(arr.slice(i, i + chunkSize));
+  }
+  return chunks;
+};
+
+// TODO: tune chunkSize parameter
+const chunkSize = 100;
+
+const addXResultsToTree = async ({
+  xRes,
+  treeNodes,
+  optionalFields,
+  lca,
+  xQuery,
+  update,
+  yRes,
+  ancStatus,
+}) => {
+  let isParentNode = {};
+  let lineages = {};
+  if (!ancStatus) {
+    ancStatus = new Set();
+  }
+
+  for (let result of xRes.results) {
+    let treeFields;
+    // let status = y ? 0 : 1;
+    let source;
+    if (result.result.fields) {
+      treeFields = {};
+      for (let f of optionalFields) {
+        if (result.result.fields[f]) {
+          let {
+            aggregation_source: source,
+            value,
+            min,
+            max,
+            range,
+          } = result.result.fields[f];
+          treeFields[f] = {
+            source,
+            value,
+            ...(min && { min }),
+            ...(max && { max }),
+          };
+        }
+      }
+    }
+    if (update) {
+      if (treeFields) {
+        treeNodes[result.result.taxon_id].fields = treeFields;
+        treeNodes[result.result.taxon_id].status = ancStatus.has(
+          result.result.taxon_id
+        )
+          ? 1
+          : 0;
+      }
+      continue;
+    } else {
+      treeNodes[result.result.taxon_id] = {
+        count: 0,
+        children: {},
+        taxon_id: result.result.taxon_id,
+        scientific_name: result.result.scientific_name,
+        taxon_rank: result.result.taxon_rank,
+        ...(treeFields && { fields: treeFields }),
+      };
+      isParentNode[result.result.parent] = true;
+      lineages[result.result.taxon_id] = result.result.lineage;
+    }
+  }
+  if (update) {
+    return;
+  }
+
+  if (yRes) {
+    let yCount = 0;
+    for (let result of yRes.results) {
+      if (!treeNodes[result.result.taxon_id]) {
+        continue;
+      }
+      yCount++;
+      treeNodes[result.result.taxon_id].status = 1;
+    }
+    lca.yCount = yCount;
+  }
+
+  let missingIds = new Set();
+
+  for (let result of xRes.results) {
+    let child = result.result.taxon_id;
+    let status = treeNodes[result.result.taxon_id].status;
+    if (!isParentNode[result.result.taxon_id]) {
+      treeNodes[child].count = 1;
+      if (lineages[result.result.taxon_id]) {
+        for (let ancestor of lineages[result.result.taxon_id]) {
+          if (ancestor.taxon_id == child) {
+            continue;
+          }
+          if (ancestor.taxon_id == lca.parent) {
+            break;
+          }
+          if (status) {
+            ancStatus.add(ancestor.taxon_id);
+          }
+          if (!treeNodes[ancestor.taxon_id]) {
+            missingIds.add(ancestor.taxon_id);
+            treeNodes[ancestor.taxon_id] = {
+              count: 0,
+              children: {},
+              scientific_name: ancestor.scientific_name,
+              taxon_rank: ancestor.taxon_rank,
+              taxon_id: ancestor.taxon_id,
+            };
+          }
+          treeNodes[ancestor.taxon_id].count += 1;
+          treeNodes[ancestor.taxon_id].children[child] = true;
+          child = ancestor.taxon_id;
+          if (ancestor.taxon_id == lca.taxon_id) {
+            continue;
+          }
+        }
+      }
+    }
+  }
+  if (missingIds.size > 0) {
+    for (let chunk of chunkArray([...missingIds], chunkSize)) {
+      let mapped = []; // xQuery.query.split(/\s+AND\s+/i);
+      mapped = mapped.filter((term) => !term.startsWith("tax_"));
+      mapped.unshift(`tax_name(${chunk.join(",")})`);
+      let newQuery = { ...xQuery, query: mapped.join(" AND ") };
+      // TODO: review newQuery options
+      let newRes = await getResults(newQuery);
+      await addXResultsToTree({
+        xRes: newRes,
+        treeNodes,
+        optionalFields,
+        lca,
+        xQuery: newQuery,
+        update: true,
+        ancStatus,
+      });
+    }
+  }
+};
+
 const getTree = async ({
   params,
+  x,
   y,
   yParams,
   fields,
@@ -165,7 +313,6 @@ const getTree = async ({
 }) => {
   cat = undefined;
   let typesMap = await attrTypes({ result });
-  // fields.push(...yFields);
   let field = yFields[0] || fields[0];
   let exclusions;
   params.excludeUnclassified = true;
@@ -179,53 +326,74 @@ const getTree = async ({
       },
     };
   }
-  let treeNodes = {};
   let maxDepth = lca.maxDepth;
   let mapped = params.query.split(/\s+(?:AND|and)\s+/);
   let yMapped = yParams.query.split(/\s+(?:AND|and)\s+/);
   // TODO: include descendant values when include estimates is false and minDepth > tax_depth
-  if (params.query.match("tax_depth")) {
-    mapped = mapped.map((term) => {
-      if (term.startsWith("tax_depth")) {
-        let parts = term.split(/[\(\)]/);
-        if (!params.includeEstimates) {
-          if (lca.minDepth > parts[1]) {
-            params.includeEstimates = "descendant";
-            lca.taxDepth = parts[1] * 1;
-          }
-        }
-        return `tax_depth(${Math.min(parts[1], maxDepth)})`;
-      } else {
-        return term;
-      }
-    });
-    yMapped = yMapped.map((term) => {
-      if (term.startsWith("tax_depth")) {
-        let parts = term.split(/[\(\)]/);
-        if (!params.includeEstimates) {
-          if (lca.minDepth > parts[1]) {
-            params.includeEstimates = "descendant";
-          }
-        }
-        return `tax_depth(${Math.min(parts[1], maxDepth)})`;
-      } else {
-        return term;
-      }
-    });
+  let match = params.query.match(/tax_depth\s*\((.+?)\)/);
+  if (match) {
+    if (match[1] > maxDepth) {
+      return {
+        lca,
+        status: {
+          success: false,
+          error: `tax_depth greater than tree depth\nConsider reducing to 'tax_depth(${maxDepth})'`,
+        },
+      };
+    }
   }
-  let xRes = await getResults({
+  let yMatch = params.query.match(/tax_depth\s*\((.+?)\)/);
+  if (yMatch) {
+    if (yMatch[1] > maxDepth) {
+      return {
+        lca,
+        status: {
+          success: false,
+          error: `tax_depth greater than tree depth\nConsider reducing to 'tax_depth(${maxDepth})'`,
+        },
+      };
+    }
+  }
+  // mapped = mapped.map((term) => {
+  //   if (term.startsWith("tax_depth")) {
+  //     let parts = term.split(/[\(\)]/);
+  //     if (!params.includeEstimates) {
+  //       if (lca.minDepth > parts[1]) {
+  //         params.includeEstimates = "descendant";
+  //         lca.taxDepth = parts[1] * 1;
+  //       }
+  //     }
+  //     return `tax_depth(${Math.min(parts[1], maxDepth)})`;
+  //   } else {
+  //     return term;
+  //   }
+  // });
+  // yMapped = yMapped.map((term) => {
+  //   if (term.startsWith("tax_depth")) {
+  //     let parts = term.split(/[\(\)]/);
+  //     if (!params.includeEstimates) {
+  //       if (lca.minDepth > parts[1]) {
+  //         params.includeEstimates = "descendant";
+  //       }
+  //     }
+  //     return `tax_depth(${Math.min(parts[1], maxDepth)})`;
+  //   } else {
+  //   return term;
+  //   }
+  // });
+
+  let xQuery = {
     ...params,
     query: mapped.join(" AND "),
     size: treeThreshold, // lca.count,
-    maxDepth,
+    // maxDepth,
     lca: lca,
     fields,
     optionalFields,
     exclusions,
-  });
+  };
+  let xRes = await getResults(xQuery);
 
-  let isParentNode = {};
-  let lineages = {};
   let yRes;
   if (y) {
     yParams.excludeMissing.push(...yFields);
@@ -244,137 +412,28 @@ const getTree = async ({
       exclusions,
     });
   }
-
-  for (let result of xRes.results) {
-    let source, value;
-    let status = y ? 0 : 1;
-    // for (let f of optionalFields) {
-    //   console.log(f);
-    //   if (result.result.fields && result.result.fields[f]) {
-    //     console.log(result.result.fields[f]);
-    //   }
-    // }
-    // break;
-    if (field && result.result.fields && result.result.fields[field]) {
-      source =
-        result.result.fields[field].aggregation_source != "ancestor"
-          ? "descendant"
-          : "ancestor";
-      value = result.result.fields[field].value;
-      status = y ? (source == "ancestor" ? 0 : 1) : 1;
-      source = y ? "ancestor" : source;
-    }
-    if (
-      field &&
-      // field != "undefined" &&
-      params.includeEstimates == "descendant"
-    ) {
-      status = 1;
-      source = "descendant";
-    }
-    treeNodes[result.result.taxon_id] = {
-      count: 0,
-      children: {},
-      taxon_id: result.result.taxon_id,
-      scientific_name: result.result.scientific_name,
-      taxon_rank: result.result.taxon_rank,
-      source,
-      value,
-      status,
-      // fields: result.result.fields,
-    };
-    isParentNode[result.result.parent] = true;
-    lineages[result.result.taxon_id] = result.result.lineage;
-  }
-
-  for (let result of xRes.results) {
-    // for (let [taxon_id, obj] of Object.entries(treeNodes)){
-    let child = result.result.taxon_id;
-    if (!isParentNode[result.result.taxon_id]) {
-      treeNodes[child].count = 1;
-      if (lineages[result.result.taxon_id]) {
-        for (let ancestor of lineages[result.result.taxon_id]) {
-          if (ancestor.taxon_id == result.result.taxon_id) {
-            continue;
-          }
-          if (!treeNodes[ancestor.taxon_id]) {
-            treeNodes[ancestor.taxon_id] = {
-              count: 0,
-              children: {},
-              scientific_name: ancestor.scientific_name,
-              taxon_rank: ancestor.taxon_rank,
-              status: 0,
-              taxon_id: ancestor.taxon_id,
-              // source,
-              // value,
-              // status,
-              // fields: result.result.fields,
-            };
-          }
-          if (
-            treeNodes[ancestor.taxon_id].status == 0 &&
-            treeNodes[child].status == 1
-          ) {
-            treeNodes[ancestor.taxon_id].status = 1;
-          }
-
-          treeNodes[ancestor.taxon_id].count += 1;
-          treeNodes[ancestor.taxon_id].children[child] = true;
-          child = ancestor.taxon_id;
-        }
-      }
-    }
-  }
-  if (yRes) {
-    for (let result of yRes.results) {
-      // for (let [taxon_id, obj] of Object.entries(treeNodes)){
-      if (!treeNodes[result.result.taxon_id]) {
-        continue;
-      }
-      if (!result.result.fields) {
-        continue;
-      }
-      treeNodes[result.result.taxon_id].status = 1;
-      let source = result.result.fields[field].aggregation_source;
-      treeNodes[result.result.taxon_id].source = source;
-      let child = result.result.taxon_id;
-      if (lineages[result.result.taxon_id]) {
-        for (let ancestor of lineages[result.result.taxon_id]) {
-          if (
-            treeNodes[ancestor.taxon_id].status == 0 &&
-            treeNodes[child].status == 1
-          ) {
-            treeNodes[ancestor.taxon_id].status = 1;
-          }
-          if (
-            (!treeNodes[ancestor.taxon_id].source ||
-              treeNodes[ancestor.taxon_id].source == "ancestor") &&
-            treeNodes[child].source != "ancestor"
-          ) {
-            treeNodes[ancestor.taxon_id].source = "descendant";
-          }
-        }
-      }
-    }
-    lca.yCount = yRes.results.length;
-  }
-  // return xRes;
+  let treeNodes = {};
+  await addXResultsToTree({
+    xRes,
+    treeNodes,
+    optionalFields,
+    lca,
+    xQuery,
+    yRes,
+  });
 
   return { lca, treeNodes };
-
-  let hist = undefined; // res.aggs.aggregations[field].histogram;
-  if (!hist) {
-    return xRes;
-  }
-  return hist;
 };
 
 export const tree = async ({ x, y, cat, result, apiParams }) => {
   let typesMap = await attrTypes({ result });
+  let searchFields = await parseFields({ result, fields: apiParams.fields });
+  // console.log(searchFields);
   let { params, fields, summaries } = queryParams({
     term: x,
     result,
   });
+  fields = searchFields;
   let status;
   if (!x || !aInB(fields, Object.keys(typesMap))) {
     status = {
@@ -399,15 +458,25 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   }
   params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
     ? apiParams.includeEstimates
-    : true;
+    : false;
   yParams.includeEstimates = params.includeEstimates;
-  if (params.includeEstimates) {
-    delete params.excludeAncestral;
-    delete yParams.excludeAncestral;
-  }
+  params.excludeDirect = apiParams.excludeDirect || [];
+  params.excludeDescendant = apiParams.excludeDescendant || [];
+  params.excludeAncestral = apiParams.excludeAncestral || [];
+  params.excludeMissing = apiParams.excludeMissing || [];
 
-  delete params.excludeDescendant;
-  delete yParams.excludeDescendant;
+  yParams.excludeDirect = apiParams.excludeDirect || [];
+  yParams.excludeDescendant = apiParams.excludeDescendant || [];
+  yParams.excludeAncestral = apiParams.excludeAncestral || [];
+  yParams.excludeMissing = apiParams.excludeMissing || [];
+
+  // if (params.includeEstimates) {
+  //   delete params.excludeAncestral;
+  //   delete yParams.excludeAncestral;
+  // }
+
+  // delete params.excludeDescendant;
+  // delete yParams.excludeDescendant;
 
   let xQuery = { ...params };
   let yQuery = { ...yParams };
@@ -418,7 +487,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   }
   optionalFields = [...new Set([...optionalFields])];
 
-  const treeThreshold = apiParams.treeThreshold || config.treeThreshold;
+  const treeThreshold = `${apiParams.treeThreshold}` || config.treeThreshold;
   let tree = status
     ? {}
     : await getTree({
@@ -427,6 +496,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
         optionalFields,
         summaries,
         cat,
+        x,
         y,
         yParams,
         yFields,
@@ -446,12 +516,13 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
       tree,
       xQuery: {
         ...xQuery,
-        fields: [...new Set(fields.concat(yFields))].join(","),
+        fields: optionalFields.join(","),
       },
       ...(y && {
         yQuery: {
           ...yQuery,
-          fields: [...new Set(yFields)].join(","),
+          fields: optionalFields.join(","),
+          yFields,
         },
       }),
       x: tree.lca ? tree.lca.count : 0,
