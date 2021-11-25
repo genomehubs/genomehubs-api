@@ -214,15 +214,7 @@ export const histPerRank = async ({
   };
 };
 
-export const xInY = async ({
-  x,
-  y,
-  result,
-  taxonomy,
-  rank,
-  queryString,
-  apiParams,
-}) => {
+export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
   if (!x) {
     return {
       status: {
@@ -239,9 +231,7 @@ export const xInY = async ({
       },
     };
   }
-  let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields } = queryParams({ term: y, result, taxonomy, rank });
-  fields = [...new Set(fields.concat(searchFields))];
   let yCount = await getResultCount({ ...params });
   let yQuery = { ...params };
   if (fields.length > 0) {
@@ -308,7 +298,6 @@ export const xInYPerRank = async ({
   taxonomy,
   rank,
   queryString,
-  ...apiParams,
 }) => {
   // Return xInY at a list of ranks
   let ranks = rank ? setRanks(rank) : [undefined];
