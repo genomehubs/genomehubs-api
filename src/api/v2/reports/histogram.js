@@ -394,10 +394,6 @@ const getHistogram = async ({
     ySummary = ySummaries[0];
     fields = [...new Set(fields.concat(yFields))];
   }
-  if (cat && typesMap[cat]) {
-    fields.push(cat);
-    fields = [...new Set(fields)];
-  }
   let valueType = valueTypes[typesMap[field].type] || "float";
   params.aggs = await setAggs({
     field,
@@ -659,9 +655,17 @@ export const histogram = async ({
       },
     };
   }
+  let typesMap = await attrTypes({ result });
+
   let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields, summaries } = queryParams({ term: x, result, rank });
+  let exclude = [];
+  if (cat && typesMap[cat]) {
+    searchFields.push(cat);
+    exclude.push(cat);
+  }
   fields = [...new Set(fields.concat(searchFields))];
+  exclude.push(fields[0]);
   let yTerm = combineQueries(x, y);
   let {
     params: yParams,
@@ -673,7 +677,6 @@ export const histogram = async ({
     rank,
   });
   let xQuery = { ...params };
-  let typesMap = await attrTypes({ result });
 
   if (!aInB(fields, Object.keys(typesMap))) {
     return {
@@ -694,6 +697,7 @@ export const histogram = async ({
     };
   }
   if (yFields && yFields.length > 0) {
+    exclude.push(yFields[0]);
     if (!aInB(yFields, Object.keys(typesMap))) {
       return {
         status: {
@@ -738,11 +742,23 @@ export const histogram = async ({
   params.excludeDirect = apiParams.excludeDirect || [];
   params.excludeDescendant = apiParams.excludeDescendant || [];
   params.excludeAncestral = apiParams.excludeAncestral || [];
-  params.excludeMissing = apiParams.excludeMissing || [];
+  params.excludeMissing = [
+    ...new Set((apiParams.excludeMissing || []).concat(exclude)),
+  ];
 
   fields = fields.concat(yFields);
   fields = [...new Set(fields)];
   exclusions = setExclusions(params);
+  console.log({
+    params: { ...params },
+    fields,
+    summaries,
+    cat,
+    result,
+    exclusions,
+    apiParams,
+    opts: xOpts,
+  });
   let bounds = await getBounds({
     params: { ...params },
     fields,
@@ -771,6 +787,7 @@ export const histogram = async ({
       },
     };
   }
+  console.log(bounds);
   let histograms, yBounds;
   if (yFields && yFields.length > 0) {
     yBounds = await getBounds({
