@@ -749,16 +749,6 @@ export const histogram = async ({
   fields = fields.concat(yFields);
   fields = [...new Set(fields)];
   exclusions = setExclusions(params);
-  console.log({
-    params: { ...params },
-    fields,
-    summaries,
-    cat,
-    result,
-    exclusions,
-    apiParams,
-    opts: xOpts,
-  });
   let bounds = await getBounds({
     params: { ...params },
     fields,
@@ -787,7 +777,6 @@ export const histogram = async ({
       },
     };
   }
-  console.log(bounds);
   let histograms, yBounds;
   if (yFields && yFields.length > 0) {
     yBounds = await getBounds({
