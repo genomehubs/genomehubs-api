@@ -434,11 +434,15 @@ const getHistogram = async ({
         let cat;
         if (bounds.cat) {
           if (bounds.by == "attribute") {
-            cat = result.result.fields[bounds.cat].value;
-            if (Array.isArray(cat)) {
-              cat = cat[0].toLowerCase();
+            if (!result.result.fields[bounds.cat]) {
+              cat = "missing";
             } else {
-              cat = result.result.fields[bounds.cat].value.toLowerCase();
+              cat = result.result.fields[bounds.cat].value;
+              if (Array.isArray(cat)) {
+                cat = cat[0].toLowerCase();
+              } else {
+                cat = result.result.fields[bounds.cat].value.toLowerCase();
+              }
             }
           } else if (result.result.ranks) {
             cat = result.result.ranks[bounds.cat];
@@ -662,7 +666,7 @@ export const histogram = async ({
   let exclude = [];
   if (cat && typesMap[cat]) {
     searchFields.push(cat);
-    exclude.push(cat);
+    // exclude.push(cat);
   }
   fields = [...new Set(fields.concat(searchFields))];
   exclude.push(fields[0]);

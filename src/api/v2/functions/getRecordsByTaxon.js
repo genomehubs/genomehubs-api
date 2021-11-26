@@ -50,7 +50,7 @@ export const getRecordsByTaxon = async (props) => {
     for await (const hit of scrollSearch(
       {
         index: props.index,
-        size: 1,
+        size: 1000,
         _source: query._source,
         body: {
           query: query.query,
@@ -65,6 +65,7 @@ export const getRecordsByTaxon = async (props) => {
       }
     }
     let took = Date.now() - startTime;
+    console.log(took);
     body = {
       took,
       timed_out: false,
