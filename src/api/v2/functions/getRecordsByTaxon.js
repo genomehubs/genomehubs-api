@@ -60,12 +60,14 @@ export const getRecordsByTaxon = async (props) => {
     )) {
       hits.push(hit);
       total++;
+      if (total % 1000 == 0) {
+        console.log(total);
+      }
       if (total == query.size) {
         break;
       }
     }
     let took = Date.now() - startTime;
-    console.log(took);
     body = {
       took,
       timed_out: false,

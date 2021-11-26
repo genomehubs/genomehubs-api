@@ -428,7 +428,6 @@ const getTree = async ({
 export const tree = async ({ x, y, cat, result, apiParams }) => {
   let typesMap = await attrTypes({ result });
   let searchFields = await parseFields({ result, fields: apiParams.fields });
-  // console.log(searchFields);
   let { params, fields, summaries } = queryParams({
     term: x,
     result,
@@ -487,7 +486,10 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
   }
   optionalFields = [...new Set([...optionalFields])];
 
-  const treeThreshold = `${apiParams.treeThreshold}` || config.treeThreshold;
+  let treeThreshold = `${apiParams.treeThreshold}` || config.treeThreshold;
+  if (treeThreshold < 0) {
+    treeThreshold = 100000;
+  }
   let tree = status
     ? {}
     : await getTree({
