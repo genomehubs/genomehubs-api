@@ -16,10 +16,15 @@ export const cacheFetch = async (req) => {
 
 export const cacheStore = async (req, obj) => {
   if (mc) {
-    const key = req.url;
-    const value = JSON.stringify(obj);
-    if (key.length <= 250 && value.length <= 1024 * 1024 * 32) {
-      mc.set(key, JSON.stringify(obj));
+    try {
+      const key = req.url;
+      const value = JSON.stringify(obj);
+      if (value.length <= 1024 * 1024 * 32) {
+        mc.set(key, JSON.stringify(obj));
+      }
+      return true;
+    } catch {
+      return false;
     }
   }
 };
