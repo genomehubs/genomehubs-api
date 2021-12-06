@@ -23,7 +23,7 @@ export const queryParams = ({
 
     term.split(/\s+(?:and|AND)\s+/).forEach((subterm) => {
       if (!subterm.match("tax_")) {
-        let field = subterm.replace(/[^\w_\(\)].+$/, "");
+        let field = subterm.replace(/[^\w_\(\)].+$/, "").toLowerCase();
         let summary = "value";
         if (field.match(/\(/)) {
           [summary, field] = field.split(/[\(\)]/);

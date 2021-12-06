@@ -713,7 +713,7 @@ export const histogram = async ({
   }
   if (
     (report == "scatter" && (!y || yFields.length == 0)) ||
-    typesMap[yFields[0]].type == "keyword"
+    (yFields[0] && typesMap[yFields[0]].type == "keyword")
   ) {
     return {
       status: {

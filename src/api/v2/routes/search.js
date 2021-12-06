@@ -16,24 +16,23 @@ const operations = (str) => {
   let operator = translate[str];
   return operator || [];
 };
-
 export const parseFields = async ({ result, fields }) => {
   let typesMap = await attrTypes({ result });
   try {
     if (!fields) {
-      fields = Object.keys(typesMap).filter(
-        (key) => typesMap[key].display_level == 1
-      );
+      fields = Object.keys(typesMap)
+        .map((key) => key.toLowerCase())
+        .filter((key) => typesMap[key].display_level == 1);
     } else if (fields == "all") {
       let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap);
     } else {
       fields = fields.split(/\s*,\s*/);
     }
-    return fields;
+    return fields.map((key) => key.toLowerCase());
   } catch (error) {
     if (Array.isArray(fields)) {
-      return fields;
+      return fields.map((key) => key.toLowerCase());
     }
     return typesMap ? Object.keys(typesMap) : [];
   }
@@ -90,6 +89,7 @@ const addCondition = (conditions, parts, type) => {
     stat = segments[0];
     parts[0] = segments[1];
   }
+  parts[0] = parts[0].toLowerCase();
   if (!conditions[parts[0]]) {
     if (type == "keyword") {
       conditions[parts[0]] = [];
@@ -168,9 +168,13 @@ const generateQuery = async ({
   let properties = {};
   let status;
   if (query && query.match(/\n/)) {
-    multiTerm = query.split(/\n/).filter((v) => v > "");
+    multiTerm = query
+      .toLowerCase()
+      .split(/\n/)
+      .filter((v) => v > "");
   } else if (query) {
-    query.split(/\s+(?:AND|and)\s+/).forEach((term) => {
+    query = query.toLowerCase();
+    query.split(/\s+and\s+/).forEach((term) => {
       let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\((.+?)\)/);
       if (taxQuery) {
         if (taxQuery[1] == "rank") {
