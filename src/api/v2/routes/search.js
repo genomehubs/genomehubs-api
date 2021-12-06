@@ -171,9 +171,10 @@ const generateQuery = async ({
     multiTerm = query
       .toLowerCase()
       .split(/\n/)
+      .map((v) => v.trim())
       .filter((v) => v > "");
   } else if (query) {
-    query = query.toLowerCase();
+    query = query.trim().toLowerCase();
     query.split(/\s+and\s+/).forEach((term) => {
       let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\((.+?)\)/);
       if (taxQuery) {
