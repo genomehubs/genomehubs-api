@@ -143,6 +143,7 @@ const generateQuery = async ({
   offset = 0,
   sortBy,
   aggs,
+  req,
 }) => {
   let typesMap = await attrTypes({ ...query });
   fields = await parseFields({ result, fields });
@@ -258,6 +259,7 @@ const generateQuery = async ({
     offset,
     sortBy,
     aggs,
+    req,
   };
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
@@ -339,7 +341,7 @@ module.exports = {
     let response = {};
     let exclusions = setExclusions(req.query);
     let sortBy = setSortBy(req.query);
-    response = await getResults({ ...req.query, exclusions, sortBy });
+    response = await getResults({ ...req.query, exclusions, sortBy, req });
     if (response.status.hits == 0) {
       let query = await replaceSearchIds(req.query);
       if (query != req.query.query) {
@@ -348,6 +350,7 @@ module.exports = {
           query,
           exclusions,
           sortBy,
+          req,
         });
         response.queryString = query;
       }

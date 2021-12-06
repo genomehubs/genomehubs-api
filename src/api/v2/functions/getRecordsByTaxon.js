@@ -35,6 +35,14 @@ async function* scrollSearch(params, scroll) {
 
 export const getRecordsByTaxon = async (props) => {
   let searchBy = searchByTaxon;
+  let active = true;
+  let req = props.req;
+  req.on("close", () => {
+    active = false;
+  });
+  req.on("end", () => {
+    active = false;
+  });
   const query = await searchBy(props);
   let scrollThreshold = config.scrollThreshold;
   let scrollDuration = config.scrollDuration;
@@ -61,9 +69,10 @@ export const getRecordsByTaxon = async (props) => {
       hits.push(hit);
       total++;
       if (total % 1000 == 0) {
+        console.log(active);
         console.log(total);
       }
-      if (total == query.size) {
+      if (!active || total == query.size) {
         break;
       }
     }

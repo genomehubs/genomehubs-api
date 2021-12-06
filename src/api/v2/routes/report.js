@@ -642,7 +642,7 @@ module.exports = {
           break;
         }
         case "tree": {
-          report = await getTree({ ...req.query, queryString });
+          report = await getTree({ ...req.query, queryString, req });
           break;
         }
         case "types": {

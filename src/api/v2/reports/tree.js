@@ -310,6 +310,7 @@ const getTree = async ({
   cat,
   result,
   treeThreshold = config.treeThreshold,
+  req,
 }) => {
   cat = undefined;
   let typesMap = await attrTypes({ result });
@@ -392,7 +393,7 @@ const getTree = async ({
     optionalFields,
     exclusions,
   };
-  let xRes = await getResults(xQuery);
+  let xRes = await getResults(xQuery, req);
 
   let yRes;
   if (y) {
@@ -410,6 +411,7 @@ const getTree = async ({
       maxDepth,
       fields: yFields,
       exclusions,
+      req,
     });
   }
   let treeNodes = {};
@@ -425,7 +427,8 @@ const getTree = async ({
   return { lca, treeNodes };
 };
 
-export const tree = async ({ x, y, cat, result, apiParams }) => {
+export const tree = async ({ x, y, cat, result, apiParams, req }) => {
+  console.log(req);
   let typesMap = await attrTypes({ result });
   let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields, summaries } = queryParams({
@@ -505,6 +508,7 @@ export const tree = async ({ x, y, cat, result, apiParams }) => {
         ySummaries,
         result,
         treeThreshold,
+        req,
       });
 
   if (tree && tree.status && tree.status.success == false) {
