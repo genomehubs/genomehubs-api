@@ -33,6 +33,7 @@ export const getTree = async ({
   cat,
   taxonomy,
   queryString,
+  req,
   ...apiParams
 }) => {
   // Return tree of results
@@ -42,6 +43,7 @@ export const getTree = async ({
     y,
     result: apiParams.result,
     taxonomy,
+    req,
     apiParams,
   });
   if (res.status.success == false) {
@@ -305,7 +307,9 @@ export const xInYPerRank = async ({
   let status;
   for (rank of ranks) {
     let res = await xInY({ x, y, result, rank, taxonomy });
-    if (res.status.success == false) {
+    if (!res || !res.status) {
+      status = { success: false, error: "unable to load report" };
+    } else if (res.status.success == false) {
       if (!status) {
         status = res.status;
       }
@@ -630,11 +634,11 @@ module.exports = {
       let queryString = qs.stringify(req.query);
       switch (req.query.report) {
         case "histogram": {
-          report = await histPerRank({ ...req.query, queryString });
+          report = await histPerRank({ ...req.query, queryString, req });
           break;
         }
         case "scatter": {
-          report = await scatterPerRank({ ...req.query, queryString });
+          report = await scatterPerRank({ ...req.query, queryString, req });
           break;
         }
         case "sources": {

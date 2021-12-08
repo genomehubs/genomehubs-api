@@ -176,6 +176,12 @@ components:
       name: preview
       schema:
         type: boolean
+    queryIdParam:
+      description: User specified query ID
+      in: query
+      name: queryId
+      schema:
+        type: string
     queryParam:
       description: Search query
       in: query
@@ -632,6 +638,30 @@ paths:
       tags:
         - GoaT API
       x-eov-operation-handler: api/v2/routes/lookup
+  /progress:
+    get:
+      description: Returns progress of a long-running search or report query
+      operationId: getProgress
+      parameters:
+        - $ref: "#/components/parameters/queryIdParam"
+        - $ref: "#/components/parameters/indentParam"
+      responses:
+        "200":
+          content:
+            application/json:
+              schema:
+                anyOf:
+                  - $ref: "#/components/schemas/Status"
+                    status: null
+                  - $ref: "#/components/schemas/Records"
+                    results: null
+          description: successful operation
+        "400":
+          description: Invalid queryId
+      summary: Returns query progress
+      tags:
+        - GoaT API
+      x-eov-operation-handler: api/v2/routes/progress
   /record:
     get:
       description: Returns records matching a record identifier
@@ -685,6 +715,7 @@ paths:
         - $ref: "#/components/parameters/yOptsParam"
         - $ref: "#/components/parameters/scatterThresholdParam"
         - $ref: "#/components/parameters/treeThresholdParam"
+        - $ref: "#/components/parameters/queryIdParam"
         - $ref: "#/components/parameters/releaseParam"
         - $ref: "#/components/parameters/indentParam"
       responses:
@@ -767,6 +798,7 @@ paths:
         - $ref: "#/components/parameters/sortModeParam"
         - $ref: "#/components/parameters/taxonomyParam"
         - $ref: "#/components/parameters/releaseParam"
+        - $ref: "#/components/parameters/queryIdParam"
         - $ref: "#/components/parameters/indentParam"
         - $ref: "#/components/parameters/tidyDataParam"
         - $ref: "#/components/parameters/filenameParam"

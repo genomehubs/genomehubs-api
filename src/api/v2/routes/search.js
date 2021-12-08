@@ -1,3 +1,5 @@
+import { clearProgress, setProgress } from "../functions/progress";
+
 import { attrTypes } from "../functions/attrTypes";
 import { formatCsv } from "../functions/formatCsv";
 import { formatJson } from "../functions/formatJson";
@@ -144,6 +146,7 @@ const generateQuery = async ({
   sortBy,
   aggs,
   req,
+  update,
 }) => {
   let typesMap = await attrTypes({ ...query });
   fields = await parseFields({ result, fields });
@@ -260,6 +263,7 @@ const generateQuery = async ({
     sortBy,
     aggs,
     req,
+    update,
   };
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
@@ -341,10 +345,21 @@ module.exports = {
     let response = {};
     let exclusions = setExclusions(req.query);
     let sortBy = setSortBy(req.query);
+    let queryId = req.query.queryId;
+    if (queryId) {
+      let countRes = await getResults({ ...req.query, exclusions, size: 0 });
+      if (countRes.status && countRes.status.hits) {
+        setProgress(queryId, { total: countRes.status.hits });
+      }
+    }
     response = await getResults({ ...req.query, exclusions, sortBy, req });
     if (response.status.hits == 0) {
       let query = await replaceSearchIds(req.query);
       if (query != req.query.query) {
+        let countRes = await getResults({ ...req.query, exclusions, size: 0 });
+        if (countRes.status && countRes.status.hits) {
+          setProgress(queryId, { total: countRes.status.hits });
+        }
         response = await getResults({
           ...req.query,
           query,
@@ -355,6 +370,7 @@ module.exports = {
         response.queryString = query;
       }
     }
+    clearProgress(queryId);
     return res.format({
       json: () => {
         if (req.query.filename) {

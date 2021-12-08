@@ -1,3 +1,5 @@
+import { clearProgress, setProgress } from "./progress";
+
 import { checkResponse } from "./checkResponse";
 import { client } from "./connection";
 import { config } from "./config";
@@ -36,13 +38,18 @@ async function* scrollSearch(params, scroll) {
 export const getRecordsByTaxon = async (props) => {
   let searchBy = searchByTaxon;
   let active = true;
-  let req = props.req;
-  req.on("close", () => {
-    active = false;
-  });
-  req.on("end", () => {
-    active = false;
-  });
+  let queryId;
+  let update;
+  if (props.req) {
+    props.req.on("close", () => {
+      active = false;
+    });
+    props.req.on("end", () => {
+      active = false;
+    });
+    queryId = props.req.query.queryId;
+    update = props.update || "x";
+  }
   const query = await searchBy(props);
   let scrollThreshold = config.scrollThreshold;
   let scrollDuration = config.scrollDuration;
@@ -69,12 +76,22 @@ export const getRecordsByTaxon = async (props) => {
       hits.push(hit);
       total++;
       if (total % 1000 == 0) {
-        console.log(active);
-        console.log(total);
+        if (queryId) {
+          setProgress(queryId, { [update]: total });
+        }
       }
       if (!active || total == query.size) {
+        if (queryId && !active) {
+          clearProgress(queryId);
+        }
         break;
       }
+    }
+    if (queryId && active) {
+      setProgress(queryId, {
+        [update]: total,
+        ...(update == "x" && { total }),
+      });
     }
     let took = Date.now() - startTime;
     body = {

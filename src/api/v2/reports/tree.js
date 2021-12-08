@@ -12,6 +12,7 @@ import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
 import { queryParams } from "./queryParams";
 import { setAggs } from "./setAggs";
+import { setProgress } from "../functions/progress";
 
 const valueTypes = {
   long: "integer",
@@ -310,6 +311,7 @@ const getTree = async ({
   cat,
   result,
   treeThreshold = config.treeThreshold,
+  queryId,
   req,
 }) => {
   cat = undefined;
@@ -393,7 +395,10 @@ const getTree = async ({
     optionalFields,
     exclusions,
   };
-  let xRes = await getResults(xQuery, req);
+  if (queryId) {
+    setProgress(queryId, { total: lca.count });
+  }
+  let xRes = await getResults({ ...xQuery, req, update: "x" });
 
   let yRes;
   if (y) {
@@ -412,6 +417,7 @@ const getTree = async ({
       fields: yFields,
       exclusions,
       req,
+      update: "y",
     });
   }
   let treeNodes = {};
@@ -428,7 +434,6 @@ const getTree = async ({
 };
 
 export const tree = async ({ x, y, cat, result, apiParams, req }) => {
-  console.log(req);
   let typesMap = await attrTypes({ result });
   let searchFields = await parseFields({ result, fields: apiParams.fields });
   let { params, fields, summaries } = queryParams({
@@ -508,6 +513,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
         ySummaries,
         result,
         treeThreshold,
+        queryId: apiParams.queryId,
         req,
       });
 
