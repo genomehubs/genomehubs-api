@@ -28,6 +28,8 @@ export const parseFields = async ({ result, fields }) => {
     } else if (fields == "all") {
       let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap);
+    } else if (fields == "none") {
+      fields = [];
     } else {
       fields = fields.split(/\s*,\s*/);
     }

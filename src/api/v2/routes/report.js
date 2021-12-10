@@ -628,6 +628,7 @@ export const getTypes = async (params) => {
 
 module.exports = {
   getReport: async (req, res) => {
+    req.url = req.url.replace(/&queryId=[\w\d-_]+/, "");
     let report = await cacheFetch(req);
     if (!report) {
       report = {};
