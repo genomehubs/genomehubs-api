@@ -9,6 +9,7 @@ import { combineQueries } from "../functions/combineQueries";
 import { config } from "../functions/config";
 import { format } from "d3-format";
 import { formatJson } from "../functions/formatJson";
+import { getBounds } from "./getBounds";
 import { indexName } from "../functions/indexName";
 import { queryParams } from "./queryParams";
 import { setAggs } from "./setAggs";
@@ -445,11 +446,15 @@ const getTree = async ({
 export const tree = async ({ x, y, cat, result, apiParams, req }) => {
   let typesMap = await attrTypes({ result });
   let searchFields = await parseFields({ result, fields: apiParams.fields });
-  let { params, fields, summaries } = queryParams({
+  let {
+    params,
+    fields: xFields,
+    summaries,
+  } = queryParams({
     term: x,
     result,
   });
-  fields = searchFields;
+  let fields = searchFields;
   let status;
   if (!x || !aInB(fields, Object.keys(typesMap))) {
     status = {
@@ -507,6 +512,19 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
   if (treeThreshold < 0) {
     treeThreshold = 100000;
   }
+  let bounds;
+  bounds = await getBounds({
+    params: { ...params },
+    fields: xFields
+      .concat(yFields)
+      .filter((field) => typesMap[field] && typesMap[field].type != "keyword"),
+    summaries,
+    cat,
+    result,
+    // exclusions,
+    apiParams,
+    // opts: xOpts,
+  });
   let tree = status
     ? {}
     : await getTree({
@@ -535,6 +553,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
     report: {
       status,
       tree,
+      bounds,
       xQuery: {
         ...xQuery,
         fields: optionalFields.join(","),

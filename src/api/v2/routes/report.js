@@ -41,6 +41,7 @@ export const getTree = async ({
   let res = await tree({
     x,
     y,
+    cat,
     result: apiParams.result,
     taxonomy,
     req,
@@ -676,11 +677,15 @@ module.exports = {
         try {
           report = await reportFunc(reportParams);
           cacheStore(req, report);
-        } catch (err) {
+        } catch (message) {
+          const timestamp = new Date();
+          const error = `unexpected error at ${timestamp.toLocaleString()}`;
+          console.log({ timestamp, url: req.url, error, message });
           let status = {
             success: false,
-            error: `unexpected error`,
-            message: err,
+            error,
+            timestamp,
+            message,
           };
           report = {
             status,
