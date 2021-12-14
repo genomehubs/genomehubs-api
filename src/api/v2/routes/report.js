@@ -633,37 +633,66 @@ module.exports = {
     if (!report) {
       report = {};
       let queryString = qs.stringify(req.query);
+      let reportFunc;
+      let reportParams = { ...req.query, queryString, req };
       switch (req.query.report) {
         case "histogram": {
-          report = await histPerRank({ ...req.query, queryString, req });
+          reportFunc = histPerRank;
+          // report = await histPerRank({ ...req.query, queryString, req });
           break;
         }
         case "scatter": {
-          report = await scatterPerRank({ ...req.query, queryString, req });
+          reportFunc = scatterPerRank;
+          // report = await scatterPerRank({ ...req.query, queryString, req });
           break;
         }
         case "sources": {
-          report = await getSources({ ...req.query, queryString });
+          reportFunc = getSources;
+          // report = await getSources({ ...req.query, queryString });
           break;
         }
         case "tree": {
-          report = await getTree({ ...req.query, queryString, req });
+          reportFunc = getTree;
+          // report = await getTree({ ...req.query, queryString, req });
           break;
         }
         case "types": {
-          report = await getTypes({ ...req.query, queryString });
+          reportFunc = getTypes;
+          // report = await getTypes({ ...req.query, queryString });
           break;
         }
         case "xInY": {
-          report = await xInYPerRank({ ...req.query, queryString });
+          reportFunc = xInYPerRank;
+          // report = await xInYPerRank({ ...req.query, queryString });
           break;
         }
         case "xPerRank": {
-          report = await xPerRank({ ...req.query, queryString });
+          reportFunc = xPerRank;
+          // report = await xPerRank({ ...req.query, queryString });
           break;
         }
       }
-      cacheStore(req, report);
+      if (reportFunc) {
+        try {
+          report = await reportFunc(reportParams);
+          cacheStore(req, report);
+        } catch (err) {
+          let status = {
+            success: false,
+            error: `unexpected error`,
+            message: err,
+          };
+          report = {
+            status,
+            report: {
+              tree: {
+                status,
+              },
+            },
+            queryString,
+          };
+        }
+      }
     }
     if (report && report != {}) {
       report.name = req.query.report;

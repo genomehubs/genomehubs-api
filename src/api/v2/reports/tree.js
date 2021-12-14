@@ -171,6 +171,7 @@ const addXResultsToTree = async ({
   update,
   yRes,
   ancStatus,
+  queryId,
 }) => {
   let isParentNode = {};
   let lineages = {};
@@ -280,10 +281,14 @@ const addXResultsToTree = async ({
     }
   }
   if (missingIds.size > 0) {
+    let x = 0;
+    if (queryId) {
+      setProgress(queryId, { x: 0, total: missingIds.size });
+    }
     for (let chunk of chunkArray([...missingIds], chunkSize)) {
       let mapped = []; // xQuery.query.split(/\s+AND\s+/i);
       mapped = mapped.filter((term) => !term.startsWith("tax_"));
-      mapped.unshift(`tax_name(${chunk.join(",")})`);
+      mapped.unshift(`tax_eq(taxon_id:${chunk.join(",taxon_id:")})`);
       let newQuery = { ...xQuery, query: mapped.join(" AND ") };
       // TODO: review newQuery options
       let newRes = await getResults(newQuery);
@@ -295,7 +300,10 @@ const addXResultsToTree = async ({
         xQuery: newQuery,
         update: true,
         ancStatus,
+        queryId,
       });
+      x = Math.min(missingIds.size, x + chunkSize);
+      setProgress(queryId, { x });
     }
   }
 };
@@ -428,6 +436,7 @@ const getTree = async ({
     lca,
     xQuery,
     yRes,
+    queryId,
   });
 
   return { lca, treeNodes };
