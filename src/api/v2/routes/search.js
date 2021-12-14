@@ -21,23 +21,21 @@ const operations = (str) => {
 export const parseFields = async ({ result, fields }) => {
   let typesMap = await attrTypes({ result });
   try {
-    if (!fields) {
+    if (!fields || fields == "undefined") {
       fields = Object.keys(typesMap)
         .map((key) => key.toLowerCase())
-        .filter((key) => typesMap[key].display_level == 1);
-    } else if (fields == "all") {
+        .filter((key) => typesMap[key] && typesMap[key].display_level == 1);
+    } else if (!fields || fields == "all") {
       let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap);
     } else if (fields == "none") {
       fields = [];
-    } else {
-      fields = fields.split(/\s*,\s*/);
+    } else if (!Array.isArray(fields)) {
+      fields = (fields || "").split(/\s*,\s*/);
     }
     return fields.map((key) => key.toLowerCase());
   } catch (error) {
-    if (Array.isArray(fields)) {
-      return fields.map((key) => key.toLowerCase());
-    }
+    console.log(error);
     return typesMap ? Object.keys(typesMap) : [];
   }
 };
