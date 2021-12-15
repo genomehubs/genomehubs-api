@@ -276,8 +276,8 @@ export const setAggs = async ({
       return;
     }
   }
+  let yHistogram, yHistograms, categoryHistograms;
   if (histogram && yField) {
-    let yHistogram, yHistograms, categoryHistograms;
     yHistogram = await histogramAgg({
       field: yField,
       summary: ySummary,
