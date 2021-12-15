@@ -228,10 +228,56 @@ export const setAggs = async ({
 }) => {
   let typesMap = await attrTypes({ result });
   if (!typesMap[field]) {
-    return;
+    if (terms) {
+      if (typesMap[terms]) {
+        field = terms;
+        if (typesMap[terms].type == "keyword") {
+          terms = attributeTerms({ terms, size });
+          return {
+            aggregations: {
+              nested: {
+                path: "attributes",
+              },
+              aggs: {
+                [field]: {
+                  filter: {
+                    term: { "attributes.key": field },
+                  },
+                  aggs: {
+                    terms,
+                  },
+                },
+              },
+            },
+          };
+        }
+      } else {
+        let rank = terms;
+        terms = lineageTerms({ terms, size });
+        return {
+          aggregations: {
+            nested: {
+              path: "lineage",
+            },
+            aggs: {
+              [field]: {
+                filter: {
+                  term: { "lineage.taxon_rank": rank },
+                },
+                aggs: {
+                  terms,
+                },
+              },
+            },
+          },
+        };
+      }
+    } else {
+      return;
+    }
   }
-  let yHistogram, yHistograms;
   if (histogram && yField) {
+    let yHistogram, yHistograms, categoryHistograms;
     yHistogram = await histogramAgg({
       field: yField,
       summary: ySummary,
@@ -252,7 +298,6 @@ export const setAggs = async ({
       yHistograms,
     });
   }
-  let categoryHistograms;
   if (bounds && bounds.cats) {
     if (bounds.by == "attribute") {
       categoryHistograms = attributeCategory({

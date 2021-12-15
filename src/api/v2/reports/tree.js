@@ -173,6 +173,7 @@ const addXResultsToTree = async ({
   yRes,
   ancStatus,
   queryId,
+  catRank,
 }) => {
   let isParentNode = {};
   let lineages = {};
@@ -182,7 +183,7 @@ const addXResultsToTree = async ({
 
   for (let result of xRes.results) {
     let treeFields;
-    // let status = y ? 0 : 1;
+    // let treeRanks;
     let source;
     if (result.result.fields) {
       treeFields = {};
@@ -204,6 +205,14 @@ const addXResultsToTree = async ({
         }
       }
     }
+    // if (result.result.ranks) {
+    //   treeRanks = {};
+    //   for (let r of ranks) {
+    //     if (result.result.ranks[r]) {
+    //       treeRanks[r] = result.result.ranks[r];
+    //     }
+    //   }
+    // }
     if (update) {
       if (treeFields) {
         treeNodes[result.result.taxon_id].fields = treeFields;
@@ -213,6 +222,9 @@ const addXResultsToTree = async ({
           ? 1
           : 0;
       }
+      // if (treeRanks) {
+      //   treeNodes[result.result.taxon_id].ranks = treeRanks;
+      // }
       continue;
     } else {
       treeNodes[result.result.taxon_id] = {
@@ -222,6 +234,7 @@ const addXResultsToTree = async ({
         scientific_name: result.result.scientific_name,
         taxon_rank: result.result.taxon_rank,
         ...(treeFields && { fields: treeFields }),
+        // ...(treeRanks && { ranks: treeRanks }),
       };
       isParentNode[result.result.parent] = true;
       lineages[result.result.taxon_id] = result.result.lineage;
@@ -248,6 +261,7 @@ const addXResultsToTree = async ({
   for (let result of xRes.results) {
     let child = result.result.taxon_id;
     let status = treeNodes[result.result.taxon_id].status;
+    let descIds = [child];
     if (!isParentNode[result.result.taxon_id]) {
       treeNodes[child].count = 1;
       if (lineages[result.result.taxon_id]) {
@@ -258,6 +272,7 @@ const addXResultsToTree = async ({
           if (ancestor.taxon_id == lca.parent) {
             break;
           }
+          descIds.push(ancestor.taxon_id);
           if (status) {
             ancStatus.add(ancestor.taxon_id);
           }
@@ -270,6 +285,11 @@ const addXResultsToTree = async ({
               taxon_rank: ancestor.taxon_rank,
               taxon_id: ancestor.taxon_id,
             };
+          }
+          if (catRank && ancestor.taxon_rank == catRank) {
+            for (let descId of descIds) {
+              treeNodes[descId].cat = ancestor.taxon_id;
+            }
           }
           treeNodes[ancestor.taxon_id].count += 1;
           treeNodes[ancestor.taxon_id].children[child] = true;
@@ -302,6 +322,7 @@ const addXResultsToTree = async ({
         update: true,
         ancStatus,
         queryId,
+        catRank,
       });
       x = Math.min(missingIds.size, x + chunkSize);
       setProgress(queryId, { x });
@@ -321,6 +342,7 @@ const getTree = async ({
   result,
   treeThreshold = config.treeThreshold,
   queryId,
+  catRank,
   req,
 }) => {
   cat = undefined;
@@ -399,8 +421,9 @@ const getTree = async ({
     query: mapped.join(" AND "),
     size: treeThreshold, // lca.count,
     // maxDepth,
-    lca: lca,
+    lca,
     fields,
+    // ranks: ranks.join(","),
     optionalFields,
     exclusions,
   };
@@ -438,6 +461,7 @@ const getTree = async ({
     xQuery,
     yRes,
     queryId,
+    catRank,
   });
 
   return { lca, treeNodes };
@@ -454,7 +478,21 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
     term: x,
     result,
   });
-  let fields = searchFields;
+  let fields;
+  let catRank;
+  if (cat) {
+    let catField;
+    catField = cat.replace(/[^\w].+$/, "");
+    if (typesMap[catField]) {
+      fields = [...new Set(searchFields.concat([catField]))];
+    } else {
+      catRank = catField;
+      fields = [...new Set(searchFields)];
+    }
+  } else {
+    fields = [...new Set(searchFields)];
+  }
+
   let status;
   if (!x || !aInB(fields, Object.keys(typesMap))) {
     status = {
@@ -513,6 +551,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
     treeThreshold = 100000;
   }
   let bounds;
+  let exclusions = setExclusions(params);
   bounds = await getBounds({
     params: { ...params },
     fields: xFields
@@ -521,7 +560,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
     summaries,
     cat,
     result,
-    // exclusions,
+    exclusions,
     apiParams,
     // opts: xOpts,
   });
@@ -531,6 +570,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
         params,
         fields,
         optionalFields,
+        catRank,
         summaries,
         cat,
         x,

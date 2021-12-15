@@ -34,9 +34,13 @@ export const getBounds = async ({
   } else {
     extraTerms = cat;
   }
-  if (fields) {
-    if (cat && typesMap[cat]) {
+  let term = field;
+
+  if (cat && typesMap[cat]) {
+    if (fields.length > 0) {
       fields.push(cat);
+    } else {
+      term = cat;
     }
   }
   params.aggs = await setAggs({
@@ -53,95 +57,97 @@ export const getBounds = async ({
     exclusions,
   });
   let aggs;
+  let domain;
   try {
-    aggs = res.aggs.aggregations[field];
+    aggs = res.aggs.aggregations[term];
   } catch {
     return;
   }
   let stats = aggs.stats;
-  if (!stats) {
-    return;
-  }
-  // Set domain to nice numbers
-  let min, max;
-  if (opts) {
-    opts = opts.split(",");
-    if (opts[0] && opts[0] > "") {
-      min = opts[0];
+  if (stats) {
+    // Set domain to nice numbers
+    let min, max;
+    if (opts) {
+      opts = opts.split(",");
+      if (opts[0] && opts[0] > "") {
+        min = opts[0];
+      }
+      if (opts[1] && opts[1] > "") {
+        max = opts[1];
+      }
+      if (opts[2] && opts[2] > "") {
+        tickCount = opts[2];
+      }
     }
-    if (opts[1] && opts[1] > "") {
-      max = opts[1];
-    }
-    if (opts[2] && opts[2] > "") {
-      tickCount = opts[2];
-    }
-  }
-  if (!min || !max) {
-    let valueType = valueTypes[typesMap[field].type] || "float";
-    if (stats.min == stats.max) {
-      tickCount = 2;
-      if (valueType == "date") {
-        min = stats.min;
-        max = incrementDate(stats.max);
-      } else if (valueType == "float" || valueType == "integer") {
-        min = Number.parseFloat(stats.min).toPrecision(3);
-        if (min > stats.min) {
+    if (!min || !max) {
+      let valueType = valueTypes[typesMap[field].type] || "float";
+      if (stats.min == stats.max) {
+        tickCount = 2;
+        if (valueType == "date") {
+          min = stats.min;
+          max = incrementDate(stats.max);
+        } else if (valueType == "float" || valueType == "integer") {
+          min = Number.parseFloat(stats.min).toPrecision(3);
+          if (min > stats.min) {
+            let [val, exp] = min.split("e");
+            min = val.split("");
+            for (let i = min.length - 1; i >= 0; i--) {
+              if (min[i] == 0) {
+                min[i] = 9;
+              } else if (min[i] != ".") {
+                min[i] = min[i] * 1 - 1;
+                break;
+              }
+            }
+            min = min.join("");
+            if (exp) {
+              min += `e${exp}`;
+            }
+          }
           let [val, exp] = min.split("e");
-          min = val.split("");
-          for (let i = min.length - 1; i >= 0; i--) {
-            if (min[i] == 0) {
-              min[i] = 9;
-            } else if (min[i] != ".") {
-              min[i] = min[i] * 1 - 1;
+          max = val.split("");
+          for (let i = max.length - 1; i >= 0; i--) {
+            if (i > 0 && max[i] == 9) {
+              max[i] = 0;
+            } else if (max[i] != ".") {
+              max[i] = max[i] * 1 + 1;
               break;
             }
           }
-          min = min.join("");
+          max = max.join("");
           if (exp) {
-            min += `e${exp}`;
+            max += `e${exp}`;
           }
         }
-        let [val, exp] = min.split("e");
-        max = val.split("");
-        for (let i = max.length - 1; i >= 0; i--) {
-          if (i > 0 && max[i] == 9) {
-            max[i] = 0;
-          } else if (max[i] != ".") {
-            max[i] = max[i] * 1 + 1;
-            break;
+      } else if (typesMap[field].type == "date") {
+        min = stats.min;
+        max = stats.max;
+      } else {
+        let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
+        let tmpMin = typeof min == "undefined" ? stats.min : min;
+        let tmpMax = typeof max == "undefined" ? stats.max : max;
+        // if (scaleType.startsWith("log") && tmpMin == 0) {
+        //   tmpMin = 1;
+        // }
+        let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
+        let ticks = scale.ticks(tickCount);
+        let gap = ticks[1] - ticks[0];
+        let lastTick = ticks[ticks.length - 1];
+        if (typeof min == "undefined") {
+          min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
+          if ((scaleType.startsWith("log") && min == 0) || isNaN(min)) {
+            min = tmpMin;
           }
         }
-        max = max.join("");
-        if (exp) {
-          max += `e${exp}`;
-        }
+        max =
+          1 *
+          fmt(
+            lastTick + gap * Math.max(Math.ceil((tmpMax - lastTick) / gap), 1)
+          );
       }
-    } else if (typesMap[field].type == "date") {
-      min = stats.min;
-      max = stats.max;
-    } else {
-      let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
-      let tmpMin = typeof min == "undefined" ? stats.min : min;
-      let tmpMax = typeof max == "undefined" ? stats.max : max;
-      // if (scaleType.startsWith("log") && tmpMin == 0) {
-      //   tmpMin = 1;
-      // }
-      let scale = scales[scaleType]().domain([tmpMin, tmpMax]);
-      let ticks = scale.ticks(tickCount);
-      let gap = ticks[1] - ticks[0];
-      let lastTick = ticks[ticks.length - 1];
-      if (typeof min == "undefined") {
-        min = 1 * fmt(ticks[0] - gap * Math.ceil((ticks[0] - tmpMin) / gap));
-        if ((scaleType.startsWith("log") && min == 0) || isNaN(min)) {
-          min = tmpMin;
-        }
-      }
-      max =
-        1 *
-        fmt(lastTick + gap * Math.max(Math.ceil((tmpMax - lastTick) / gap), 1));
     }
+    domain = [min, max];
   }
-  let domain = [min, max];
   let terms = aggs.terms;
   let cats;
   let by;
