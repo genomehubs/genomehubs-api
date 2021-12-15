@@ -58,8 +58,14 @@ export const histogramAgg = async ({
   if (typesMap[field].type == "date") {
     histKey = "date_histogram";
     [min, max] = timeLimits(bounds.stats.min, bounds.stats.max);
-    min = bounds.domain[0] || min;
-    max = bounds.domain[1] || max;
+    min = bounds.domain[0];
+    max = bounds.domain[1];
+    if (typeof min === "string") {
+      min = new Date(min).getTime();
+    }
+    if (typeof max === "string") {
+      max = new Date(max).getTime();
+    }
     max = Math.max(max, min + day);
     calendar_interval = duration(max - min);
   } else {
