@@ -39,8 +39,10 @@ const getHistogram = async ({
   yBounds,
   ySummaries,
   raw,
+  taxonomy,
 }) => {
-  let typesMap = await attrTypes({ result });
+  console.log("getHistogram");
+  let typesMap = await attrTypes({ result, taxonomy });
   params.size = raw;
   // find max and min plus most frequent categories
   let field = fields[0];
@@ -59,6 +61,7 @@ const getHistogram = async ({
     field,
     summary,
     result,
+    taxonomy,
     histogram: true,
     bounds,
     yField,
@@ -67,6 +70,7 @@ const getHistogram = async ({
   });
   let res = await getResults({
     ...params,
+    taxonomy,
     fields,
     exclusions,
     ...(raw && cat && !typesMap[cat] && { ranks: cat }),
@@ -305,6 +309,7 @@ export const histogram = async ({
   rank,
   includeEstimates,
   queryString,
+  taxonomy,
   xOpts,
   yOpts,
   scatterThreshold,
@@ -319,9 +324,14 @@ export const histogram = async ({
       },
     };
   }
-  let typesMap = await attrTypes({ result });
+  console.log("histogram");
+  let typesMap = await attrTypes({ result, taxonomy });
 
-  let searchFields = await parseFields({ result, fields: apiParams.fields });
+  let searchFields = await parseFields({
+    result,
+    fields: apiParams.fields,
+    taxonomy,
+  });
   let { params, fields, summaries } = queryParams({ term: x, result, rank });
   let exclude = [];
   if (cat && typesMap[cat]) {
@@ -420,6 +430,7 @@ export const histogram = async ({
     cat,
     result,
     exclusions,
+    taxonomy,
     apiParams,
     opts: xOpts,
   });
@@ -450,6 +461,7 @@ export const histogram = async ({
       cat,
       result,
       exclusions,
+      taxonomy,
       apiParams,
       opts: yOpts,
     });
@@ -468,6 +480,7 @@ export const histogram = async ({
       yFields,
       yBounds,
       ySummaries,
+      taxonomy,
       raw: bounds.stats.count < threshold ? threshold : 0,
     });
     if (histograms.byCat && histograms.byCat.other) {

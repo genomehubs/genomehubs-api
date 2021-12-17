@@ -1,18 +1,11 @@
 import { getResults, parseFields, setExclusions } from "../routes/search";
-import { scaleLinear, scaleLog, scaleSqrt } from "d3-scale";
 
 import { aInB } from "../functions/aInB";
 import { attrTypes } from "../functions/attrTypes";
-import { checkResponse } from "../functions/checkResponse";
-import { client } from "../functions/connection";
 import { combineQueries } from "../functions/combineQueries";
 import { config } from "../functions/config";
-import { format } from "d3-format";
-import { formatJson } from "../functions/formatJson";
 import { getBounds } from "./getBounds";
-import { indexName } from "../functions/indexName";
 import { queryParams } from "./queryParams";
-import { setAggs } from "./setAggs";
 import { setProgress } from "../functions/progress";
 
 const valueTypes = {
@@ -29,6 +22,7 @@ const getLCA = async ({
   fields,
   summaries,
   result,
+  taxonomy,
   exclusions,
   apiParams,
 }) => {
@@ -75,6 +69,7 @@ const getLCA = async ({
   }
   let res = await getResults({
     ...params,
+    taxonomy,
     fields: [],
     query,
     exclusions,
@@ -93,6 +88,7 @@ const getLCA = async ({
       }
       res = await getResults({
         ...params,
+        taxonomy,
         fields: [],
         query: filtered.join(" AND "),
         exclusions,
@@ -173,6 +169,7 @@ const addXResultsToTree = async ({
   yRes,
   ancStatus,
   queryId,
+  taxonomy,
   catRank,
 }) => {
   let isParentNode = {};
@@ -310,7 +307,7 @@ const addXResultsToTree = async ({
       let mapped = []; // xQuery.query.split(/\s+AND\s+/i);
       mapped = mapped.filter((term) => !term.startsWith("tax_"));
       mapped.unshift(`tax_eq(taxon_id:${chunk.join(",taxon_id:")})`);
-      let newQuery = { ...xQuery, query: mapped.join(" AND ") };
+      let newQuery = { ...xQuery, taxonomy, query: mapped.join(" AND ") };
       // TODO: review newQuery options
       let newRes = await getResults(newQuery);
       await addXResultsToTree({
@@ -322,6 +319,7 @@ const addXResultsToTree = async ({
         update: true,
         ancStatus,
         queryId,
+        taxonomy,
         catRank,
       });
       x = Math.min(missingIds.size, x + chunkSize);
@@ -343,15 +341,17 @@ const getTree = async ({
   treeThreshold = config.treeThreshold,
   queryId,
   catRank,
+  taxonomy,
   req,
 }) => {
   cat = undefined;
-  let typesMap = await attrTypes({ result });
+  console.log("getTree");
+  let typesMap = await attrTypes({ result, taxonomy });
   let field = yFields[0] || fields[0];
   let exclusions;
   params.excludeUnclassified = true;
   exclusions = setExclusions(params);
-  let lca = await getLCA({ params: { ...params }, exclusions });
+  let lca = await getLCA({ params: { ...params }, taxonomy, exclusions });
   if (treeThreshold > -1 && lca.count > treeThreshold) {
     return {
       status: {
@@ -430,7 +430,7 @@ const getTree = async ({
   if (queryId) {
     setProgress(queryId, { total: lca.count });
   }
-  let xRes = await getResults({ ...xQuery, req, update: "x" });
+  let xRes = await getResults({ ...xQuery, taxonomy, req, update: "x" });
 
   let yRes;
   if (y) {
@@ -443,6 +443,7 @@ const getTree = async ({
     exclusions = setExclusions(yParams);
     yRes = await getResults({
       ...yParams,
+      taxonomy,
       query: yMapped.join(" AND "),
       size: treeThreshold, // lca.count,
       maxDepth,
@@ -461,15 +462,22 @@ const getTree = async ({
     xQuery,
     yRes,
     queryId,
+    taxonomy,
     catRank,
   });
 
   return { lca, treeNodes };
 };
 
-export const tree = async ({ x, y, cat, result, apiParams, req }) => {
-  let typesMap = await attrTypes({ result });
-  let searchFields = await parseFields({ result, fields: apiParams.fields });
+export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
+  console.log("tree");
+  console.log({ x, y, cat, result, taxonomy });
+  let typesMap = await attrTypes({ result, taxonomy });
+  let searchFields = await parseFields({
+    result,
+    fields: apiParams.fields,
+    taxonomy,
+  });
   let {
     params,
     fields: xFields,
@@ -561,6 +569,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
     cat,
     result,
     exclusions,
+    taxonomy,
     apiParams,
     // opts: xOpts,
   });
@@ -582,6 +591,7 @@ export const tree = async ({ x, y, cat, result, apiParams, req }) => {
         treeThreshold,
         queryId: apiParams.queryId,
         req,
+        taxonomy,
       });
 
   if (tree && tree.status && tree.status.success == false) {

@@ -225,8 +225,10 @@ export const setAggs = async ({
   yField,
   ySummary,
   yBounds,
+  taxonomy,
 }) => {
-  let typesMap = await attrTypes({ result });
+  console.log("setAggs");
+  let typesMap = await attrTypes({ result, taxonomy });
   if (!typesMap[field]) {
     if (terms) {
       if (typesMap[terms]) {
@@ -283,6 +285,7 @@ export const setAggs = async ({
       summary: ySummary,
       result,
       bounds: yBounds,
+      taxonomy,
     });
     yHistograms = nestedHistograms({
       field: yField,
@@ -296,6 +299,7 @@ export const setAggs = async ({
       result,
       bounds,
       yHistograms,
+      taxonomy,
     });
   }
   if (bounds && bounds.cats) {

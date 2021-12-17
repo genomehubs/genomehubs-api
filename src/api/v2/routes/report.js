@@ -416,9 +416,11 @@ export const getRawSources = async (params) => {
 };
 
 export const getSources = async (params) => {
+  console.log("getSources");
   const types = await attrTypes({
     result: params.result,
     indexType: "attributes",
+    taxonomy: params.taxonomy,
   });
   const binned = await getRawSources(params);
   let counts = {};
@@ -489,7 +491,7 @@ export const getNewickString = ({ treeNodes, rootNode }) => {
 export const getPhyloXml = ({
   treeNodes,
   rootNode,
-  taxonomy = "ncbi",
+  taxonomy,
   compact = true,
   meta,
   fields,
@@ -609,9 +611,11 @@ ${tree}
 };
 
 export const getTypes = async (params) => {
+  console.log("getTypes");
   const types = await attrTypes({
     result: params.result,
     indexType: "attributes",
+    taxonomy: params.taxonomy,
   });
   let byGroup = {};
   Object.keys(types).forEach((key) => {
@@ -703,6 +707,7 @@ module.exports = {
       report.name = req.query.report;
       let typesMap;
       if (report.name == "tree") {
+        console.log("getReport");
         typesMap = await attrTypes({ ...req.query });
       }
 

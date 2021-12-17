@@ -6,10 +6,11 @@ import { indexName } from "./indexName";
 const fetchTypes = async ({ result, taxonomy, hub, release, indexType }) => {
   let index = indexName({
     result: indexType,
-    taxonomy: false,
+    taxonomy,
     hub,
     release,
   });
+  console.log({ result, taxonomy, hub, release, indexType });
   let query = {
     match: {
       group: {

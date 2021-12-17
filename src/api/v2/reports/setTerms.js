@@ -1,6 +1,6 @@
 import { getCatLabels } from "./getCatLabels";
 
-export const setTerms = async ({ cat, typesMap, apiParams }) => {
+export const setTerms = async ({ cat, typesMap, taxonomy, apiParams }) => {
   let size = 5;
   let other;
   if (!cat) {
@@ -48,6 +48,7 @@ export const setTerms = async ({ cat, typesMap, apiParams }) => {
     let cats = await getCatLabels({
       cat: field,
       cats: terms,
+      taxonomy,
       apiParams,
       key: "taxon_id",
     });

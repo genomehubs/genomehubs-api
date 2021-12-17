@@ -16,15 +16,17 @@ export const getBounds = async ({
   result,
   exclusions,
   tickCount = 10,
+  taxonomy,
   apiParams,
   opts,
 }) => {
-  let typesMap = await attrTypes({ result });
+  console.log("getBounds");
+  let typesMap = await attrTypes({ result, taxonomy });
   params.size = 0;
   // find max and min plus most frequent categories
   let field = fields[0];
   let summary = summaries[0];
-  let definedTerms = await setTerms({ cat, typesMap, apiParams });
+  let definedTerms = await setTerms({ cat, typesMap, taxonomy, apiParams });
   cat = definedTerms.cat;
   let extraTerms;
   if (definedTerms.terms) {
@@ -47,12 +49,14 @@ export const getBounds = async ({
     field,
     summary,
     result,
+    taxonomy,
     stats: true,
     terms: extraTerms,
     size: definedTerms.size,
   });
   let res = await getResults({
     ...params,
+    taxonomy,
     fields,
     exclusions,
   });
@@ -154,7 +158,7 @@ export const getBounds = async ({
   if (terms) {
     if (terms.by_lineage) {
       cats = terms.by_lineage.at_rank.taxa.buckets;
-      cats = await getCatLabels({ cat, result, cats, apiParams });
+      cats = await getCatLabels({ cat, result, cats, taxonomy, apiParams });
       by = "lineage";
     } else {
       cats = terms.by_attribute.by_cat.cats.buckets;

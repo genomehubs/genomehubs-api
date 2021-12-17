@@ -8,6 +8,7 @@ export const histogramAgg = async ({
   rawValues,
   bounds,
   yHistograms,
+  taxonomy,
 }) => {
   const scales = {
     log2: "Math.max(Math.log(_value)/Math.log(2), 0)",
@@ -46,8 +47,9 @@ export const histogramAgg = async ({
     let ticks = scaleTime().domain([startTime, endTime]).nice().ticks();
     return [ticks[0], ticks[ticks.length - 1]];
   };
+  console.log("histogramAgg");
 
-  let typesMap = await attrTypes({ result });
+  let typesMap = await attrTypes({ result, taxonomy });
   if (!typesMap[field]) {
     return;
   }

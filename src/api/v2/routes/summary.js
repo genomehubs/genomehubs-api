@@ -6,6 +6,7 @@ import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
 
 const getSummary = async (params) => {
+  console.log("getSummary");
   let typesMap = await attrTypes({ ...params });
   let index = indexName({ ...params });
   let ids = Array.isArray(params.recordId)
@@ -26,6 +27,7 @@ const getSummary = async (params) => {
     result: params.result,
     field: fields[0],
     summary: params.summary[0],
+    taxonomy: params.taxonomy,
   });
   const { body } = await client
     .search({

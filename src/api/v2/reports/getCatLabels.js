@@ -6,9 +6,11 @@ export const getCatLabels = async ({
   cat,
   cats,
   apiParams,
+  taxonomy,
   key = "scientific_name",
 }) => {
-  let index = indexName(apiParams);
+  console.log("getCatLabels");
+  let index = indexName({ ...apiParams, taxonomy });
   let qBody = [];
   let labels = [];
   cats.forEach((obj) => {

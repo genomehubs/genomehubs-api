@@ -10,7 +10,8 @@ export const indexName = ({ result, taxonomy, hub, release }) => {
    * @param {string} indexInfo.release - Hub release version.
    */
   let parts = [result];
-  if (taxonomy === undefined) {
+  if (taxonomy === undefined || taxonomy == "undefined") {
+    console.log({ taxonomy });
     taxonomy = config.taxonomy;
   }
   if (taxonomy) parts.push(taxonomy);
@@ -19,5 +20,6 @@ export const indexName = ({ result, taxonomy, hub, release }) => {
   if (!release || release == "latest") release = config.release;
   parts.push(release);
   let sep = config.separator;
+  console.log(`!${parts.join(sep)}`);
   return `${parts.join(sep)}`;
 };

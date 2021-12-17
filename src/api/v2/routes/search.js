@@ -18,15 +18,23 @@ const operations = (str) => {
   let operator = translate[str];
   return operator || [];
 };
-export const parseFields = async ({ result, fields }) => {
-  let typesMap = await attrTypes({ result });
+export const parseFields = async ({ result, fields, taxonomy }) => {
+  console.log("parseFields");
+  console.log(0);
+  let typesMap = await attrTypes({ result, taxonomy });
+  console.log(1);
+  console.log({ result, taxonomy });
+  console.log({ typesMap });
+  console.log({ result, fields, taxonomy });
   try {
+    if (!typesMap) {
+      return [];
+    }
     if (!fields || fields == "undefined") {
       fields = Object.keys(typesMap)
         .map((key) => key.toLowerCase())
         .filter((key) => typesMap[key] && typesMap[key].display_level == 1);
     } else if (!fields || fields == "all") {
-      let typesMap = await attrTypes({ result });
       fields = Object.keys(typesMap);
     } else if (fields == "none") {
       fields = [];
@@ -130,6 +138,7 @@ const summaries = ["value", "max", "min", "range"];
 const generateQuery = async ({
   query,
   result,
+  taxonomy,
   fields,
   optionalFields,
   names,
@@ -148,10 +157,11 @@ const generateQuery = async ({
   req,
   update,
 }) => {
-  let typesMap = await attrTypes({ ...query });
-  fields = await parseFields({ result, fields });
+  console.log("generateQuery");
+  let typesMap = await attrTypes({ ...query, taxonomy });
+  fields = await parseFields({ result, fields, taxonomy });
   optionalFields = optionalFields
-    ? await parseFields({ result, fields: optionalFields })
+    ? await parseFields({ result, fields: optionalFields, taxonomy })
     : [];
   if (ranks) {
     let rankNames = ranks.split(/\s*,\s*/);
@@ -264,6 +274,7 @@ const generateQuery = async ({
     aggs,
     req,
     update,
+    taxonomy,
   };
   if (taxTerm) {
     if (taxTerm[1] == "eq") {
@@ -315,6 +326,8 @@ const generateQuery = async ({
 };
 
 export const getResults = async (params) => {
+  console.log("getResults");
+  console.log(params.taxonomy);
   let query = await generateQuery({ ...params });
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });
