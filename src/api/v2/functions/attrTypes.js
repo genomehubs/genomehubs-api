@@ -10,7 +10,6 @@ const fetchTypes = async ({ result, taxonomy, hub, release, indexType }) => {
     hub,
     release,
   });
-  console.log({ result, taxonomy, hub, release, indexType });
   let query = {
     match: {
       group: {

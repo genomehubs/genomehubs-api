@@ -19,13 +19,7 @@ const operations = (str) => {
   return operator || [];
 };
 export const parseFields = async ({ result, fields, taxonomy }) => {
-  console.log("parseFields");
-  console.log(0);
   let typesMap = await attrTypes({ result, taxonomy });
-  console.log(1);
-  console.log({ result, taxonomy });
-  console.log({ typesMap });
-  console.log({ result, fields, taxonomy });
   try {
     if (!typesMap) {
       return [];
@@ -157,7 +151,6 @@ const generateQuery = async ({
   req,
   update,
 }) => {
-  console.log("generateQuery");
   let typesMap = await attrTypes({ ...query, taxonomy });
   fields = await parseFields({ result, fields, taxonomy });
   optionalFields = optionalFields
@@ -326,8 +319,6 @@ const generateQuery = async ({
 };
 
 export const getResults = async (params) => {
-  console.log("getResults");
-  console.log(params.taxonomy);
   let query = await generateQuery({ ...params });
   let index = indexName({ ...params });
   return query.func({ index, ...query.params });

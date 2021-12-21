@@ -41,7 +41,6 @@ const getHistogram = async ({
   raw,
   taxonomy,
 }) => {
-  console.log("getHistogram");
   let typesMap = await attrTypes({ result, taxonomy });
   params.size = raw;
   // find max and min plus most frequent categories
@@ -324,7 +323,6 @@ export const histogram = async ({
       },
     };
   }
-  console.log("histogram");
   let typesMap = await attrTypes({ result, taxonomy });
 
   let searchFields = await parseFields({

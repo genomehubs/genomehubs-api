@@ -2,7 +2,6 @@ import { attrTypes } from "../functions/attrTypes";
 import { histogramAgg } from "./histogramAgg";
 
 const termsAgg = async (field, result, taxonomy) => {
-  console.log("termsAgg");
   let typesMap = await attrTypes({ result, taxonomy });
   if (!typesMap[field]) {
     return;

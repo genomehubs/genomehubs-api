@@ -15,10 +15,8 @@ export const setIncludes = ({
       include.push("assembly_id");
     }
   }
-  // console.log(non_attr_fields);
   if (non_attr_fields && non_attr_fields.length > 0) {
     include = include.concat(non_attr_fields);
-    // include = ["lineage"];
   }
 
   if (includeRawValues) {

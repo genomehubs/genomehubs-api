@@ -47,7 +47,6 @@ export const histogramAgg = async ({
     let ticks = scaleTime().domain([startTime, endTime]).nice().ticks();
     return [ticks[0], ticks[ticks.length - 1]];
   };
-  console.log("histogramAgg");
 
   let typesMap = await attrTypes({ result, taxonomy });
   if (!typesMap[field]) {

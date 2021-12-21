@@ -9,7 +9,6 @@ export const getCatLabels = async ({
   taxonomy,
   key = "scientific_name",
 }) => {
-  console.log("getCatLabels");
   let index = indexName({ ...apiParams, taxonomy });
   let qBody = [];
   let labels = [];

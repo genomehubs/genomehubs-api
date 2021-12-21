@@ -345,7 +345,6 @@ const getTree = async ({
   req,
 }) => {
   cat = undefined;
-  console.log("getTree");
   let typesMap = await attrTypes({ result, taxonomy });
   let field = yFields[0] || fields[0];
   let exclusions;
@@ -470,8 +469,6 @@ const getTree = async ({
 };
 
 export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
-  console.log("tree");
-  console.log({ x, y, cat, result, taxonomy });
   let typesMap = await attrTypes({ result, taxonomy });
   let searchFields = await parseFields({
     result,

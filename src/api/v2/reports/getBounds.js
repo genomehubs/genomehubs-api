@@ -20,7 +20,6 @@ export const getBounds = async ({
   apiParams,
   opts,
 }) => {
-  console.log("getBounds");
   let typesMap = await attrTypes({ result, taxonomy });
   params.size = 0;
   // find max and min plus most frequent categories

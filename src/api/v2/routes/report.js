@@ -416,7 +416,6 @@ export const getRawSources = async (params) => {
 };
 
 export const getSources = async (params) => {
-  console.log("getSources");
   const types = await attrTypes({
     result: params.result,
     indexType: "attributes",
@@ -611,7 +610,6 @@ ${tree}
 };
 
 export const getTypes = async (params) => {
-  console.log("getTypes");
   const types = await attrTypes({
     result: params.result,
     indexType: "attributes",
@@ -684,7 +682,6 @@ module.exports = {
         } catch (message) {
           const timestamp = new Date();
           const error = `unexpected error at ${timestamp.toLocaleString()}`;
-          console.log({ timestamp, url: req.url, error, message });
           let status = {
             success: false,
             error,
@@ -707,7 +704,6 @@ module.exports = {
       report.name = req.query.report;
       let typesMap;
       if (report.name == "tree") {
-        console.log("getReport");
         typesMap = await attrTypes({ ...req.query });
       }
 

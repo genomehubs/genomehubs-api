@@ -6,7 +6,6 @@ import { formatJson } from "../functions/formatJson";
 import { indexName } from "../functions/indexName";
 
 const getSummary = async (params) => {
-  console.log("getSummary");
   let typesMap = await attrTypes({ ...params });
   let index = indexName({ ...params });
   let ids = Array.isArray(params.recordId)

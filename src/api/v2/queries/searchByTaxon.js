@@ -39,7 +39,6 @@ export const searchByTaxon = async ({
   taxonomy,
   aggs = {},
 }) => {
-  console.log("searchByTaxon");
   let typesMap = await attrTypes({ result, taxonomy });
   let namesMap = await attrTypes({
     result,
