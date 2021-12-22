@@ -454,6 +454,14 @@ const getTree = async ({
     catRank,
   });
 
+  if (
+    lca.taxon_id &&
+    !treeNodes[lca.taxon_id] &&
+    treeNodes[lca.taxon_id.toUpperCase()]
+  ) {
+    lca.taxon_id = lca.taxon_id.toUpperCase();
+  }
+
   return { lca, treeNodes };
 };
 
