@@ -180,7 +180,6 @@ const addXResultsToTree = async ({
 
   for (let result of xRes.results) {
     let treeFields;
-    // let treeRanks;
     let source;
     if (result.result.fields) {
       treeFields = {};
@@ -202,39 +201,24 @@ const addXResultsToTree = async ({
         }
       }
     }
-    // if (result.result.ranks) {
-    //   treeRanks = {};
-    //   for (let r of ranks) {
-    //     if (result.result.ranks[r]) {
-    //       treeRanks[r] = result.result.ranks[r];
-    //     }
-    //   }
-    // }
+    let taxonId = result.result.taxon_id.toLowerCase();
     if (update) {
       if (treeFields) {
-        treeNodes[result.result.taxon_id].fields = treeFields;
-        treeNodes[result.result.taxon_id].status = ancStatus.has(
-          result.result.taxon_id
-        )
-          ? 1
-          : 0;
+        treeNodes[taxonId].fields = treeFields;
+        treeNodes[taxonId].status = ancStatus.has(taxonId) ? 1 : 0;
       }
-      // if (treeRanks) {
-      //   treeNodes[result.result.taxon_id].ranks = treeRanks;
-      // }
       continue;
     } else {
-      treeNodes[result.result.taxon_id] = {
+      treeNodes[taxonId] = {
         count: 0,
         children: {},
-        taxon_id: result.result.taxon_id,
+        taxon_id: taxonId,
         scientific_name: result.result.scientific_name,
         taxon_rank: result.result.taxon_rank,
         ...(treeFields && { fields: treeFields }),
-        // ...(treeRanks && { ranks: treeRanks }),
       };
       isParentNode[result.result.parent] = true;
-      lineages[result.result.taxon_id] = result.result.lineage;
+      lineages[taxonId] = result.result.lineage;
     }
   }
   if (update) {
@@ -244,11 +228,12 @@ const addXResultsToTree = async ({
   if (yRes) {
     let yCount = 0;
     for (let result of yRes.results) {
-      if (!treeNodes[result.result.taxon_id]) {
+      let taxonId = result.result.taxon_id.toLowerCase();
+      if (!treeNodes[taxonId]) {
         continue;
       }
       yCount++;
-      treeNodes[result.result.taxon_id].status = 1;
+      treeNodes[taxonId].status = 1;
     }
     lca.yCount = yCount;
   }
@@ -256,42 +241,44 @@ const addXResultsToTree = async ({
   let missingIds = new Set();
 
   for (let result of xRes.results) {
-    let child = result.result.taxon_id;
-    let status = treeNodes[result.result.taxon_id].status;
+    let taxonId = result.result.taxon_id.toLowerCase();
+    let child = taxonId;
+    let status = treeNodes[taxonId].status;
     let descIds = [child];
-    if (!isParentNode[result.result.taxon_id]) {
+    if (!isParentNode[taxonId]) {
       treeNodes[child].count = 1;
-      if (lineages[result.result.taxon_id]) {
-        for (let ancestor of lineages[result.result.taxon_id]) {
-          if (ancestor.taxon_id == child) {
+      if (lineages[taxonId]) {
+        for (let ancestor of lineages[taxonId]) {
+          let ancestorId = ancestor.taxon_id.toLowerCase();
+          if (ancestorId == child) {
             continue;
           }
-          if (ancestor.taxon_id == lca.parent) {
+          if (ancestorId == lca.parent) {
             break;
           }
-          descIds.push(ancestor.taxon_id);
+          descIds.push(ancestorId);
           if (status) {
-            ancStatus.add(ancestor.taxon_id);
+            ancStatus.add(ancestorId);
           }
-          if (!treeNodes[ancestor.taxon_id]) {
-            missingIds.add(ancestor.taxon_id);
-            treeNodes[ancestor.taxon_id] = {
+          if (!treeNodes[ancestorId]) {
+            missingIds.add(ancestorId);
+            treeNodes[ancestorId] = {
               count: 0,
               children: {},
               scientific_name: ancestor.scientific_name,
               taxon_rank: ancestor.taxon_rank,
-              taxon_id: ancestor.taxon_id,
+              taxon_id: ancestorId,
             };
           }
           if (catRank && ancestor.taxon_rank == catRank) {
             for (let descId of descIds) {
-              treeNodes[descId].cat = ancestor.taxon_id;
+              treeNodes[descId].cat = ancestorId;
             }
           }
-          treeNodes[ancestor.taxon_id].count += 1;
-          treeNodes[ancestor.taxon_id].children[child] = true;
-          child = ancestor.taxon_id;
-          if (ancestor.taxon_id == lca.taxon_id) {
+          treeNodes[ancestorId].count += 1;
+          treeNodes[ancestorId].children[child] = true;
+          child = ancestorId;
+          if (ancestorId == lca.taxon_id) {
             continue;
           }
         }
