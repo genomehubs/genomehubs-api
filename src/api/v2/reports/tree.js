@@ -64,7 +64,7 @@ const getLCA = async ({
     let match = query.match(/tax_tree\((.+?)\)/);
     if (match) {
       maxDepth = 100;
-      taxon = match[1].toLowerCase();
+      taxon = match[1];
     }
   }
   let res = await getResults({
@@ -120,8 +120,7 @@ const getLCA = async ({
       }
       if (
         taxon &&
-        (ancestor.taxon_id.toLowerCase() == taxon ||
-          ancestor.scientific_name.toLowerCase() == taxon)
+        (ancestor.taxon_id == taxon || ancestor.scientific_name == taxon)
       ) {
         minDepth += depthChange;
         maxDepth += depthChange;
@@ -201,7 +200,7 @@ const addXResultsToTree = async ({
         }
       }
     }
-    let taxonId = result.result.taxon_id.toLowerCase();
+    let taxonId = result.result.taxon_id;
     if (update) {
       if (treeFields) {
         treeNodes[taxonId].fields = treeFields;
@@ -228,7 +227,7 @@ const addXResultsToTree = async ({
   if (yRes) {
     let yCount = 0;
     for (let result of yRes.results) {
-      let taxonId = result.result.taxon_id.toLowerCase();
+      let taxonId = result.result.taxon_id;
       if (!treeNodes[taxonId]) {
         continue;
       }
@@ -241,7 +240,7 @@ const addXResultsToTree = async ({
   let missingIds = new Set();
 
   for (let result of xRes.results) {
-    let taxonId = result.result.taxon_id.toLowerCase();
+    let taxonId = result.result.taxon_id;
     let child = taxonId;
     let status = treeNodes[taxonId].status;
     let descIds = [child];
@@ -249,7 +248,7 @@ const addXResultsToTree = async ({
       treeNodes[child].count = 1;
       if (lineages[taxonId]) {
         for (let ancestor of lineages[taxonId]) {
-          let ancestorId = ancestor.taxon_id.toLowerCase();
+          let ancestorId = ancestor.taxon_id;
           if (ancestorId == child) {
             continue;
           }
