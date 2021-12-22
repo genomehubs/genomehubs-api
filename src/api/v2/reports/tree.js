@@ -1,3 +1,4 @@
+import { getProgress, setProgress } from "../functions/progress";
 import { getResults, parseFields, setExclusions } from "../routes/search";
 
 import { aInB } from "../functions/aInB";
@@ -6,7 +7,6 @@ import { combineQueries } from "../functions/combineQueries";
 import { config } from "../functions/config";
 import { getBounds } from "./getBounds";
 import { queryParams } from "./queryParams";
-import { setProgress } from "../functions/progress";
 
 const valueTypes = {
   long: "integer",
@@ -299,11 +299,21 @@ const addXResultsToTree = async ({
     }
   }
   if (missingIds.size > 0) {
-    let x = 0;
+    let progress = getProgress(queryId);
+    console.log(progress);
+    console.log(missingIds.size);
+    let x = progress.x;
     if (queryId) {
-      setProgress(queryId, { x: 0, total: missingIds.size });
+      console.log("x");
+      console.log(progress);
+      setProgress(queryId, { total: progress.total + missingIds.size });
+      progress = getProgress(queryId);
+      console.log(progress);
+      console.log("y");
     }
     for (let chunk of chunkArray([...missingIds], chunkSize)) {
+      progress = getProgress(queryId);
+      console.log(progress);
       let mapped = []; // xQuery.query.split(/\s+AND\s+/i);
       mapped = mapped.filter((term) => !term.startsWith("tax_"));
       mapped.unshift(`tax_eq(taxon_id:${chunk.join(",taxon_id:")})`);
@@ -322,7 +332,7 @@ const addXResultsToTree = async ({
         taxonomy,
         catRank,
       });
-      x = Math.min(missingIds.size, x + chunkSize);
+      x += chunkSize;
       setProgress(queryId, { x });
     }
   }
