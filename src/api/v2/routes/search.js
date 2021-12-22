@@ -83,7 +83,7 @@ const setSortBy = ({ sortBy, sortOrder, sortMode }) => {
   return sortBy;
 };
 
-const addCondition = (conditions, parts, type) => {
+const addCondition = (conditions, parts, type, summary) => {
   if (!conditions) {
     conditions = {};
   }
@@ -102,6 +102,9 @@ const addCondition = (conditions, parts, type) => {
     }
   }
   if (stat) {
+    if (type == "date") {
+      stat = stat == "min" ? "from" : stat == "max" ? "to" : stat;
+    }
     conditions[parts[0]]["stat"] = stat;
   }
   if (type == "keyword") {
@@ -216,7 +219,8 @@ const generateQuery = async ({
               filters = addCondition(
                 filters,
                 parts,
-                typesMap[result][field].type // TODO: catch missing type
+                typesMap[result][field].type, // TODO: catch missing type
+                summary
               );
             }
           } else {
