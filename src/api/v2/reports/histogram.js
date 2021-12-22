@@ -515,6 +515,7 @@ export const histogram = async ({
     report: {
       histograms,
       ...bounds,
+      bounds,
       xQuery: {
         ...xQuery,
         fields: fields.join(","),
