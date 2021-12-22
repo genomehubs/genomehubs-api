@@ -300,20 +300,13 @@ const addXResultsToTree = async ({
   }
   if (missingIds.size > 0) {
     let progress = getProgress(queryId);
-    console.log(progress);
-    console.log(missingIds.size);
     let x = progress.x;
     if (queryId) {
-      console.log("x");
-      console.log(progress);
       setProgress(queryId, { total: progress.total + missingIds.size });
       progress = getProgress(queryId);
-      console.log(progress);
-      console.log("y");
     }
     for (let chunk of chunkArray([...missingIds], chunkSize)) {
       progress = getProgress(queryId);
-      console.log(progress);
       let mapped = []; // xQuery.query.split(/\s+AND\s+/i);
       mapped = mapped.filter((term) => !term.startsWith("tax_"));
       mapped.unshift(`tax_eq(taxon_id:${chunk.join(",taxon_id:")})`);
