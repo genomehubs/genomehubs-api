@@ -150,6 +150,8 @@ export const getBounds = async ({
       }
     }
     domain = [min, max];
+  } else {
+    stats = { count: res.status.hits };
   }
   let terms = aggs.terms;
   let cats;
