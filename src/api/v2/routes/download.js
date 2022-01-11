@@ -53,6 +53,6 @@ module.exports = {
       }
       return response.fileStream.pipe(res);
     }
-    return res.status(404).send({ status: "error" });
+    return res.status(404).send();
   },
 };
