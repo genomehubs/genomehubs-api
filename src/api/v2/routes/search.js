@@ -184,7 +184,10 @@ const generateQuery = async ({
       .map((v) => v.trim())
       .filter((v) => v > "");
   } else if (query) {
-    query = query.trim().toLowerCase();
+    query = query.trim();
+    if (result != "file") {
+      query = query.toLowerCase();
+    }
     query.split(/\s+and\s+/).forEach((term) => {
       let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\((.+?)\)/);
       if (taxQuery) {
