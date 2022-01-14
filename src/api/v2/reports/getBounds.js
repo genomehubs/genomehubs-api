@@ -125,6 +125,9 @@ export const getBounds = async ({
       } else if (typesMap[field].type == "date") {
         min = stats.min;
         max = stats.max;
+        if (max > min + 31536000000) {
+          max = new Date(`${new Date(stats.max).getFullYear() + 1}`).getTime();
+        }
       } else {
         let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
         let tmpMin = typeof min == "undefined" ? stats.min : min;
