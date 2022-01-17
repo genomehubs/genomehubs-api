@@ -79,7 +79,7 @@ export const getBounds = async ({
         max = opts[1];
       }
       if (opts[2] && opts[2] > "") {
-        tickCount = opts[2];
+        tickCount = Math.abs(opts[2]);
       }
     }
     if (!min || !max) {
