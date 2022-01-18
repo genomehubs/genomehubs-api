@@ -1,7 +1,7 @@
 import { attrTypes } from "../functions/attrTypes";
 import { histogramAgg } from "./histogramAgg";
 
-const termsAgg = async (field, result, taxonomy) => {
+const termsAgg = async ({ field, result, taxonomy }) => {
   let typesMap = await attrTypes({ result, taxonomy });
   if (!typesMap[field]) {
     return;
@@ -31,7 +31,7 @@ export const aggregateRawValuesByTaxon = async ({
     });
   }
   if (summary == "terms") {
-    terms = await termsAgg();
+    terms = await termsAgg({ field, result, taxonomy });
   }
   return {
     size: 0,
