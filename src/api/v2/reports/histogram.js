@@ -331,13 +331,13 @@ export const histogram = async ({
     taxonomy,
   });
   let { params, fields, summaries } = queryParams({ term: x, result, rank });
-  let exclude = [];
+  // let exclude = [];
   if (cat && typesMap[cat]) {
     searchFields.push(cat);
     // exclude.push(cat);
   }
-  fields = [...new Set(fields.concat(searchFields))];
-  exclude.push(fields[0]);
+  // fields = [...new Set(fields.concat(searchFields))];
+  // exclude.push(fields[0]);
   let yTerm = combineQueries(x, y);
   let {
     params: yParams,
@@ -369,7 +369,7 @@ export const histogram = async ({
     };
   }
   if (yFields && yFields.length > 0) {
-    exclude.push(yFields[0]);
+    // exclude.push(yFields[0]);
     if (!aInB(yFields, Object.keys(typesMap))) {
       return {
         status: {
@@ -393,30 +393,30 @@ export const histogram = async ({
     };
   }
   let exclusions;
-  // if (apiParams.includeEstimates) {
-  //   delete params.excludeAncestral;
-  //   delete xQuery.excludeAncestral;
-  // } else {
-  //   params.excludeAncestral.push(...yFields);
-  //   if (typesMap[cat]) {
-  //     params.excludeAncestral.push(cat);
-  //   }
-  // }
-  // params.excludeAncestral = [...new Set(params.excludeAncestral)];
-  // params.excludeMissing.push(...yFields);
-  // if (typesMap[cat]) {
-  //   params.excludeMissing.push(cat);
-  // }
-  // params.excludeMissing = [...new Set(params.excludeMissing)];
+
+  // params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
+  //   ? apiParams.includeEstimates
+  //   : false;
+  // params.excludeDirect = apiParams.excludeDirect || [];
+  // params.excludeDescendant = apiParams.excludeDescendant || [];
+  // params.excludeAncestral = apiParams.excludeAncestral || [];
+  // params.excludeMissing = [
+  //   ...new Set((apiParams.excludeMissing || []).concat(exclude)),
+  // ];
+
   params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
     ? apiParams.includeEstimates
     : false;
+  yParams.includeEstimates = params.includeEstimates;
   params.excludeDirect = apiParams.excludeDirect || [];
   params.excludeDescendant = apiParams.excludeDescendant || [];
   params.excludeAncestral = apiParams.excludeAncestral || [];
-  params.excludeMissing = [
-    ...new Set((apiParams.excludeMissing || []).concat(exclude)),
-  ];
+  params.excludeMissing = apiParams.excludeMissing || [];
+
+  yParams.excludeDirect = apiParams.excludeDirect || [];
+  yParams.excludeDescendant = apiParams.excludeDescendant || [];
+  yParams.excludeAncestral = apiParams.excludeAncestral || [];
+  yParams.excludeMissing = apiParams.excludeMissing || [];
 
   fields = fields.concat(yFields);
   fields = [...new Set(fields)];

@@ -217,7 +217,15 @@ export const histPerRank = async ({
   };
 };
 
-export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
+export const xInY = async ({
+  x,
+  y,
+  result,
+  taxonomy,
+  rank,
+  queryString,
+  apiParams,
+}) => {
   if (!x) {
     return {
       status: {
@@ -235,28 +243,16 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
     };
   }
   let { params, fields } = queryParams({ term: y, result, taxonomy, rank });
-  let yCount = await getResultCount({ ...params });
-  let yQuery = { ...params };
-  if (fields.length > 0) {
-    yQuery.fields = fields.join(",");
-  }
-  params.query = combineQueries(params.query, x);
+  params.includeEstimates = apiParams.hasOwnProperty("includeEstimates")
+    ? apiParams.includeEstimates
+    : false;
   if (rank) {
-    params.includeEstimates = true;
-    params.excludeAncestral = yQuery.excludeAncestral
-      ? [...yQuery.excludeAncestral]
-      : [];
-    params.excludeMissing = yQuery.excludeMissing
-      ? [...yQuery.excludeMissing]
-      : [];
     x.split(/\s+(?:and|AND)\s+/).forEach((term) => {
       if (!term.match("tax_")) {
         let field = term.replace(/[^\w_\(\)].+$/, "");
         if (field.match(/\(/)) {
           field = field.split(/[\(\)]/)[1];
         }
-        params.excludeAncestral.push(field);
-        params.excludeMissing.push(field);
         fields.push(field);
       }
     });
@@ -264,8 +260,17 @@ export const xInY = async ({ x, y, result, taxonomy, rank, queryString }) => {
       fields = ["all"];
     }
   }
-  params.excludeMissing = [...new Set(params.excludeMissing)];
-  params.excludeAncestral = [...new Set(params.excludeAncestral)];
+  params.fields = fields;
+  let yCount = await getResultCount({ ...params });
+  let yQuery = { ...params };
+  if (fields.length > 0) {
+    yQuery.fields = fields.join(",");
+  }
+  params.query = combineQueries(params.query, x);
+  params.excludeDirect = apiParams.excludeDirect || [];
+  params.excludeDescendant = apiParams.excludeDescendant || [];
+  params.excludeAncestral = apiParams.excludeAncestral || [];
+  params.excludeMissing = apiParams.excludeMissing || [];
   let xCount = await getResultCount({ ...params });
   let xQuery = params;
   if (fields.length > 0) {
@@ -301,13 +306,23 @@ export const xInYPerRank = async ({
   taxonomy,
   rank,
   queryString,
+  req,
+  ...apiParams
 }) => {
   // Return xInY at a list of ranks
   let ranks = rank ? setRanks(rank) : [undefined];
   let perRank = [];
   let status;
   for (rank of ranks) {
-    let res = await xInY({ x, y, result, rank, taxonomy });
+    let res = await xInY({
+      x,
+      y,
+      result,
+      rank,
+      taxonomy,
+      queryString,
+      apiParams,
+    });
     if (!res || !res.status) {
       status = { success: false, error: "unable to load report" };
     } else if (res.status.success == false) {
