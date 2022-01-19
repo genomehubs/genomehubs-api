@@ -99,28 +99,44 @@ export const searchByTaxon = async ({
     }
     if (searchTerm && searchTerm.match(",")) {
       let taxFilter = [];
+      let notTaxFilter = [];
+      let boolOperator = "should";
       searchTerm.split(",").forEach((taxon) => {
-        taxFilter = taxFilter.concat(
-          filterTaxa({
-            depth,
-            searchTerm: taxon,
-            multiTerm,
-            ancestral,
-            idTerm,
-            gte: maxDepth ? undefined : true,
-          })
-        );
+        if ((taxon || "").startsWith("!")) {
+          taxon = taxon.replace("!", "");
+          boolOperator = "must_not";
+        }
+        let subFilter = filterTaxa({
+          depth,
+          searchTerm: taxon,
+          multiTerm,
+          ancestral,
+          idTerm,
+          gte: maxDepth ? undefined : true,
+        });
+        if (boolOperator == "should") {
+          taxFilter = taxFilter.concat(subFilter);
+        } else {
+          notTaxFilter = notTaxFilter.concat(subFilter);
+        }
       });
-      taxonFilter = [{ bool: { should: taxFilter } }];
+      taxonFilter = [{ bool: { should: taxFilter, must_not: notTaxFilter } }];
     } else {
+      let boolOperator = "should";
+      let taxon = searchTerm;
+      if ((taxon || "").startsWith("!")) {
+        taxon = taxon.replace("!", "");
+        boolOperator = "must_not";
+      }
       taxonFilter = filterTaxa({
         depth,
-        searchTerm,
+        searchTerm: taxon,
         multiTerm,
         ancestral,
         idTerm,
         gte: maxDepth ? undefined : true,
       });
+      taxonFilter = [{ bool: { [boolOperator]: taxonFilter } }];
     }
   } else {
     // TODO: allow comma separated taxa here

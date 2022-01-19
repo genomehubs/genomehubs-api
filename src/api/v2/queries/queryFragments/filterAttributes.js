@@ -43,19 +43,26 @@ export const filterAttributes = (
           {
             bool: {
               filter: filters[field].map((term) => {
-                if (term.match(",")) {
-                  return {
-                    bool: {
-                      should: term.split(",").map((option) => {
-                        return {
-                          match: { [`attributes.${stat}`]: option },
-                        };
-                      }),
-                    },
-                  };
+                let include = [];
+                let exclude = [];
+                for (let option of term.split(",")) {
+                  if (option.startsWith("!")) {
+                    option = option.replace("!", "");
+                    exclude.push({
+                      match: { [`attributes.${stat}`]: option },
+                    });
+                  } else {
+                    include.push({
+                      match: { [`attributes.${stat}`]: option },
+                    });
+                  }
                 }
+
                 return {
-                  match: { [`attributes.${stat}`]: term },
+                  bool: {
+                    should: include,
+                    must_not: exclude,
+                  },
                 };
               }),
             },
@@ -136,9 +143,18 @@ export const filterAttributes = (
             },
           };
         }
+        let boolOperator = "should";
+        if (flt.hasOwnProperty("ne")) {
+          boolOperator = "must_not";
+          delete flt.ne;
+        }
         return {
-          range: {
-            [`attributes.${stat}`]: flt,
+          bool: {
+            [boolOperator]: {
+              range: {
+                [`attributes.${stat}`]: flt,
+              },
+            },
           },
         };
       });

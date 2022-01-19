@@ -14,6 +14,7 @@ const operations = (str) => {
     "<": ["lt"],
     "<=": ["lte"],
     "=": ["gte", "lte"],
+    "!=": ["ne", "gte", "lte"],
   };
   let operator = translate[str];
   return operator || [];
@@ -108,18 +109,31 @@ const addCondition = (conditions, parts, type, summary) => {
     conditions[parts[0]]["stat"] = stat;
   }
   if (type == "keyword") {
-    if (!parts[1].match(/[><]/)) {
-      conditions[parts[0]].push(parts[2]);
-    } else {
+    if (parts[1].match(/[><]/)) {
       let values = {};
       operations(parts[1]).forEach((operator) => {
         values[operator] = parts[2];
       });
       conditions[parts[0]].push(values);
+    } else {
+      if (parts[1] == "!=") {
+        conditions[parts[0]].push(
+          parts[2]
+            .split(",")
+            .map((term) => `!${term}`)
+            .join(",")
+        );
+      } else {
+        conditions[parts[0]].push(parts[2]);
+      }
     }
   } else {
     if (parts[1] == "==") {
       parts[1] = "=";
+    }
+    if (parts[2].startsWith("!")) {
+      parts[2] = parts[2].replace("!", "");
+      parts[1] = `!${parts[1]}`;
     }
     operations(parts[1]).forEach((operator) => {
       conditions[parts[0]][operator] = parts[2];
@@ -213,6 +227,10 @@ const generateQuery = async ({
         }
         if (term.match(/[\>\<=]/)) {
           let parts = term.split(/\s*([\>\<=]+)\s*/);
+          if (parts[0].endsWith("!")) {
+            parts[0] = parts[0].replace("!", "");
+            parts[1] = `!${parts[1]}`;
+          }
           if (!field) field = parts[0];
           if (typesMap[result]) {
             if (!typesMap[result][field]) {
