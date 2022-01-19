@@ -118,13 +118,12 @@ const addCondition = (conditions, parts, type, summary) => {
       conditions[parts[0]].push(values);
     }
   } else {
-    if (parts[1] == "==" || parts[1] == "=") {
-      conditions[parts[0]] = parts[2];
-    } else {
-      operations(parts[1]).forEach((operator) => {
-        conditions[parts[0]][operator] = parts[2];
-      });
+    if (parts[1] == "==") {
+      parts[1] = "=";
     }
+    operations(parts[1]).forEach((operator) => {
+      conditions[parts[0]][operator] = parts[2];
+    });
   }
 
   return conditions;
