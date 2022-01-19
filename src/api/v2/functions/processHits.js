@@ -114,7 +114,7 @@ export const processHits = ({
               name = attribute[key];
             } else if (key.match(/_value$/)) {
               if (key == "is_primary_value") {
-                field.is_primary = true;
+                field.is_primary = Boolean(attribute.is_primary_value);
               } else {
                 field.value = attribute[key];
               }
@@ -124,7 +124,7 @@ export const processHits = ({
                 Object.keys(value).forEach((vkey) => {
                   if (vkey.match(/_value$/)) {
                     if (vkey == "is_primary_value") {
-                      retValue.is_primary = true;
+                      retValue.is_primary = Boolean(value.is_primary_value);
                     } else {
                       retValue.value = value[vkey];
                     }
