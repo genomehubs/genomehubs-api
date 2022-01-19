@@ -18,7 +18,7 @@ export const formatCsv = async (response, opts) => {
     });
   }
   let meta = ["aggregation_source", "aggregation_method"];
-  let raw = ["source"];
+  let raw = ["source", "source_index", "source_id", "is_primary"];
   let usedFields = {};
   let allFields = {};
   let data = [];
@@ -57,6 +57,7 @@ export const formatCsv = async (response, opts) => {
                 fullResult.result.fields[key]["rawValues"].forEach(
                   (rawValue) => {
                     let row = { ...datum };
+                    console.log(rawValue);
                     row.field = key;
                     row.value = rawValue.value;
                     raw.forEach((rawKey) => {
