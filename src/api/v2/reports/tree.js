@@ -323,7 +323,7 @@ const collapseNodes = ({ taxonId, treeNodes, ancNode, depth = 0 }) => {
   }
   let children = Object.keys(treeNodes[taxonId].children);
   if (ancNode) {
-    if (children.length == 1) {
+    if (children.length == 1 && treeNodes[taxonId].taxon_rank != "species") {
       delete ancNode.children[taxonId];
       delete treeNodes[taxonId];
     } else {
