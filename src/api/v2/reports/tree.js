@@ -317,6 +317,37 @@ const addXResultsToTree = async ({
   }
 };
 
+const collapseNodes = ({ taxonId, treeNodes, ancNode, depth = 0 }) => {
+  if (!treeNodes[taxonId]) {
+    return;
+  }
+  let children = Object.keys(treeNodes[taxonId].children);
+  if (ancNode) {
+    if (children.length == 1) {
+      delete ancNode.children[taxonId];
+      delete treeNodes[taxonId];
+    } else {
+      ancNode = treeNodes[taxonId];
+      depth += 1;
+    }
+  } else {
+    ancNode = treeNodes[taxonId];
+  }
+  let depths = [depth];
+  for (let childId of children) {
+    ancNode.children[childId] = true;
+    depths.push(
+      collapseNodes({
+        taxonId: childId,
+        treeNodes,
+        ancNode,
+        depth,
+      })
+    );
+  }
+  return Math.max(...depths);
+};
+
 const getTree = async ({
   params,
   x,
@@ -331,6 +362,7 @@ const getTree = async ({
   queryId,
   catRank,
   taxonomy,
+  collapseMonotypic,
   req,
 }) => {
   cat = undefined;
@@ -376,33 +408,6 @@ const getTree = async ({
       };
     }
   }
-  // mapped = mapped.map((term) => {
-  //   if (term.startsWith("tax_depth")) {
-  //     let parts = term.split(/[\(\)]/);
-  //     if (!params.includeEstimates) {
-  //       if (lca.minDepth > parts[1]) {
-  //         params.includeEstimates = "descendant";
-  //         lca.taxDepth = parts[1] * 1;
-  //       }
-  //     }
-  //     return `tax_depth(${Math.min(parts[1], maxDepth)})`;
-  //   } else {
-  //     return term;
-  //   }
-  // });
-  // yMapped = yMapped.map((term) => {
-  //   if (term.startsWith("tax_depth")) {
-  //     let parts = term.split(/[\(\)]/);
-  //     if (!params.includeEstimates) {
-  //       if (lca.minDepth > parts[1]) {
-  //         params.includeEstimates = "descendant";
-  //       }
-  //     }
-  //     return `tax_depth(${Math.min(parts[1], maxDepth)})`;
-  //   } else {
-  //   return term;
-  //   }
-  // });
 
   let xQuery = {
     ...params,
@@ -461,8 +466,11 @@ const getTree = async ({
   ) {
     lca.taxon_id = lca.taxon_id.toUpperCase();
   }
+  if (collapseMonotypic) {
+    maxDepth = collapseNodes({ taxonId: lca.taxon_id, treeNodes });
+  }
 
-  return { lca, treeNodes };
+  return { lca: { ...lca, maxDepth }, treeNodes };
 };
 
 export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
@@ -584,6 +592,7 @@ export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
         result,
         treeThreshold,
         queryId: apiParams.queryId,
+        collapseMonotypic: apiParams.collapseMonotypic,
         req,
         taxonomy,
       });

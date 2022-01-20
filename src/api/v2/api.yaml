@@ -8,6 +8,12 @@ components:
       required: false
       schema:
         type: string
+    collapseMonotypicParam:
+      description: "Collapse monotypic tree nodes [default: false]"
+      in: query
+      name: collapseMonotypic
+      schema:
+        type: boolean
     confidenceParam:
       description: "Threshold for candidate suggestions relative to input phrase [default: 1]"
       explode: false
@@ -704,6 +710,7 @@ paths:
         - $ref: "#/components/parameters/catParam"
         - $ref: "#/components/parameters/rankParam"
         - $ref: "#/components/parameters/includeEstimatesParam"
+        - $ref: "#/components/parameters/collapseMonotypicParam"
         - $ref: "#/components/parameters/ranksParam"
         - $ref: "#/components/parameters/namesParam"
         - $ref: "#/components/parameters/excludeAncestralParam"
