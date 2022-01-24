@@ -575,6 +575,21 @@ export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
     apiParams,
     // opts: xOpts,
   });
+  let yBounds;
+  if (y) {
+    yBounds = await getBounds({
+      params: { ...params },
+      fields: yFields.filter(
+        (field) => typesMap[field] && typesMap[field].type != "keyword"
+      ),
+      summaries,
+      cat,
+      result,
+      exclusions,
+      taxonomy,
+      apiParams,
+    });
+  }
   let tree = status
     ? {}
     : await getTree({
@@ -607,6 +622,7 @@ export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
       status,
       tree,
       bounds,
+      yBounds,
       xQuery: {
         ...xQuery,
         fields: optionalFields.join(","),
