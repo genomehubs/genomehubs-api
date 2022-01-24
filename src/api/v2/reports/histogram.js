@@ -155,6 +155,7 @@ const getHistogram = async ({
   let zDomain = [Number.POSITIVE_INFINITY, Number.NEGATIVE_INFINITY];
   let other = [];
   let allOther = [];
+
   hist.buckets.forEach((obj, i) => {
     buckets.push(obj.key);
     allValues.push(obj.doc_count);
@@ -192,14 +193,14 @@ const getHistogram = async ({
   if (typesMap[field].type == "date") {
     buckets = scaleBuckets(buckets, "date", bounds);
   } else {
-    buckets = scaleBuckets(buckets, typesMap[field].bins.scale, bounds);
+    buckets = scaleBuckets(buckets, bounds.scale, bounds);
   }
 
   if (yBuckets) {
     if (typesMap[yField].type == "date") {
       yBuckets = scaleBuckets(yBuckets, "date", yBounds);
     } else {
-      yBuckets = scaleBuckets(yBuckets, typesMap[yField].bins.scale, yBounds);
+      yBuckets = scaleBuckets(yBuckets, yBounds.scale, yBounds);
     }
   }
   let catHists = res.aggs.aggregations[field].categoryHistograms;
@@ -516,6 +517,7 @@ export const histogram = async ({
       histograms,
       ...bounds,
       bounds,
+      yBounds,
       xQuery: {
         ...xQuery,
         fields: fields.join(","),

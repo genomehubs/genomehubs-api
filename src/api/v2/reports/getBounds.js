@@ -5,6 +5,7 @@ import { getResults } from "../routes/search";
 import { incrementDate } from "./incrementDate";
 import { scales } from "./scales";
 import { setAggs } from "./setAggs";
+import { setScale } from "./setScale";
 import { setTerms } from "./setTerms";
 import { valueTypes } from "./valueTypes";
 
@@ -25,6 +26,7 @@ export const getBounds = async ({
   // find max and min plus most frequent categories
   let field = fields[0];
   let summary = summaries[0];
+  let scaleType = setScale({ field, typesMap, opts });
   let definedTerms = await setTerms({ cat, typesMap, taxonomy, apiParams });
   cat = definedTerms.cat;
   let extraTerms;
@@ -36,7 +38,6 @@ export const getBounds = async ({
     extraTerms = cat;
   }
   let term = field;
-
   if (cat && typesMap[cat]) {
     if (fields.length > 0) {
       fields.push(cat);
@@ -129,7 +130,6 @@ export const getBounds = async ({
           max = new Date(`${new Date(stats.max).getFullYear() + 1}`).getTime();
         }
       } else {
-        let scaleType = (typesMap[field].bins.scale || "linear").toLowerCase();
         let tmpMin = typeof min == "undefined" ? stats.min : min;
         let tmpMax = typeof max == "undefined" ? stats.max : max;
         // if (scaleType.startsWith("log") && tmpMin == 0) {
@@ -197,6 +197,7 @@ export const getBounds = async ({
   }
   return {
     field,
+    scale: scaleType,
     stats,
     domain,
     tickCount,

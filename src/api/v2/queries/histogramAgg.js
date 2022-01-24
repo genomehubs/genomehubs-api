@@ -13,11 +13,13 @@ export const histogramAgg = async ({
   const scales = {
     log2: "Math.max(Math.log(_value)/Math.log(2), 0)",
     log10: "Math.log10(_value)",
+    log: "Math.log(_value)",
     sqrt: "Math.sqrt(_value)",
   };
   const funcs = {
     log2: (value) => Math.log2(value),
     log10: (value) => Math.log10(value),
+    log: (value) => Math.log(value),
     sqrt: (value) => Math.sqrt(value),
     linear: (value) => value,
   };
@@ -74,7 +76,11 @@ export const histogramAgg = async ({
     ({ scale, min, max, count } = typesMap[field].bins);
     if (bounds) {
       if (!isNaN(bounds.domain[0])) {
+        scale = bounds.scale;
         min = funcs[scale](bounds.domain[0]);
+        if (min == -Infinity) {
+          min = 0;
+        }
       }
       if (!isNaN(bounds.domain[1])) {
         max = funcs[scale](1 * bounds.domain[1]);
