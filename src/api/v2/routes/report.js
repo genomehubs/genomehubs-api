@@ -34,6 +34,7 @@ export const getTree = async ({
   taxonomy,
   queryString,
   req,
+  yOpts,
   ...apiParams
 }) => {
   // Return tree of results
@@ -45,6 +46,7 @@ export const getTree = async ({
     result: apiParams.result,
     taxonomy,
     req,
+    yOpts,
     apiParams,
   });
   if (res.status.success == false) {

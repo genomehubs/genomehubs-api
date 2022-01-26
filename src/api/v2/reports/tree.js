@@ -473,7 +473,16 @@ const getTree = async ({
   return { lca: { ...lca, maxDepth }, treeNodes };
 };
 
-export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
+export const tree = async ({
+  x,
+  y,
+  cat,
+  result,
+  taxonomy,
+  yOpts,
+  apiParams,
+  req,
+}) => {
   let typesMap = await attrTypes({ result, taxonomy });
   let searchFields = await parseFields({
     result,
@@ -573,7 +582,7 @@ export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
     exclusions,
     taxonomy,
     apiParams,
-    // opts: xOpts,
+    //opts: xOpts,
   });
   let yBounds;
   if (y) {
@@ -588,6 +597,7 @@ export const tree = async ({ x, y, cat, result, taxonomy, apiParams, req }) => {
       exclusions,
       taxonomy,
       apiParams,
+      opts: yOpts,
     });
   }
   let tree = status
