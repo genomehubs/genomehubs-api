@@ -424,12 +424,12 @@ export const getRawSources = async (params) => {
     .catch((err) => {
       return err.meta;
     });
-  let sources = [];
+  let fields = [];
   let status = checkResponse({ body });
   if (status.hits) {
-    sources = body.aggregations.attributes.summary.terms;
+    fields = body.aggregations.attributes.fields;
   }
-  return { status, sources };
+  return { status, fields };
 };
 
 export const getSources = async (params) => {
@@ -440,9 +440,19 @@ export const getSources = async (params) => {
   });
   const binned = await getRawSources(params);
   let counts = {};
+  let fields = {};
   if (binned.status.success) {
-    binned.sources.buckets.forEach((obj) => {
-      counts[obj.key] = obj.doc_count;
+    binned.fields.buckets.forEach(({ key: field, summary }) => {
+      summary.terms.buckets.forEach(({ key: source, doc_count: count }) => {
+        if (!counts[source]) {
+          counts[source] = 0;
+        }
+        if (!fields[source]) {
+          fields[source] = [];
+        }
+        counts[source] += count;
+        fields[source].push(field);
+      });
     });
   }
   let sources = {};
@@ -450,7 +460,6 @@ export const getSources = async (params) => {
     let source = meta.source || [];
     let source_url = meta.source_url || [];
     let source_url_stub = meta.source_url_stub || [];
-    let value = meta.key || meta.name;
     if (!Array.isArray(source)) {
       source = [source];
     }
@@ -462,20 +471,28 @@ export const getSources = async (params) => {
     }
     source.forEach((src, i) => {
       if (src && typeof src === "string") {
-        if (!sources.hasOwnProperty(src)) {
-          sources[src] = {
+        let lcSrc = src.toLowerCase();
+        if (counts[lcSrc] && !sources.hasOwnProperty(lcSrc)) {
+          sources[lcSrc] = {
             url: source_url[i] || source_url_stub[i],
             attributes: [],
           };
-          let lcSrc = src.toLowerCase();
           if (counts[lcSrc]) {
-            sources[src].count = counts[lcSrc];
+            sources[lcSrc].count = counts[lcSrc];
+            sources[lcSrc].attributes.push(...fields[lcSrc]);
           }
         }
-        sources[src].attributes.push(value);
       }
     });
   });
+  Object.keys(counts).forEach((src) => {
+    if (!sources.hasOwnProperty(src)) {
+      sources[src] = {};
+    }
+    sources[src].count = counts[src];
+    sources[src].attributes = fields[src];
+  });
+  // console.log(sources);
   return { report: { sources: sources } };
 };
 

@@ -2,6 +2,7 @@ const termsAgg = async () => {
   return {
     terms: {
       field: "attributes.values.source",
+      size: 200,
     },
   };
 };
@@ -19,12 +20,26 @@ export const aggregateRawValueSources = async ({}) => {
           path: "attributes",
         },
         aggs: {
-          summary: {
-            nested: {
-              path: "attributes.values",
+          fields: {
+            terms: {
+              field: "attributes.key",
+              size: 200,
             },
+
             aggs: {
-              terms,
+              summary: {
+                nested: {
+                  path: "attributes.values",
+                },
+                aggs: {
+                  terms: {
+                    terms: {
+                      field: "attributes.values.source",
+                      size: 200,
+                    },
+                  },
+                },
+              },
             },
           },
         },
