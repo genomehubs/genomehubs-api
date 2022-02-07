@@ -31,6 +31,13 @@ export const processDoc = ({ doc, inner_hits = {} }) => {
             });
             attribute.values.push(value);
           });
+        } else if (key == "aggregation_source") {
+          if (Array.isArray(attr[key])) {
+            attribute[key] = "direct";
+            attribute.has_descendants = true;
+          } else {
+            attribute[key] = attr[key];
+          }
         } else {
           attribute[key] = attr[key];
         }

@@ -177,6 +177,14 @@ export const processHits = ({
                 } else {
                   field.value = inner_hit.fields[ikey];
                 }
+              } else if (ikey == "attributes.aggregation_source") {
+                if (Array.isArray(inner_hit.fields[ikey])) {
+                  field[ikey.replace(/attributes\./, "")] = "direct";
+                  field.has_descendants = true;
+                } else {
+                  field[ikey.replace(/attributes\./, "")] =
+                    inner_hit.fields[ikey];
+                }
               } else {
                 if (inner_hit.fields[ikey].length == 1) {
                   field[ikey.replace(/attributes\./, "")] =
