@@ -17,7 +17,13 @@ export const filterProperties = (properties) => {
       };
     }
   };
-  return Object.keys(properties).length == 0
-    ? []
-    : Object.keys(properties).map((field) => rangeQuery(field));
+  if (Object.keys(filters).length == 0) {
+    return [];
+  }
+  let arr = [];
+  Object.keys(filters).forEach((stat) => {
+    let subset = Object.keys(filters[stat]).map((field) => rangeQuery(field));
+    arr.push(...subset);
+  });
+  return arr;
 };

@@ -9,8 +9,8 @@ export const filterAttributes = (
   }
   let rangeQuery;
   if (searchRawValues) {
-    rangeQuery = (field) => {
-      // TODO: support enum based query here
+    rangeQuery = (field, stat) => {
+      // TODO: support alternate stats and enum based query here
       return [
         {
           nested: {
@@ -18,7 +18,7 @@ export const filterAttributes = (
             query: {
               range: {
                 [`attributes.values.${typesMap[field].type}_value`]:
-                  filters[field],
+                  filters[stat][field],
               },
             },
           },
@@ -26,7 +26,7 @@ export const filterAttributes = (
       ];
     };
   } else {
-    rangeQuery = (field) => {
+    rangeQuery = (field, stat) => {
       if (!typesMap[field]) {
         return [
           {
@@ -34,15 +34,14 @@ export const filterAttributes = (
           },
         ];
       }
-      let stat = `${typesMap[field].type}_value`;
       if (
-        Array.isArray(filters[field]) &&
-        typeof filters[field][0] === "string"
+        Array.isArray(filters[stat][field]) &&
+        typeof filters[stat][field][0] === "string"
       ) {
         return [
           {
             bool: {
-              filter: filters[field].map((term) => {
+              filter: filters[stat][field].map((term) => {
                 let include = [];
                 let exclude = [];
                 for (let option of term.split(",")) {
@@ -69,11 +68,11 @@ export const filterAttributes = (
           },
         ];
       }
-      let filter = { ...filters[field] };
-      if (filter.stat) {
-        stat = filter.stat;
-        delete filter.stat;
-      }
+      let filter = { ...filters[stat][field] };
+      // if (filter.stat) {
+      //   stat = filter.stat;
+      //   delete filter.stat;
+      // }
       let meta = typesMap[field];
       if (
         meta.type == "keyword" &&
@@ -160,18 +159,24 @@ export const filterAttributes = (
       });
     };
   }
-  return Object.keys(filters).length == 0
-    ? []
-    : Object.keys(filters).map((field) => ({
-        nested: {
-          path: "attributes",
-          query: {
-            bool: {
-              filter: [{ match: { "attributes.key": field } }]
-                .concat(aggregation_source)
-                .concat(rangeQuery(field)),
-            },
+  if (Object.keys(filters).length == 0) {
+    return [];
+  }
+  let arr = [];
+  Object.keys(filters).forEach((stat) => {
+    let subset = Object.keys(filters[stat]).map((field) => ({
+      nested: {
+        path: "attributes",
+        query: {
+          bool: {
+            filter: [{ match: { "attributes.key": field } }]
+              .concat(aggregation_source)
+              .concat(rangeQuery(field, stat)),
           },
         },
-      }));
+      },
+    }));
+    arr.push(...subset);
+  });
+  return arr;
 };

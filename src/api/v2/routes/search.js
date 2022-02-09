@@ -84,47 +84,53 @@ const setSortBy = ({ sortBy, sortOrder, sortMode }) => {
   return sortBy;
 };
 
-const addCondition = (conditions, parts, type, summary) => {
+const addCondition = (conditions, parts, type, summary = "value") => {
   if (!conditions) {
     conditions = {};
   }
   let segments = parts[0].split(/[\(\)]/);
-  let stat;
+  let stat = summary;
   if (segments.length > 1) {
     stat = segments[0];
     parts[0] = segments[1];
-  }
-  parts[0] = parts[0].toLowerCase();
-  if (!conditions[parts[0]]) {
-    if (type == "keyword") {
-      conditions[parts[0]] = [];
-    } else {
-      conditions[parts[0]] = {};
-    }
   }
   if (stat) {
     if (type == "date") {
       stat = stat == "min" ? "from" : stat == "max" ? "to" : stat;
     }
-    conditions[parts[0]]["stat"] = stat;
   }
-  if (type == "keyword") {
+  if (stat == "value") {
+    stat = `${type}_value`;
+  }
+  if (!conditions[stat]) {
+    conditions[stat] = {};
+  }
+  parts[0] = parts[0].toLowerCase();
+  if (!conditions[stat][parts[0]]) {
+    if (stat == "keyword_value") {
+      conditions[stat][parts[0]] = [];
+    } else {
+      conditions[stat][parts[0]] = {};
+    }
+  }
+
+  if (stat == "keyword_value") {
     if (parts[1].match(/[><]/)) {
       let values = {};
       operations(parts[1]).forEach((operator) => {
         values[operator] = parts[2];
       });
-      conditions[parts[0]].push(values);
+      conditions[stat][parts[0]].push(values);
     } else {
       if (parts[1] == "!=") {
-        conditions[parts[0]].push(
+        conditions[stat][parts[0]].push(
           parts[2]
             .split(",")
             .map((term) => `!${term}`)
             .join(",")
         );
       } else {
-        conditions[parts[0]].push(parts[2]);
+        conditions[stat][parts[0]].push(parts[2]);
       }
     }
   } else {
@@ -136,14 +142,14 @@ const addCondition = (conditions, parts, type, summary) => {
       parts[1] = `!${parts[1]}`;
     }
     operations(parts[1]).forEach((operator) => {
-      conditions[parts[0]][operator] = parts[2];
+      conditions[stat][parts[0]][operator] = parts[2];
     });
   }
 
   return conditions;
 };
 
-const summaries = ["value", "max", "min", "range"];
+const summaries = ["value", "count", "length", "max", "min", "range"];
 
 const generateQuery = async ({
   query,
