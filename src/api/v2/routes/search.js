@@ -250,7 +250,7 @@ const generateQuery = async ({
               );
             }
           } else {
-            properties = addCondition(properties, parts);
+            properties = addCondition(properties, parts, "keyword");
           }
         } else {
           if (typesMap[result][term]) {

@@ -2,27 +2,32 @@ export const filterProperties = (properties) => {
   if (Object.keys(properties).length == 0) {
     return [];
   }
-  let rangeQuery = (field) => {
-    if (typeof properties[field] === "object") {
+  let rangeQuery = (field, stat) => {
+    if (
+      stat != "keyword_value" &&
+      typeof properties[stat][field] === "object"
+    ) {
       return {
         range: {
-          [field]: properties[field],
+          [field]: properties[stat][field],
         },
       };
     } else {
       return {
         match: {
-          [field]: properties[field],
+          [field]: properties[stat][field][0],
         },
       };
     }
   };
-  if (Object.keys(filters).length == 0) {
+  if (Object.keys(properties).length == 0) {
     return [];
   }
   let arr = [];
-  Object.keys(filters).forEach((stat) => {
-    let subset = Object.keys(filters[stat]).map((field) => rangeQuery(field));
+  Object.keys(properties).forEach((stat) => {
+    let subset = Object.keys(properties[stat]).map((field) =>
+      rangeQuery(field, stat)
+    );
     arr.push(...subset);
   });
   return arr;

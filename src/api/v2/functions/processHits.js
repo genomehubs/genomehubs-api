@@ -178,7 +178,10 @@ export const processHits = ({
                   field.value = inner_hit.fields[ikey];
                 }
               } else if (ikey == "attributes.aggregation_source") {
-                if (Array.isArray(inner_hit.fields[ikey])) {
+                if (
+                  Array.isArray(inner_hit.fields[ikey]) &&
+                  inner_hit.fields[ikey].includes("direct")
+                ) {
                   field[ikey.replace(/attributes\./, "")] = "direct";
                   field.has_descendants = true;
                 } else {
