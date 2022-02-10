@@ -183,7 +183,9 @@ export const processHits = ({
                   inner_hit.fields[ikey].includes("direct")
                 ) {
                   field[ikey.replace(/attributes\./, "")] = "direct";
-                  field.has_descendants = true;
+                  if (inner_hit.fields[ikey].includes("descendant")) {
+                    field.has_descendants = true;
+                  }
                 } else {
                   field[ikey.replace(/attributes\./, "")] =
                     inner_hit.fields[ikey];

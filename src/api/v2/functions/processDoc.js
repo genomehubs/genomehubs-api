@@ -32,9 +32,11 @@ export const processDoc = ({ doc, inner_hits = {} }) => {
             attribute.values.push(value);
           });
         } else if (key == "aggregation_source") {
-          if (Array.isArray(attr[key])) {
+          if (Array.isArray(attr[key]) && attr[key].includes("direct")) {
             attribute[key] = "direct";
-            attribute.has_descendants = true;
+            if (attr[key].includes("descendant")) {
+              attribute.has_descendants = true;
+            }
           } else {
             attribute[key] = attr[key];
           }
