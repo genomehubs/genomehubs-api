@@ -208,7 +208,7 @@ const generateQuery = async ({
       query = query.toLowerCase();
     }
     query.split(/\s+and\s+/).forEach((term) => {
-      let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\((.+?)\)/);
+      let taxQuery = term.match(/tax_(tree|name|eq|rank|depth)\(\s*(.+?)\s*\)/);
       if (taxQuery) {
         if (taxQuery[1] == "rank") {
           rank = taxQuery[2];
@@ -357,7 +357,7 @@ export const getResults = async (params) => {
 const replaceSearchIds = async (params) => {
   let query = params.query;
   let index = indexName({ ...params });
-  let match = query.match(/tax_\w+\(([^\)]+)/);
+  let match = query.match(/tax_\w+\(\s*([^\)]+\s*)/);
   if (match) {
     let ids = match.slice(1);
     if (ids.length > 0) {
